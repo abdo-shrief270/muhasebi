@@ -35,6 +35,8 @@ class GenerateReportJob implements ShouldQueue
 
     public function handle(): void
     {
+        app()->instance('tenant.id', $this->tenantId);
+
         $filename = sprintf(
             'reports/%d/%s_%s.%s',
             $this->tenantId,
@@ -43,27 +45,39 @@ class GenerateReportJob implements ShouldQueue
             $this->format,
         );
 
-        // Report generation is delegated to the existing ReportController logic.
-        // This job wraps it for async execution. The actual report service
-        // should be extracted from the controller for reuse here.
-        // For now, store a placeholder indicating the job completed.
-        Storage::disk('local')->put($filename, json_encode([
-            'report_type' => $this->reportType,
-            'filters' => $this->filters,
-            'format' => $this->format,
-            'generated_at' => now()->toISOString(),
-            'tenant_id' => $this->tenantId,
-            'user_id' => $this->userId,
-            'status' => 'completed',
-        ]));
+        if ($this->format === 'pdf') {
+            $pdfService = app(\App\Domain\Accounting\Services\ReportPdfService::class);
 
-        // TODO: Send notification to user that report is ready
-        // Notification::send(User::find($this->userId), new ReportReadyNotification($filename));
+            /** @var \Illuminate\Http\Response $response */
+            $response = match ($this->reportType) {
+                'trial_balance' => $pdfService->trialBalancePdf($this->filters['from'] ?? null, $this->filters['to'] ?? null),
+                'income_statement' => $pdfService->incomeStatementPdf($this->filters['from'] ?? null, $this->filters['to'] ?? null),
+                'balance_sheet' => $pdfService->balanceSheetPdf($this->filters['date'] ?? null),
+                'cash_flow' => $pdfService->cashFlowPdf($this->filters['from'] ?? null, $this->filters['to'] ?? null),
+                'vat_return' => $pdfService->vatReturnPdf($this->filters['from'] ?? null, $this->filters['to'] ?? null),
+                'wht_report' => $pdfService->whtReportPdf($this->filters['from'] ?? null, $this->filters['to'] ?? null),
+                default => throw new \InvalidArgumentException("Unknown report type: {$this->reportType}"),
+            };
+
+            Storage::disk('local')->put($filename, $response->getContent());
+        } else {
+            // Non-PDF formats can be added here in the future
+            Storage::disk('local')->put($filename, json_encode([
+                'report_type' => $this->reportType,
+                'filters' => $this->filters,
+                'format' => $this->format,
+                'generated_at' => now()->toISOString(),
+                'tenant_id' => $this->tenantId,
+                'user_id' => $this->userId,
+                'status' => 'completed',
+            ]));
+        }
 
         logger()->info("Report generated: {$filename}", [
             'tenant_id' => $this->tenantId,
             'user_id' => $this->userId,
             'type' => $this->reportType,
+            'format' => $this->format,
         ]);
     }
 
