@@ -7,10 +7,21 @@ namespace App\Domain\Webhook\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 #[Fillable(['endpoint_id', 'event', 'payload', 'status_code', 'response_body', 'duration_ms', 'attempt', 'status', 'error_message', 'next_retry_at'])]
 class WebhookDelivery extends Model
 {
+    use LogsActivity;
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['event', 'status', 'status_code', 'attempt'])
+            ->logOnlyDirty()
+            ->setDescriptionForEvent(fn (string $eventName) => "Webhook delivery {$eventName}");
+    }
 
     protected function casts(): array
     {

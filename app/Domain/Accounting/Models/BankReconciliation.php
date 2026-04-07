@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Accounting\Models;
 
+use App\Domain\Accounting\Enums\ReconciliationStatus;
 use App\Domain\Shared\Traits\BelongsToTenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -40,6 +41,7 @@ class BankReconciliation extends Model
             'book_balance' => 'decimal:2',
             'adjusted_book_balance' => 'decimal:2',
             'reconciled_at' => 'datetime',
+            'status' => ReconciliationStatus::class,
         ];
     }
 
@@ -89,12 +91,12 @@ class BankReconciliation extends Model
 
     public function isDraft(): bool
     {
-        return $this->status === 'draft';
+        return $this->status === ReconciliationStatus::Draft;
     }
 
     public function isCompleted(): bool
     {
-        return $this->status === 'completed';
+        return $this->status === ReconciliationStatus::Completed;
     }
 
     public function unmatchedCount(): int

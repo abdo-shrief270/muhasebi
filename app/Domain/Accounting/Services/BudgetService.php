@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Accounting\Services;
 
+use App\Domain\Accounting\Enums\BudgetStatus;
 use App\Domain\Accounting\Enums\JournalEntryStatus;
 use App\Domain\Accounting\Enums\NormalBalance;
 use App\Domain\Accounting\Models\Account;
@@ -98,7 +99,7 @@ class BudgetService
         }
 
         $budget->update([
-            'status' => 'approved',
+            'status' => BudgetStatus::Approved,
             'approved_by' => auth()->id(),
             'approved_at' => now(),
         ]);
