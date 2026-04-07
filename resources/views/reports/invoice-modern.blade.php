@@ -2,11 +2,14 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
+    @php
+        $safeAccent = preg_match('/^#[0-9a-fA-F]{3,6}$/', $accentColor ?? '') ? $accentColor : '#2c3e50';
+    @endphp
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Cairo', 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #333; direction: rtl; line-height: 1.5; }
 
-        .header { background-color: {{ $accentColor }}; color: #fff; padding: 30px; display: flex; }
+        .header { background-color: {{ $safeAccent }}; color: #fff; padding: 30px; display: flex; }
         .header-left { flex: 1; }
         .header-right { text-align: left; }
         .company-name { font-size: 22px; font-weight: bold; margin-bottom: 4px; }
@@ -14,7 +17,7 @@
         .invoice-number { font-size: 14px; opacity: 0.8; }
 
         @if($headerText)
-        .header-banner { background: {{ $accentColor }}22; padding: 8px 30px; font-size: 11px; color: {{ $accentColor }}; text-align: center; }
+        .header-banner { background: {{ $safeAccent }}22; padding: 8px 30px; font-size: 11px; color: {{ $safeAccent }}; text-align: center; }
         @endif
 
         .meta-section { padding: 25px 30px; display: flex; gap: 30px; }
@@ -30,7 +33,7 @@
         .totals { padding: 0 30px; margin-top: 15px; }
         .totals-table { margin-right: auto; border-collapse: collapse; }
         .totals-table td { padding: 6px 20px; font-size: 12px; }
-        .totals-table .total-row { font-size: 16px; font-weight: bold; color: {{ $accentColor }}; border-top: 2px solid {{ $accentColor }}; }
+        .totals-table .total-row { font-size: 16px; font-weight: bold; color: {{ $safeAccent }}; border-top: 2px solid {{ $safeAccent }}; }
 
         .notes { padding: 20px 30px; margin-top: 15px; }
         .notes-title { font-size: 11px; font-weight: bold; color: #666; margin-bottom: 4px; }

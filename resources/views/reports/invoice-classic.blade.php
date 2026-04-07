@@ -2,21 +2,24 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
+    @php
+        $safeAccent = preg_match('/^#[0-9a-fA-F]{3,6}$/', $accentColor ?? '') ? $accentColor : '#2c3e50';
+    @endphp
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Cairo', 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #333; direction: rtl; line-height: 1.6; padding: 40px; }
 
-        .header { border-bottom: 3px solid {{ $accentColor }}; padding-bottom: 20px; margin-bottom: 25px; }
-        .company-name { font-size: 20px; font-weight: bold; color: {{ $accentColor }}; }
+        .header { border-bottom: 3px solid {{ $safeAccent }}; padding-bottom: 20px; margin-bottom: 25px; }
+        .company-name { font-size: 20px; font-weight: bold; color: {{ $safeAccent }}; }
 
         .invoice-meta { margin-bottom: 25px; }
         .invoice-meta table { width: 100%; }
         .invoice-meta .label { font-weight: bold; color: #555; width: 120px; }
 
-        .invoice-title { font-size: 24px; font-weight: bold; color: {{ $accentColor }}; text-align: center; margin: 20px 0; border: 2px solid {{ $accentColor }}; padding: 8px; }
+        .invoice-title { font-size: 24px; font-weight: bold; color: {{ $safeAccent }}; text-align: center; margin: 20px 0; border: 2px solid {{ $safeAccent }}; padding: 8px; }
 
         table.items { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        table.items th { background: {{ $accentColor }}; color: #fff; padding: 8px 10px; text-align: right; font-size: 11px; }
+        table.items th { background: {{ $safeAccent }}; color: #fff; padding: 8px 10px; text-align: right; font-size: 11px; }
         table.items td { padding: 8px 10px; border: 1px solid #ddd; font-size: 11px; }
         table.items .amount { text-align: left; direction: ltr; }
         table.items tr:nth-child(even) { background: #f9f9f9; }
@@ -24,11 +27,11 @@
         .totals { margin-top: 15px; }
         .totals table { margin-right: auto; }
         .totals td { padding: 5px 15px; font-size: 12px; }
-        .totals .grand-total { font-size: 16px; font-weight: bold; background: {{ $accentColor }}11; }
+        .totals .grand-total { font-size: 16px; font-weight: bold; background: {{ $safeAccent }}11; }
 
         .notes { margin-top: 25px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 11px; color: #666; }
 
-        .footer { margin-top: 30px; padding-top: 10px; border-top: 2px solid {{ $accentColor }}; text-align: center; font-size: 10px; color: #999; }
+        .footer { margin-top: 30px; padding-top: 10px; border-top: 2px solid {{ $safeAccent }}; text-align: center; font-size: 10px; color: #999; }
     </style>
 </head>
 <body>
