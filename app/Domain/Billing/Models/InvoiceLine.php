@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Billing\Models;
 
 use App\Domain\Accounting\Models\Account;
+use App\Domain\Shared\Traits\BelongsToTenant;
 use Database\Factories\InvoiceLineFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
@@ -28,7 +29,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class InvoiceLine extends Model
 {
-    use HasFactory;
+    use BelongsToTenant, HasFactory;
 
     /** @return array<string, string> */
     protected function casts(): array
