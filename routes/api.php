@@ -68,8 +68,12 @@ use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\NotificationPreferenceController;
 use App\Http\Controllers\Api\V1\OnboardingController;
 use App\Http\Controllers\Api\V1\PaymentController;
+use App\Http\Controllers\Api\V1\AttendanceController;
+use App\Http\Controllers\Api\V1\LeaveController;
+use App\Http\Controllers\Api\V1\LoanController;
 use App\Http\Controllers\Api\V1\PayrollController;
 use App\Http\Controllers\Api\V1\PayslipController;
+use App\Http\Controllers\Api\V1\SalaryComponentController;
 use App\Http\Controllers\Api\V1\PlanController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalDocumentController;
@@ -537,6 +541,35 @@ Route::prefix('v1')->group(function (): void {
                 Route::post('{payrollRun}/mark-paid', [PayrollController::class, 'markPaid'])->name('mark-paid');
                 Route::get('{payrollRun}/items', [PayrollController::class, 'items'])->name('items');
                 Route::get('{payrollRun}/items/{payrollItem}/payslip', [PayslipController::class, 'download'])->name('payslip');
+            });
+
+            // ── Payroll Extensions ──
+            Route::middleware('permission:manage_payroll')->group(function (): void {
+                // Salary Components
+                Route::apiResource('salary-components', SalaryComponentController::class)->except(['show']);
+                Route::post('employees/{employee}/salary-components', [SalaryComponentController::class, 'assign'])->name('employees.salary-components.assign');
+                Route::get('employees/{employee}/salary-components', [SalaryComponentController::class, 'employeeComponents'])->name('employees.salary-components.index');
+
+                // Loans
+                Route::apiResource('loans', LoanController::class)->only(['index', 'store']);
+                Route::post('loans/{loan}/installment', [LoanController::class, 'recordInstallment'])->name('loans.installment');
+                Route::post('loans/{loan}/cancel', [LoanController::class, 'cancel'])->name('loans.cancel');
+
+                // Leave Management
+                Route::get('leave-types', [LeaveController::class, 'types'])->name('leave-types.index');
+                Route::post('leave-types', [LeaveController::class, 'createType'])->name('leave-types.store');
+                Route::get('leave-requests', [LeaveController::class, 'requests'])->name('leave-requests.index');
+                Route::post('leave-requests', [LeaveController::class, 'request'])->name('leave-requests.store');
+                Route::post('leave-requests/{leaveRequest}/approve', [LeaveController::class, 'approve'])->name('leave-requests.approve');
+                Route::post('leave-requests/{leaveRequest}/reject', [LeaveController::class, 'reject'])->name('leave-requests.reject');
+                Route::post('leave-requests/{leaveRequest}/cancel', [LeaveController::class, 'cancel'])->name('leave-requests.cancel');
+                Route::get('employees/{employee}/leave-balance', [LeaveController::class, 'balance'])->name('employees.leave-balance');
+
+                // Attendance
+                Route::get('attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+                Route::post('attendance', [AttendanceController::class, 'store'])->name('attendance.store');
+                Route::post('attendance/bulk', [AttendanceController::class, 'bulkStore'])->name('attendance.bulk');
+                Route::get('employees/{employee}/attendance-summary', [AttendanceController::class, 'summary'])->name('employees.attendance-summary');
             });
 
             // ── ETA E-Invoicing (admin + accountant) ──
