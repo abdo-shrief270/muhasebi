@@ -61,6 +61,9 @@ Schedule::command('recurring-je:process')->dailyAt('05:00')->withoutOverlapping(
 // Process scheduled report email distribution (runs daily at 6am)
 Schedule::command('reports:process-scheduled')->dailyAt('06:00')->withoutOverlapping(300);
 
+// Process approved payment schedules (runs daily at 7am)
+Schedule::command('payments:process-scheduled')->dailyAt('07:00')->withoutOverlapping(300);
+
 // Generate recurring invoices (runs daily at 6am)
 Schedule::command('invoices:process-recurring')->dailyAt('06:00')->withoutOverlapping(300);
 
