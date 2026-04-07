@@ -1,0 +1,148 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop, 'release/**']
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, bcmath, pdo_pgsql, redis
+          tools: composer:v2
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+      - run: composer install --no-interaction --prefer-dist
+      - name: Pint (Code Style)
+        run: ./vendor/bin/pint --test
+      - name: PHPStan (Static Analysis)
+        run: ./vendor/bin/phpstan analyse app --memory-limit=512M
+
+  test:
+    name: Tests (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      matrix:
+        php: ['8.3', '8.4']
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: muhasebi_test
+          POSTGRES_USER: muhasebi
+          POSTGRES_PASSWORD: secret
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, bcmath, pdo_pgsql, redis
+          coverage: pcov
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ matrix.php }}-${{ hashFiles('composer.lock') }}
+      - run: composer install --no-interaction --prefer-dist
+      - name: Prepare Environment
+        run: |
+          cp .env.example .env
+          sed -i 's/DB_CONNECTION=sqlite/DB_CONNECTION=pgsql/' .env
+          sed -i 's/# DB_HOST=127.0.0.1/DB_HOST=127.0.0.1/' .env
+          sed -i 's/# DB_PORT=3306/DB_PORT=5432/' .env
+          sed -i 's/# DB_DATABASE=laravel/DB_DATABASE=muhasebi_test/' .env
+          sed -i 's/# DB_USERNAME=root/DB_USERNAME=muhasebi/' .env
+          sed -i 's/# DB_PASSWORD=/DB_PASSWORD=secret/' .env
+          php artisan key:generate
+      - name: Run Migrations
+        run: php artisan migrate --force
+      - name: Run Tests
+        run: php artisan test --coverage --coverage-clover=coverage.xml
+      - name: Upload Coverage
+        if: matrix.php == '8.4'
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.xml
+        continue-on-error: true
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+      - run: composer install --no-interaction --prefer-dist
+      - name: Check Vulnerabilities
+        run: composer audit
+
+  migrate-check:
+    name: Migration Dry Run
+    runs-on: ubuntu-latest
+    needs: lint
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: muhasebi_migrate
+          POSTGRES_USER: muhasebi
+          POSTGRES_PASSWORD: secret
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, bcmath, pdo_pgsql
+      - run: composer install --no-interaction --prefer-dist
+      - name: Prepare Environment
+        run: |
+          cp .env.example .env
+          sed -i 's/DB_CONNECTION=sqlite/DB_CONNECTION=pgsql/' .env
+          sed -i 's/# DB_HOST=127.0.0.1/DB_HOST=127.0.0.1/' .env
+          sed -i 's/# DB_PORT=3306/DB_PORT=5432/' .env
+          sed -i 's/# DB_DATABASE=laravel/DB_DATABASE=muhasebi_migrate/' .env
+          sed -i 's/# DB_USERNAME=root/DB_USERNAME=muhasebi/' .env
+          sed -i 's/# DB_PASSWORD=/DB_PASSWORD=secret/' .env
+          php artisan key:generate
+      - name: Migrate Up
+        run: php artisan migrate --force
+      - name: Migrate Rollback
+        run: php artisan migrate:rollback --step=5
+      - name: Migrate Up Again
+        run: php artisan migrate --force

@@ -1,0 +1,108 @@
+name: Deploy White-Label
+
+on:
+  workflow_dispatch:
+    inputs:
+      tenant:
+        description: 'Tenant slug (e.g., client-acme)'
+        required: true
+        type: string
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      skip_ci:
+        description: 'Skip CI checks'
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-wl-${{ inputs.tenant }}-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    if: ${{ !inputs.skip_ci }}
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Deploy ${{ inputs.tenant }} (${{ inputs.environment }})
+    needs: [ci]
+    if: always() && (needs.ci.result == 'success' || inputs.skip_ci)
+    runs-on: ubuntu-latest
+    environment:
+      name: whitelabel-${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Load Tenant Config
+        id: config
+        run: |
+          CONFIG_FILE="config/whitelabel/${{ inputs.tenant }}.json"
+          if [ ! -f "$CONFIG_FILE" ]; then
+            echo "Tenant config not found: $CONFIG_FILE"
+            exit 1
+          fi
+          echo "domain=$(jq -r '.domain' $CONFIG_FILE)" >> $GITHUB_OUTPUT
+          echo "app_name=$(jq -r '.app_name' $CONFIG_FILE)" >> $GITHUB_OUTPUT
+          echo "theme_primary=$(jq -r '.theme.primary_color' $CONFIG_FILE)" >> $GITHUB_OUTPUT
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.WL_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.WL_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy White-Label Instance
+        env:
+          HOST: ${{ secrets.WL_HOST }}
+          USER: ${{ secrets.WL_USER }}
+          TENANT: ${{ inputs.tenant }}
+          DOMAIN: ${{ steps.config.outputs.domain }}
+          APP_NAME: ${{ steps.config.outputs.app_name }}
+        run: |
+          ssh -i ~/.ssh/deploy_key $USER@$HOST bash -s << 'DEPLOY'
+            set -e
+            APP_PATH="/var/www/whitelabel/$TENANT"
+            RELEASE=$(date +%Y%m%d%H%M%S)
+
+            mkdir -p $APP_PATH/releases/$RELEASE $APP_PATH/shared
+
+            git archive --remote=origin HEAD | tar -x -C $APP_PATH/releases/$RELEASE
+
+            # Apply tenant-specific .env
+            cp $APP_PATH/shared/.env $APP_PATH/releases/$RELEASE/.env
+            ln -nfs $APP_PATH/shared/storage $APP_PATH/releases/$RELEASE/storage
+
+            cd $APP_PATH/releases/$RELEASE
+            composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+            npm ci && npm run build
+
+            php artisan migrate --force
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+
+            # Atomic swap
+            ln -nfs $APP_PATH/releases/$RELEASE $APP_PATH/current
+            sudo systemctl reload php8.4-fpm
+            php $APP_PATH/current/artisan queue:restart
+
+            # Cleanup
+            cd $APP_PATH/releases && ls -dt */ | tail -n +4 | xargs rm -rf
+
+            echo "White-label $TENANT deployed to $DOMAIN"
+          DEPLOY
+
+      - name: Health Check
+        run: |
+          sleep 5
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${{ steps.config.outputs.domain }}/api/v1/health)
+          if [ "$STATUS" != "200" ]; then
+            echo "Health check failed ($STATUS)"
+            exit 1
+          fi
