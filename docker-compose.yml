@@ -55,7 +55,12 @@ services:
       target: production
     restart: unless-stopped
     command: >
-      sh -c "while true; do php artisan schedule:run --no-interaction; sleep 60; done"
+      sh -c "while true; do php artisan schedule:run --verbose --no-interaction 2>&1; sleep 60; done"
+    healthcheck:
+      test: ["CMD", "php", "artisan", "env:validate"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
     volumes:
       - app-storage:/var/www/html/storage
     depends_on:

@@ -167,7 +167,7 @@ class BudgetService
                     'actual' => $monthActual,
                     'variance' => $monthVariance,
                     'variance_pct' => bccomp($monthBudget, '0', 2) !== 0
-                        ? number_format(((float) $monthVariance / (float) $monthBudget) * 100, 1, '.', '')
+                        ? number_format((float) bcmul(bcdiv($monthVariance, $monthBudget, 4), '100', 1), 1, '.', '')
                         : '0.0',
                 ];
             }
@@ -185,10 +185,10 @@ class BudgetService
                 'actual_ytd' => $actualYtd,
                 'variance_ytd' => $varianceYtd,
                 'variance_pct' => bccomp($budgetYtd, '0', 2) !== 0
-                    ? number_format(((float) $varianceYtd / (float) $budgetYtd) * 100, 1, '.', '')
+                    ? number_format((float) bcmul(bcdiv($varianceYtd, $budgetYtd, 4), '100', 1), 1, '.', '')
                     : '0.0',
                 'utilization_pct' => bccomp($budgetYtd, '0', 2) !== 0
-                    ? number_format(((float) $actualYtd / (float) $budgetYtd) * 100, 1, '.', '')
+                    ? number_format((float) bcmul(bcdiv($actualYtd, $budgetYtd, 4), '100', 1), 1, '.', '')
                     : '0.0',
                 'monthly' => $monthlyData,
             ];
@@ -214,7 +214,7 @@ class BudgetService
                 'actual_ytd' => $totalActual,
                 'variance_ytd' => $totalVariance,
                 'variance_pct' => bccomp($totalBudget, '0', 2) !== 0
-                    ? number_format(((float) $totalVariance / (float) $totalBudget) * 100, 1, '.', '')
+                    ? number_format((float) bcmul(bcdiv($totalVariance, $totalBudget, 4), '100', 1), 1, '.', '')
                     : '0.0',
             ],
             'generated_at' => now()->format('Y-m-d H:i'),
