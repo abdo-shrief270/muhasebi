@@ -58,7 +58,6 @@ class User extends Authenticatable
     use HasRoles;
     use LogsActivity;
     use Notifiable;
-
     use SoftDeletes;
 
     /** @var array<string, mixed> */
