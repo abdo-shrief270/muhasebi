@@ -1,0 +1,106 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Deploy to Staging
+    needs: ci
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.STAGING_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.STAGING_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy with Zero Downtime
+        env:
+          HOST: ${{ secrets.STAGING_HOST }}
+          USER: ${{ secrets.STAGING_USER }}
+          PATH_APP: ${{ secrets.STAGING_APP_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key $USER@$HOST bash -s << 'DEPLOY'
+            set -e
+            cd $PATH_APP
+
+            # Create new release directory
+            RELEASE=$(date +%Y%m%d%H%M%S)
+            RELEASES_DIR="releases"
+            SHARED_DIR="shared"
+            mkdir -p $RELEASES_DIR/$RELEASE
+
+            # Clone code to new release
+            git archive --remote=origin HEAD | tar -x -C $RELEASES_DIR/$RELEASE
+
+            # Link shared resources
+            ln -nfs $PWD/$SHARED_DIR/.env $RELEASES_DIR/$RELEASE/.env
+            ln -nfs $PWD/$SHARED_DIR/storage $RELEASES_DIR/$RELEASE/storage
+
+            # Install dependencies
+            cd $RELEASES_DIR/$RELEASE
+            composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+            npm ci && npm run build
+
+            # Run migrations
+            php artisan migrate --force
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+            php artisan event:cache
+
+            # Validate environment
+            php artisan env:validate
+
+            # Swap symlink (atomic — zero downtime)
+            cd $PATH_APP
+            ln -nfs $PWD/$RELEASES_DIR/$RELEASE current
+
+            # Reload PHP-FPM (graceful — finishes existing requests)
+            sudo systemctl reload php8.4-fpm
+
+            # Restart queue workers (graceful)
+            php current/artisan queue:restart
+
+            # Cleanup old releases (keep last 5)
+            cd $RELEASES_DIR
+            ls -dt */ | tail -n +6 | xargs rm -rf
+
+            echo "Deployed release $RELEASE to staging"
+          DEPLOY
+
+      - name: Smoke Test
+        run: |
+          sleep 5
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ vars.STAGING_URL }}/api/v1/health)
+          if [ "$STATUS" != "200" ]; then
+            echo "Health check failed with status $STATUS"
+            exit 1
+          fi
+          echo "Staging health check passed"
+
+      - name: Notify
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: "Staging deploy: ${{ job.status }}"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true

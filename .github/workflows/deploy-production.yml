@@ -1,0 +1,143 @@
+name: Deploy Production
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Deploy to Production
+    needs: ci
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.PRODUCTION_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Pre-deploy Backup
+        env:
+          HOST: ${{ secrets.PRODUCTION_HOST }}
+          USER: ${{ secrets.PRODUCTION_USER }}
+          PATH_APP: ${{ secrets.PRODUCTION_APP_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key $USER@$HOST bash -s << 'BACKUP'
+            set -e
+            cd $PATH_APP/current
+            php artisan backup:database --filename=pre-deploy-$(date +%Y%m%d%H%M%S).sql
+          BACKUP
+
+      - name: Deploy with Zero Downtime
+        env:
+          HOST: ${{ secrets.PRODUCTION_HOST }}
+          USER: ${{ secrets.PRODUCTION_USER }}
+          PATH_APP: ${{ secrets.PRODUCTION_APP_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key $USER@$HOST bash -s << 'DEPLOY'
+            set -e
+            cd $PATH_APP
+
+            RELEASE=$(date +%Y%m%d%H%M%S)
+            RELEASES_DIR="releases"
+            SHARED_DIR="shared"
+            PREVIOUS=$(readlink -f current || echo "")
+
+            mkdir -p $RELEASES_DIR/$RELEASE
+
+            git archive --remote=origin HEAD | tar -x -C $RELEASES_DIR/$RELEASE
+
+            ln -nfs $PWD/$SHARED_DIR/.env $RELEASES_DIR/$RELEASE/.env
+            ln -nfs $PWD/$SHARED_DIR/storage $RELEASES_DIR/$RELEASE/storage
+
+            cd $RELEASES_DIR/$RELEASE
+            composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+            npm ci && npm run build
+
+            # Pre-flight checks
+            php artisan env:validate
+            php artisan migrate --force
+
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+            php artisan event:cache
+
+            # Atomic symlink swap
+            cd $PATH_APP
+            ln -nfs $PWD/$RELEASES_DIR/$RELEASE current
+
+            # Graceful reload
+            sudo systemctl reload php8.4-fpm
+            php current/artisan queue:restart
+
+            # Cleanup (keep last 5)
+            cd $RELEASES_DIR
+            ls -dt */ | tail -n +6 | xargs rm -rf
+
+            echo "Production release $RELEASE deployed"
+            echo "PREVIOUS=$PREVIOUS" >> $GITHUB_ENV
+          DEPLOY
+
+      - name: Health Check
+        id: health
+        run: |
+          sleep 5
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ vars.PRODUCTION_URL }}/api/v1/health)
+            if [ "$STATUS" = "200" ]; then
+              echo "Production health check passed (attempt $i)"
+              exit 0
+            fi
+            echo "Health check attempt $i failed ($STATUS), retrying..."
+            sleep 3
+          done
+          echo "Health check failed after 5 attempts"
+          exit 1
+
+      - name: Rollback on Failure
+        if: failure() && steps.health.outcome == 'failure'
+        env:
+          HOST: ${{ secrets.PRODUCTION_HOST }}
+          USER: ${{ secrets.PRODUCTION_USER }}
+          PATH_APP: ${{ secrets.PRODUCTION_APP_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key $USER@$HOST bash -s << 'ROLLBACK'
+            set -e
+            cd $PATH_APP
+            PREVIOUS=$(ls -dt releases/*/ | sed -n '2p' | tr -d '/')
+            if [ -n "$PREVIOUS" ]; then
+              ln -nfs $PWD/releases/$PREVIOUS current
+              sudo systemctl reload php8.4-fpm
+              php current/artisan queue:restart
+              echo "Rolled back to $PREVIOUS"
+            else
+              echo "No previous release to rollback to!"
+              exit 1
+            fi
+          ROLLBACK
+
+      - name: Notify
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: "Production deploy: ${{ job.status }}"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
