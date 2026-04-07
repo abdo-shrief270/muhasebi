@@ -35,6 +35,7 @@ return [
         'manage_vendors',
         'manage_bills',
         'manage_fixed_assets',
+        'manage_expenses',
     ],
 
     'accountant' => [
@@ -52,6 +53,7 @@ return [
         'manage_vendors',
         'manage_bills',
         'manage_fixed_assets',
+        'manage_expenses',
     ],
 
     'auditor' => [
