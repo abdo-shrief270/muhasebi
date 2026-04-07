@@ -49,6 +49,7 @@ use App\Http\Controllers\Api\V1\CustomReportController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\DocumentController;
+use App\Http\Controllers\Api\V1\ExecutiveDashboardController;
 use App\Http\Controllers\Api\V1\EtaController;
 use App\Http\Controllers\Api\V1\EtaItemCodeController;
 use App\Http\Controllers\Api\V1\ExpenseCategoryController;
@@ -699,6 +700,16 @@ Route::prefix('v1')->group(function (): void {
                     ->name('vat-return-pdf');
                 Route::get('wht/pdf', [ReportController::class, 'whtReportPdf'])
                     ->name('wht-pdf');
+            });
+
+            // ── Executive Dashboard ──
+            Route::middleware('permission:view_reports')->prefix('dashboard')->name('dashboard.')->group(function (): void {
+                Route::get('overview', [ExecutiveDashboardController::class, 'overview'])->name('overview');
+                Route::get('revenue', [ExecutiveDashboardController::class, 'revenueAnalysis'])->name('revenue');
+                Route::get('cash-flow', [ExecutiveDashboardController::class, 'cashFlow'])->name('cash-flow');
+                Route::get('profitability', [ExecutiveDashboardController::class, 'profitability'])->name('profitability');
+                Route::get('kpis', [ExecutiveDashboardController::class, 'kpis'])->name('kpis');
+                Route::get('comparison', [ExecutiveDashboardController::class, 'comparison'])->name('comparison');
             });
 
             // CSV/JSONL Exports (streaming, memory-efficient)
