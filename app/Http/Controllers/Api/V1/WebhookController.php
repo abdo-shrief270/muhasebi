@@ -1,0 +1,53 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Domain\ClientPortal\Services\ClientPaymentService;
+use App\Domain\Subscription\Services\FawryService;
+use App\Domain\Subscription\Services\PaymobService;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+class WebhookController extends Controller
+{
+    public function __construct(
+        private readonly PaymobService $paymobService,
+        private readonly ClientPaymentService $clientPaymentService,
+    ) {}
+
+    /**
+     * Handle Paymob webhook callback.
+     */
+    public function paymob(Request $request): JsonResponse
+    {
+        $this->paymobService->handleCallback($request->all());
+
+        return response()->json(['message' => 'OK'], Response::HTTP_OK);
+    }
+
+    /**
+     * Handle Fawry webhook callback.
+     * Routes to invoice or subscription handler based on merchant ref format.
+     */
+    public function fawry(Request $request): JsonResponse
+    {
+        $data = $request->all();
+        $merchantRef = $data['merchantRefNum'] ?? '';
+
+        // Invoice payments use "INV-FAWRY-{id}-{ts}" format
+        if (str_starts_with($merchantRef, 'INV-FAWRY-')) {
+            $result = $this->clientPaymentService->handleFawryCallback($data);
+
+            return response()->json($result, Response::HTTP_OK);
+        }
+
+        // Default: subscription payment
+        $result = FawryService::handleCallback($data);
+
+        return response()->json($result, Response::HTTP_OK);
+    }
+}
