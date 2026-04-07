@@ -18,5 +18,7 @@ return [
         'depreciation_expense' => env('ACCOUNT_CODE_DEPR_EXPENSE', '6310'),
         'asset_disposal' => env('ACCOUNT_CODE_ASSET_DISPOSAL', '7110'),
         'bad_debt_expense' => env('ACCOUNT_CODE_BAD_DEBT', '6910'),
+        'fx_gain' => env('ACCOUNT_CODE_FX_GAIN', '7210'),
+        'fx_loss' => env('ACCOUNT_CODE_FX_LOSS', '6810'),
     ],
 ];
