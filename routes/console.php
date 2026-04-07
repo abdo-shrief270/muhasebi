@@ -93,5 +93,8 @@ Schedule::command('eta:reconcile')->dailyAt('03:00')->withoutOverlapping(600);
 // Retry webhook deliveries stuck in "retrying" state (hourly)
 Schedule::command('webhooks:retry-stuck')->hourly();
 
+// Evaluate alert rules for all tenants (hourly)
+Schedule::command('alerts:evaluate')->hourly()->withoutOverlapping(300);
+
 // Run monthly depreciation for all tenants (1st of each month at 4am)
 Schedule::command('assets:depreciate')->monthlyOn(1, '04:00')->withoutOverlapping(600);
