@@ -8,6 +8,7 @@ use App\Domain\Client\Models\Client;
 use App\Domain\Shared\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -46,12 +47,12 @@ class InvoiceReminder extends Model
         return $this->belongsTo(Client::class);
     }
 
-    public function scopeForInvoice($query, int $invoiceId)
+    public function scopeForInvoice(Builder $query, int $invoiceId): Builder
     {
         return $query->where('invoice_id', $invoiceId);
     }
 
-    public function scopeForMilestone($query, string $milestone)
+    public function scopeForMilestone(Builder $query, string $milestone): Builder
     {
         return $query->where('milestone', $milestone);
     }

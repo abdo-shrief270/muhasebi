@@ -6,6 +6,7 @@ namespace App\Domain\Webhook\Models;
 
 use App\Domain\Shared\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
@@ -41,12 +42,12 @@ class WebhookEndpoint extends Model
         return $this->hasMany(WebhookDelivery::class, 'endpoint_id');
     }
 
-    public function scopeActive($query)
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }
 
-    public function scopeForEvent($query, string $event)
+    public function scopeForEvent(Builder $query, string $event): Builder
     {
         return $query->whereJsonContains('events', $event);
     }
