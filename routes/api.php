@@ -92,6 +92,7 @@ use App\Http\Controllers\Api\V1\Portal\ClientPortalNotificationController;
 use App\Http\Controllers\Api\V1\RecurringInvoiceController;
 use App\Http\Controllers\Api\V1\RecurringJournalEntryController;
 use App\Http\Controllers\Api\V1\ReportController;
+use App\Http\Controllers\Api\V1\ScheduledReportController;
 use App\Http\Controllers\Api\V1\RssFeedController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\TeamController;
@@ -796,6 +797,17 @@ Route::prefix('v1')->group(function (): void {
                 Route::put('{savedReport}', [CustomReportController::class, 'update'])->name('update');
                 Route::delete('{savedReport}', [CustomReportController::class, 'destroy'])->name('destroy');
                 Route::get('{savedReport}/run', [CustomReportController::class, 'run'])->name('run');
+            });
+
+            // ── Scheduled Reports ──
+            Route::middleware('permission:manage_reports')->prefix('scheduled-reports')->name('scheduled-reports.')->group(function (): void {
+                Route::get('/', [ScheduledReportController::class, 'index'])->name('index');
+                Route::post('/', [ScheduledReportController::class, 'store'])->name('store');
+                Route::get('{scheduledReport}', [ScheduledReportController::class, 'show'])->name('show');
+                Route::put('{scheduledReport}', [ScheduledReportController::class, 'update'])->name('update');
+                Route::delete('{scheduledReport}', [ScheduledReportController::class, 'destroy'])->name('destroy');
+                Route::post('{scheduledReport}/toggle', [ScheduledReportController::class, 'toggle'])->name('toggle');
+                Route::post('{scheduledReport}/send-now', [ScheduledReportController::class, 'sendNow'])->name('send-now');
             });
 
             Route::middleware(['permission:view_reports', 'throttle:exports'])->prefix('export')->name('export.')->group(function (): void {
