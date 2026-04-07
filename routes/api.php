@@ -113,6 +113,7 @@ use App\Http\Controllers\Api\V1\WebhookEndpointController;
 use App\Http\Controllers\Api\V1\WhtCertificateController;
 use App\Http\Controllers\Api\V1\WorkingPaperController;
 use App\Http\Controllers\Api\V1\AlertRuleController;
+use App\Http\Controllers\Api\V1\PaymentWorkflowController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
@@ -450,6 +451,22 @@ Route::prefix('v1')->group(function (): void {
                 Route::get('bills/{bill}/payments', [BillPaymentController::class, 'index'])->name('bills.payments.index');
                 Route::post('bills/{bill}/payments', [BillPaymentController::class, 'store'])->name('bills.payments.store');
                 Route::delete('bill-payments/{billPayment}/void', [BillPaymentController::class, 'void'])->name('bill-payments.void');
+            });
+
+            // ── Payment Workflow (scheduling, auto-approval) ──
+            Route::middleware('permission:manage_payments')->group(function (): void {
+                Route::get('payment-schedules', [PaymentWorkflowController::class, 'listScheduled'])->name('payment-schedules.index');
+                Route::post('payment-schedules', [PaymentWorkflowController::class, 'schedule'])->name('payment-schedules.store');
+                Route::post('payment-schedules/bulk', [PaymentWorkflowController::class, 'scheduleBulk'])->name('payment-schedules.bulk');
+                Route::post('payment-schedules/{paymentSchedule}/approve', [PaymentWorkflowController::class, 'approve'])->name('payment-schedules.approve');
+                Route::get('payment-schedules/discount-opportunities', [PaymentWorkflowController::class, 'discountOpportunities'])->name('payment-schedules.discount-opportunities');
+            });
+
+            Route::middleware('permission:manage_bills')->group(function (): void {
+                Route::get('auto-approval-rules', [PaymentWorkflowController::class, 'autoRulesIndex'])->name('auto-approval-rules.index');
+                Route::post('auto-approval-rules', [PaymentWorkflowController::class, 'autoRulesStore'])->name('auto-approval-rules.store');
+                Route::put('auto-approval-rules/{autoApprovalRule}', [PaymentWorkflowController::class, 'autoRulesUpdate'])->name('auto-approval-rules.update');
+                Route::delete('auto-approval-rules/{autoApprovalRule}', [PaymentWorkflowController::class, 'autoRulesDestroy'])->name('auto-approval-rules.destroy');
             });
 
             // ── Fixed Assets ──
