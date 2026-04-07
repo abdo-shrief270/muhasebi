@@ -73,7 +73,7 @@ jobs:
             ln -nfs $PWD/$RELEASES_DIR/$RELEASE current
 
             # Reload PHP-FPM (graceful — finishes existing requests)
-            sudo systemctl reload php8.4-fpm
+            sudo systemctl reload php8.5-fpm
 
             # Restart queue workers (graceful)
             php current/artisan queue:restart

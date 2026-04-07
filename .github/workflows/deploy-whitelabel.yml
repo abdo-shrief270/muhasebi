@@ -89,7 +89,7 @@ jobs:
 
             # Atomic swap
             ln -nfs $APP_PATH/releases/$RELEASE $APP_PATH/current
-            sudo systemctl reload php8.4-fpm
+            sudo systemctl reload php8.5-fpm
             php $APP_PATH/current/artisan queue:restart
 
             # Cleanup

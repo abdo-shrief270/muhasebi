@@ -83,7 +83,7 @@ jobs:
             ln -nfs $PWD/$RELEASES_DIR/$RELEASE current
 
             # Graceful reload
-            sudo systemctl reload php8.4-fpm
+            sudo systemctl reload php8.5-fpm
             php current/artisan queue:restart
 
             # Cleanup (keep last 5)
@@ -123,7 +123,7 @@ jobs:
             PREVIOUS=$(ls -dt releases/*/ | sed -n '2p' | tr -d '/')
             if [ -n "$PREVIOUS" ]; then
               ln -nfs $PWD/releases/$PREVIOUS current
-              sudo systemctl reload php8.4-fpm
+              sudo systemctl reload php8.5-fpm
               php current/artisan queue:restart
               echo "Rolled back to $PREVIOUS"
             else

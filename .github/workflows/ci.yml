@@ -19,7 +19,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: '8.5'
           extensions: mbstring, bcmath, pdo_pgsql, redis
           tools: composer:v2
       - name: Cache Composer
@@ -39,10 +39,10 @@ jobs:
     needs: lint
     strategy:
       matrix:
-        php: ['8.3', '8.4']
+        php: ['8.4', '8.5']
     services:
       postgres:
-        image: postgres:16
+        image: postgres:17
         env:
           POSTGRES_DB: muhasebi_test
           POSTGRES_USER: muhasebi
@@ -54,7 +54,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
       redis:
-        image: redis:7
+        image: redis:8
         ports: ['6379:6379']
         options: >-
           --health-cmd "redis-cli ping"
@@ -90,8 +90,8 @@ jobs:
       - name: Run Tests
         run: php artisan test --coverage --coverage-clover=coverage.xml
       - name: Upload Coverage
-        if: matrix.php == '8.4'
-        uses: codecov/codecov-action@v4
+        if: matrix.php == '8.5'
+        uses: codecov/codecov-action@v5
         with:
           files: coverage.xml
         continue-on-error: true
@@ -104,7 +104,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: '8.5'
       - run: composer install --no-interaction --prefer-dist
       - name: Check Vulnerabilities
         run: composer audit
@@ -115,7 +115,7 @@ jobs:
     needs: lint
     services:
       postgres:
-        image: postgres:16
+        image: postgres:17
         env:
           POSTGRES_DB: muhasebi_migrate
           POSTGRES_USER: muhasebi
@@ -127,7 +127,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: '8.5'
           extensions: mbstring, bcmath, pdo_pgsql
       - run: composer install --no-interaction --prefer-dist
       - name: Prepare Environment
