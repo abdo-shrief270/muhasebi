@@ -41,6 +41,7 @@ use App\Http\Controllers\Api\V1\BudgetController;
 use App\Http\Controllers\Api\V1\ClientController;
 use App\Http\Controllers\Api\V1\CollectionController;
 use App\Http\Controllers\Api\V1\CsvImportController;
+use App\Http\Controllers\Api\V1\CostCenterController;
 use App\Http\Controllers\Api\V1\CurrencyController;
 use App\Http\Controllers\Api\V1\CustomReportController;
 use App\Http\Controllers\Api\V1\DashboardController;
@@ -408,6 +409,14 @@ Route::prefix('v1')->group(function (): void {
                 Route::post('expense-reports/{expenseReport}/submit', [ExpenseReportController::class, 'submit'])->name('expense-reports.submit');
                 Route::post('expense-reports/{expenseReport}/approve', [ExpenseReportController::class, 'approve'])->name('expense-reports.approve');
                 Route::post('expense-reports/{expenseReport}/reject', [ExpenseReportController::class, 'reject'])->name('expense-reports.reject');
+            });
+
+            // ── Cost Centers ──
+            Route::middleware('permission:manage_cost_centers')->group(function (): void {
+                Route::apiResource('cost-centers', CostCenterController::class);
+                Route::get('cost-centers/{costCenter}/pnl', [CostCenterController::class, 'profitAndLoss'])->name('cost-centers.pnl');
+                Route::get('cost-centers/reports/cost-analysis', [CostCenterController::class, 'costAnalysis'])->name('cost-centers.cost-analysis');
+                Route::get('cost-centers/reports/allocation', [CostCenterController::class, 'allocationReport'])->name('cost-centers.allocation');
             });
 
             // ── Invoice & Landing Page Settings (admin only) ──

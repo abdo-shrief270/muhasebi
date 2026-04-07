@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'currency',
     'description',
     'cost_center',
+    'cost_center_id',
 ])]
 class JournalEntryLine extends Model
 {
@@ -62,6 +63,11 @@ class JournalEntryLine extends Model
     public function account(): BelongsTo
     {
         return $this->belongsTo(Account::class);
+    }
+
+    public function costCenter(): BelongsTo
+    {
+        return $this->belongsTo(CostCenter::class);
     }
 
     // ──────────────────────────────────────
