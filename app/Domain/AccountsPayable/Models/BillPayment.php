@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\AccountsPayable\Models;
 
 use App\Domain\Accounting\Models\JournalEntry;
-use App\Domain\Billing\Enums\PaymentMethod;
+use App\Domain\AccountsPayable\Enums\PaymentMethod;
 use App\Domain\Shared\Traits\BelongsToTenant;
 use App\Domain\Tenant\Models\Tenant;
 use App\Models\User;
