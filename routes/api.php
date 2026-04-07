@@ -47,6 +47,9 @@ use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\DocumentController;
 use App\Http\Controllers\Api\V1\EtaController;
 use App\Http\Controllers\Api\V1\EtaItemCodeController;
+use App\Http\Controllers\Api\V1\ExpenseCategoryController;
+use App\Http\Controllers\Api\V1\ExpenseController;
+use App\Http\Controllers\Api\V1\ExpenseReportController;
 use App\Http\Controllers\Api\V1\ExportController;
 use App\Http\Controllers\Api\V1\FiscalPeriodController;
 use App\Http\Controllers\Api\V1\FiscalYearController;
@@ -376,6 +379,23 @@ Route::prefix('v1')->group(function (): void {
                 Route::get('fixed-assets/reports/roll-forward', [FixedAssetController::class, 'rollForward'])->name('fixed-assets.roll-forward');
                 Route::get('fixed-assets/{fixedAsset}/disposals', [AssetDisposalController::class, 'index'])->name('fixed-assets.disposals.index');
                 Route::post('fixed-assets/{fixedAsset}/dispose', [AssetDisposalController::class, 'store'])->name('fixed-assets.dispose');
+            });
+
+            // ── Expenses ──
+            Route::middleware('permission:manage_expenses')->group(function (): void {
+                Route::apiResource('expense-categories', ExpenseCategoryController::class);
+                Route::apiResource('expenses', ExpenseController::class);
+                Route::post('expenses/{expense}/submit', [ExpenseController::class, 'submit'])->name('expenses.submit');
+                Route::post('expenses/{expense}/approve', [ExpenseController::class, 'approve'])->name('expenses.approve');
+                Route::post('expenses/{expense}/reject', [ExpenseController::class, 'reject'])->name('expenses.reject');
+                Route::post('expenses/{expense}/reimburse', [ExpenseController::class, 'reimburse'])->name('expenses.reimburse');
+                Route::post('expenses/bulk-submit', [ExpenseController::class, 'bulkSubmit'])->name('expenses.bulk-submit');
+                Route::get('expenses/reports/summary', [ExpenseController::class, 'summary'])->name('expenses.summary');
+                Route::apiResource('expense-reports', ExpenseReportController::class)->only(['index', 'store', 'show']);
+                Route::post('expense-reports/{expenseReport}/expenses', [ExpenseReportController::class, 'addExpenses'])->name('expense-reports.add-expenses');
+                Route::post('expense-reports/{expenseReport}/submit', [ExpenseReportController::class, 'submit'])->name('expense-reports.submit');
+                Route::post('expense-reports/{expenseReport}/approve', [ExpenseReportController::class, 'approve'])->name('expense-reports.approve');
+                Route::post('expense-reports/{expenseReport}/reject', [ExpenseReportController::class, 'reject'])->name('expense-reports.reject');
             });
 
             // ── Invoice & Landing Page Settings (admin only) ──
