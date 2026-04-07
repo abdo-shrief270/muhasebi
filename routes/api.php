@@ -31,6 +31,7 @@ use App\Http\Controllers\Api\V1\Admin\AdminTenantController;
 use App\Http\Controllers\Api\V1\Admin\AdminUsageController;
 use App\Http\Controllers\Api\V1\Admin\AdminUserController;
 use App\Http\Controllers\Api\V1\AgingReminderController;
+use App\Http\Controllers\Api\V1\AnomalyDetectionController;
 use App\Http\Controllers\Api\V1\ApiDocsController;
 use App\Http\Controllers\Api\V1\BankReconciliationController;
 use App\Http\Controllers\Api\V1\AssetCategoryController;
@@ -700,6 +701,15 @@ Route::prefix('v1')->group(function (): void {
                 Route::get('clients', [ExportController::class, 'clients'])->name('clients');
                 Route::get('invoices', [ExportController::class, 'invoices'])->name('invoices');
                 Route::get('journal-entries', [ExportController::class, 'journalEntries'])->name('journal-entries');
+            });
+
+            // ── Anomaly Detection ──
+            Route::middleware('permission:view_reports')->prefix('anomalies')->name('anomalies.')->group(function (): void {
+                Route::get('/', [AnomalyDetectionController::class, 'detectAll'])->name('detect-all');
+                Route::get('duplicates', [AnomalyDetectionController::class, 'duplicates'])->name('duplicates');
+                Route::get('unusual-amounts', [AnomalyDetectionController::class, 'unusualAmounts'])->name('unusual-amounts');
+                Route::get('missing-sequences', [AnomalyDetectionController::class, 'missingSequences'])->name('missing-sequences');
+                Route::get('weekend-entries', [AnomalyDetectionController::class, 'weekendEntries'])->name('weekend-entries');
             });
 
             // ── Approval Workflows ──
