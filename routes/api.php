@@ -9,6 +9,7 @@ use App\Domain\Tenant\Models\Tenant;
 use App\Http\Controllers\Api\V1\AccountController;
 use App\Http\Controllers\Api\V1\AccountSuggestionController;
 use App\Http\Controllers\Api\V1\ActivityLogController;
+use App\Http\Controllers\Api\V1\AuditComplianceController;
 use App\Http\Controllers\Api\V1\Admin\AdminActivityLogController;
 use App\Http\Controllers\Api\V1\Admin\AdminApiLogController;
 use App\Http\Controllers\Api\V1\Admin\AdminAuditLogController;
@@ -222,6 +223,16 @@ Route::prefix('v1')->group(function (): void {
                 Route::get('/', [ActivityLogController::class, 'index'])->name('index');
                 Route::get('stats', [ActivityLogController::class, 'stats'])->name('stats');
                 Route::get('{activityId}', [ActivityLogController::class, 'show'])->name('show');
+            });
+
+            // ── Audit Compliance (admin only — view_audit permission) ──
+            Route::middleware('permission:view_audit')->prefix('audit-compliance')->name('audit-compliance.')->group(function (): void {
+                Route::get('user-access', [AuditComplianceController::class, 'userAccess'])->name('user-access');
+                Route::get('changes', [AuditComplianceController::class, 'changes'])->name('changes');
+                Route::get('high-risk', [AuditComplianceController::class, 'highRisk'])->name('high-risk');
+                Route::get('segregation', [AuditComplianceController::class, 'segregation'])->name('segregation');
+                Route::get('export', [AuditComplianceController::class, 'export'])->name('export');
+                Route::get('summary', [AuditComplianceController::class, 'summary'])->name('summary');
             });
 
             // ── Notifications (all authenticated — no permission needed) ──

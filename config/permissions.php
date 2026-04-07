@@ -39,6 +39,7 @@ return [
         'manage_collections',
         'manage_cost_centers',
         'manage_tax',
+        'view_audit',
     ],
 
     'accountant' => [
