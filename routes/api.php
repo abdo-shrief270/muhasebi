@@ -81,6 +81,7 @@ use App\Http\Controllers\Api\V1\Portal\ClientPortalInvoiceController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalMessageController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalNotificationController;
 use App\Http\Controllers\Api\V1\RecurringInvoiceController;
+use App\Http\Controllers\Api\V1\RecurringJournalEntryController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\RssFeedController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
@@ -295,6 +296,12 @@ Route::prefix('v1')->group(function (): void {
                 Route::apiResource('fiscal-years', FiscalYearController::class)->only(['index', 'store', 'show']);
                 Route::post('fiscal-periods/{fiscalPeriod}/close', [FiscalPeriodController::class, 'close'])->name('fiscal-periods.close');
                 Route::post('fiscal-periods/{fiscalPeriod}/reopen', [FiscalPeriodController::class, 'reopen'])->name('fiscal-periods.reopen');
+            });
+
+            // ── Recurring Journal Entries ──
+            Route::middleware('permission:manage_accounts')->group(function (): void {
+                Route::apiResource('recurring-journal-entries', RecurringJournalEntryController::class);
+                Route::post('recurring-journal-entries/{recurringJournalEntry}/toggle', [RecurringJournalEntryController::class, 'toggle'])->name('recurring-journal-entries.toggle');
             });
 
             // ── Invoices (admin + accountant) ──
