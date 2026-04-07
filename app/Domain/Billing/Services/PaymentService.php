@@ -300,7 +300,7 @@ class PaymentService
         $today = now()->startOfDay();
 
         $invoices = Invoice::query()
-            ->with('client')
+            ->with(['client', 'payments'])
             ->whereIn('status', [InvoiceStatus::Sent, InvoiceStatus::PartiallyPaid, InvoiceStatus::Overdue])
             ->when($clientId, fn ($q) => $q->forClient($clientId))
             ->get();
