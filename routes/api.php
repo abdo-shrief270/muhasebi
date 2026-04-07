@@ -87,6 +87,7 @@ use App\Http\Controllers\Api\V1\SalaryComponentController;
 use App\Http\Controllers\Api\V1\PlanController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalDocumentController;
+use App\Http\Controllers\Api\V1\Portal\ClientPortalEnhancedController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalInvoiceController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalMessageController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalNotificationController;
@@ -1112,6 +1113,17 @@ Route::prefix('v1')->group(function (): void {
                 Route::get('notifications', [ClientPortalNotificationController::class, 'index'])->name('notifications.index');
                 Route::post('notifications/{notification}/read', [ClientPortalNotificationController::class, 'markAsRead'])->name('notifications.read');
                 Route::post('notifications/read-all', [ClientPortalNotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+
+                // Enhanced portal features
+                Route::get('disputes', [ClientPortalEnhancedController::class, 'disputes'])->name('disputes.index');
+                Route::post('disputes', [ClientPortalEnhancedController::class, 'createDispute'])->name('disputes.store');
+                Route::get('disputes/{dispute}', [ClientPortalEnhancedController::class, 'disputeShow'])->name('disputes.show');
+
+                Route::get('payment-plans', [ClientPortalEnhancedController::class, 'paymentPlans'])->name('payment-plans.index');
+                Route::post('invoices/{invoice}/payment-plan', [ClientPortalEnhancedController::class, 'createPaymentPlan'])->name('payment-plans.store');
+                Route::post('installments/{installment}/pay', [ClientPortalEnhancedController::class, 'payInstallment'])->name('installments.pay');
+
+                Route::get('reports', [ClientPortalEnhancedController::class, 'clientReport'])->name('reports');
             });
     });
 });
