@@ -31,7 +31,7 @@ jobs:
       - name: Pint (Code Style)
         run: ./vendor/bin/pint --test
       - name: PHPStan (Static Analysis)
-        run: ./vendor/bin/phpstan analyse app --memory-limit=512M
+        run: ./vendor/bin/phpstan analyse app --level=5 --memory-limit=512M
 
   test:
     name: Tests (PHP ${{ matrix.php }})
