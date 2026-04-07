@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Accounting\Models;
 
+use App\Domain\AccountsPayable\Models\Bill;
+use App\Domain\Billing\Models\Invoice;
 use App\Domain\Shared\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
@@ -25,6 +27,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'confidence_score',
     'category_rule_id',
     'is_auto_categorized',
+    'auto_matched',
+    'match_confidence',
+    'matched_invoice_id',
+    'matched_bill_id',
+    'auto_posted',
+    'posted_journal_entry_id',
 ])]
 class BankStatementLine extends Model
 {
@@ -37,6 +45,9 @@ class BankStatementLine extends Model
             'amount' => 'decimal:2',
             'confidence_score' => 'decimal:2',
             'is_auto_categorized' => 'boolean',
+            'auto_matched' => 'boolean',
+            'match_confidence' => 'decimal:2',
+            'auto_posted' => 'boolean',
         ];
     }
 
@@ -65,6 +76,21 @@ class BankStatementLine extends Model
     public function categoryRule(): BelongsTo
     {
         return $this->belongsTo(BankCategorizationRule::class, 'category_rule_id');
+    }
+
+    public function matchedInvoice(): BelongsTo
+    {
+        return $this->belongsTo(Invoice::class, 'matched_invoice_id');
+    }
+
+    public function matchedBill(): BelongsTo
+    {
+        return $this->belongsTo(Bill::class, 'matched_bill_id');
+    }
+
+    public function postedJournalEntry(): BelongsTo
+    {
+        return $this->belongsTo(JournalEntry::class, 'posted_journal_entry_id');
     }
 
     // ── Scopes ──
