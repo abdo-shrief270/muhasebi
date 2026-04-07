@@ -23,7 +23,7 @@ class BudgetController extends Controller
         $data = $this->budgetService->list([
             'fiscal_year_id' => $request->query('fiscal_year_id'),
             'status' => $request->query('status'),
-            'per_page' => $request->query('per_page', 15),
+            'per_page' => min((int) ($request->query('per_page', 15)), 100),
         ]);
 
         return response()->json($data);

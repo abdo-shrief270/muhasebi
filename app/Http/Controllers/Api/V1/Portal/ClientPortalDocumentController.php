@@ -27,7 +27,7 @@ class ClientPortalDocumentController extends Controller
             $this->portalService->listDocuments(app('portal.client'), [
                 'search' => $request->query('search'),
                 'category' => $request->query('category'),
-                'per_page' => $request->query('per_page', 15),
+                'per_page' => min((int) ($request->query('per_page', 15)), 100),
             ]),
         );
     }

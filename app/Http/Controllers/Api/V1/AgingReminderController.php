@@ -58,7 +58,7 @@ class AgingReminderController extends Controller
             'status' => $request->query('status'),
             'from' => $request->query('from'),
             'to' => $request->query('to'),
-            'per_page' => $request->query('per_page', 20),
+            'per_page' => min((int) ($request->query('per_page', 20)), 100),
         ]);
 
         return response()->json($data);

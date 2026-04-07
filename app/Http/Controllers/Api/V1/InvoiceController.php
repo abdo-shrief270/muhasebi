@@ -31,7 +31,7 @@ class InvoiceController extends Controller
             'client_id' => $request->query('client_id'),
             'date_from' => $request->query('from'),
             'date_to' => $request->query('to'),
-            'per_page' => $request->query('per_page', 15),
+            'per_page' => min((int) ($request->query('per_page', 15)), 100),
         ]);
 
         return InvoiceResource::collection($invoices);

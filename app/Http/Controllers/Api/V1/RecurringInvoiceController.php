@@ -23,7 +23,7 @@ class RecurringInvoiceController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         return RecurringInvoiceResource::collection(
-            $this->service->list($request->only('is_active', 'client_id', 'per_page'))
+            $this->service->list(array_merge($request->only('is_active', 'client_id'), ['per_page' => min((int) ($request->query('per_page', 15)), 100)]))
         );
     }
 

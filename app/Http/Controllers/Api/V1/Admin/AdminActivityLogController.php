@@ -19,7 +19,7 @@ class AdminActivityLogController extends Controller
             ->when($request->query('causer_id'), fn ($q, $id) => $q->where('causer_id', $id))
             ->when($request->query('log_name'), fn ($q, $name) => $q->where('log_name', $name))
             ->orderByDesc('created_at')
-            ->paginate($request->query('per_page', 20));
+            ->paginate(min((int) ($request->query('per_page', 20)), 100));
 
         return response()->json($query);
     }

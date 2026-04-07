@@ -59,7 +59,7 @@ class CustomReportController extends Controller
     {
         $reports = $this->reportService->listSaved(
             auth()->id(),
-            (int) $request->query('per_page', 15),
+            min((int) ($request->query('per_page', 15)), 100),
         );
 
         return response()->json($reports);

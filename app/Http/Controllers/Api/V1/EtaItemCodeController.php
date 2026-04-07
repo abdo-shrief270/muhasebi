@@ -32,7 +32,7 @@ class EtaItemCodeController extends Controller
             ->orderBy('item_code');
 
         return EtaItemCodeResource::collection(
-            $query->paginate($request->query('per_page', 15)),
+            $query->paginate(min((int) ($request->query('per_page', 15)), 100)),
         );
     }
 

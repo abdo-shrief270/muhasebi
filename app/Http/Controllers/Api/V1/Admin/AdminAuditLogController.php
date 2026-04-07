@@ -57,7 +57,7 @@ class AdminAuditLogController extends Controller
         }
 
         $logs = $query->with('causer:id,name,email')
-            ->paginate($request->input('per_page', 30));
+            ->paginate(min((int) ($request->input('per_page', 30)), 100));
 
         // Transform for frontend
         $logs->getCollection()->transform(function (Activity $activity) {

@@ -21,7 +21,7 @@ class BlogController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         return BlogPostResource::collection(
-            $this->blogService->listPublishedPosts($request->only('category', 'tag', 'search', 'per_page', 'page'))
+            $this->blogService->listPublishedPosts(array_merge($request->only('category', 'tag', 'search', 'page'), ['per_page' => min((int) ($request->query('per_page', 15)), 100)]))
         );
     }
 

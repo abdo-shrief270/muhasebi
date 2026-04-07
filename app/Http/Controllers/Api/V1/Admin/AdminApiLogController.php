@@ -53,7 +53,7 @@ class AdminApiLogController extends Controller
             $query->where('created_at', '<=', $request->input('to'));
         }
 
-        $logs = $query->paginate($request->input('per_page', 50));
+        $logs = $query->paginate(min((int) ($request->input('per_page', 50)), 100));
 
         return response()->json($logs);
     }
