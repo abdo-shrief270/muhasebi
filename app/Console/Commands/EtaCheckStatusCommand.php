@@ -45,9 +45,10 @@ class EtaCheckStatusCommand extends Command
                 $oldStatus = $doc->status;
                 $documentService->checkStatus($doc);
 
-                if ($doc->fresh()->status !== $oldStatus) {
+                $doc = $doc->fresh();
+                if ($doc->status !== $oldStatus) {
                     $updated++;
-                    $this->line("  [{$doc->internal_id}] {$oldStatus->value} → {$doc->fresh()->status->value}");
+                    $this->line("  [{$doc->internal_id}] {$oldStatus->value} → {$doc->status->value}");
                 }
             } catch (\Throwable $e) {
                 $errors++;

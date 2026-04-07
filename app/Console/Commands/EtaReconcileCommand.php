@@ -36,6 +36,8 @@ class EtaReconcileCommand extends Command
                 $this->line("  Tenant {$tenantId}: matched={$result['matched']}, mismatched={$result['mismatched']}");
             } catch (\Throwable $e) {
                 $this->warn("  Tenant {$tenantId}: Error - {$e->getMessage()}");
+            } finally {
+                app()->forgetInstance('tenant.id');
             }
         }
 
