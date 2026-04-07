@@ -56,6 +56,7 @@ use App\Http\Controllers\Api\V1\ExportController;
 use App\Http\Controllers\Api\V1\FiscalPeriodController;
 use App\Http\Controllers\Api\V1\FiscalYearController;
 use App\Http\Controllers\Api\V1\FixedAssetController;
+use App\Http\Controllers\Api\V1\FxRevaluationController;
 use App\Http\Controllers\Api\V1\HealthCheckController;
 use App\Http\Controllers\Api\V1\ImportController;
 use App\Http\Controllers\Api\V1\InvoiceController;
@@ -284,6 +285,15 @@ Route::prefix('v1')->group(function (): void {
                     Route::post('lines/{bankStatementLine}/match', [BankReconciliationController::class, 'manualMatch'])->name('lines.match');
                     Route::post('lines/{bankStatementLine}/unmatch', [BankReconciliationController::class, 'unmatch'])->name('lines.unmatch');
                     Route::post('lines/{bankStatementLine}/exclude', [BankReconciliationController::class, 'exclude'])->name('lines.exclude');
+                });
+
+                // FX Revaluations
+                Route::prefix('fx-revaluations')->name('fx-revaluations.')->group(function (): void {
+                    Route::get('/', [FxRevaluationController::class, 'index'])->name('index');
+                    Route::post('/', [FxRevaluationController::class, 'calculate'])->name('calculate');
+                    Route::get('{fxRevaluation}', [FxRevaluationController::class, 'show'])->name('show');
+                    Route::post('{fxRevaluation}/post', [FxRevaluationController::class, 'post'])->name('post');
+                    Route::post('{fxRevaluation}/reverse', [FxRevaluationController::class, 'reverse'])->name('reverse');
                 });
             });
 
