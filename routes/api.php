@@ -82,6 +82,7 @@ use App\Http\Controllers\Api\V1\RssFeedController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\TeamController;
 use App\Http\Controllers\Api\V1\TimeBillingController;
+use App\Http\Controllers\Api\V1\TaxReturnController;
 use App\Http\Controllers\Api\V1\TimerController;
 use App\Http\Controllers\Api\V1\TimesheetController;
 use App\Http\Controllers\Api\V1\TwoFactorController;
@@ -89,6 +90,7 @@ use App\Http\Controllers\Api\V1\UserPreferenceController;
 use App\Http\Controllers\Api\V1\VendorController;
 use App\Http\Controllers\Api\V1\WebhookController;
 use App\Http\Controllers\Api\V1\WebhookEndpointController;
+use App\Http\Controllers\Api\V1\WhtCertificateController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
@@ -417,6 +419,29 @@ Route::prefix('v1')->group(function (): void {
                 Route::get('cost-centers/{costCenter}/pnl', [CostCenterController::class, 'profitAndLoss'])->name('cost-centers.pnl');
                 Route::get('cost-centers/reports/cost-analysis', [CostCenterController::class, 'costAnalysis'])->name('cost-centers.cost-analysis');
                 Route::get('cost-centers/reports/allocation', [CostCenterController::class, 'allocationReport'])->name('cost-centers.allocation');
+            });
+
+            // ── Tax Management ──
+            Route::middleware('permission:manage_tax')->group(function (): void {
+                // WHT Certificates
+                Route::get('wht-certificates', [WhtCertificateController::class, 'index'])->name('wht-certificates.index');
+                Route::post('wht-certificates/generate', [WhtCertificateController::class, 'generate'])->name('wht-certificates.generate');
+                Route::get('wht-certificates/{whtCertificate}', [WhtCertificateController::class, 'show'])->name('wht-certificates.show');
+                Route::post('wht-certificates/{whtCertificate}/issue', [WhtCertificateController::class, 'issue'])->name('wht-certificates.issue');
+                Route::post('wht-certificates/{whtCertificate}/submit', [WhtCertificateController::class, 'submit'])->name('wht-certificates.submit');
+
+                // Tax Returns
+                Route::get('tax-returns', [TaxReturnController::class, 'index'])->name('tax-returns.index');
+                Route::get('tax-returns/{taxReturn}', [TaxReturnController::class, 'show'])->name('tax-returns.show');
+                Route::post('tax-returns/corporate', [TaxReturnController::class, 'calculateCorporateTax'])->name('tax-returns.corporate');
+                Route::post('tax-returns/vat', [TaxReturnController::class, 'calculateVatReturn'])->name('tax-returns.vat');
+                Route::post('tax-returns/{taxReturn}/file', [TaxReturnController::class, 'file'])->name('tax-returns.file');
+                Route::post('tax-returns/{taxReturn}/payment', [TaxReturnController::class, 'recordPayment'])->name('tax-returns.payment');
+
+                // Tax Adjustments
+                Route::get('tax-adjustments/{fiscalYear}', [TaxReturnController::class, 'adjustments'])->name('tax-adjustments.index');
+                Route::post('tax-adjustments', [TaxReturnController::class, 'storeAdjustment'])->name('tax-adjustments.store');
+                Route::delete('tax-adjustments/{taxAdjustment}', [TaxReturnController::class, 'destroyAdjustment'])->name('tax-adjustments.destroy');
             });
 
             // ── Invoice & Landing Page Settings (admin only) ──
