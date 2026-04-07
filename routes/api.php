@@ -52,6 +52,7 @@ use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\DocumentController;
 use App\Http\Controllers\Api\V1\ExecutiveDashboardController;
+use App\Http\Controllers\Api\V1\ECommerceController;
 use App\Http\Controllers\Api\V1\EtaController;
 use App\Http\Controllers\Api\V1\EtaItemCodeController;
 use App\Http\Controllers\Api\V1\ExpenseCategoryController;
@@ -164,6 +165,9 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/search', [BlogController::class, 'search'])->name('search');
         Route::get('/{slug}', [BlogController::class, 'show'])->name('show');
     });
+
+    // E-commerce webhooks (public, verified by platform signature)
+    Route::post('/webhooks/ecommerce/{platform}', [ECommerceController::class, 'webhook'])->name('webhooks.ecommerce');
 
     // Payment gateway webhooks (no auth, verified by signature)
     Route::post('/webhooks/paymob', [WebhookController::class, 'paymob'])->name('webhooks.paymob');
@@ -353,6 +357,25 @@ Route::prefix('v1')->group(function (): void {
                     Route::get('{fxRevaluation}', [FxRevaluationController::class, 'show'])->name('show');
                     Route::post('{fxRevaluation}/post', [FxRevaluationController::class, 'post'])->name('post');
                     Route::post('{fxRevaluation}/reverse', [FxRevaluationController::class, 'reverse'])->name('reverse');
+                });
+            });
+
+            // ── E-Commerce Integration ──
+            Route::middleware('permission:manage_integrations')->group(function (): void {
+                Route::prefix('ecommerce')->name('ecommerce.')->group(function (): void {
+                    Route::get('dashboard', [ECommerceController::class, 'dashboard'])->name('dashboard');
+                    Route::post('bulk-convert', [ECommerceController::class, 'bulkConvert'])->name('bulk-convert');
+
+                    Route::prefix('channels')->name('channels.')->group(function (): void {
+                        Route::get('/', [ECommerceController::class, 'index'])->name('index');
+                        Route::post('/', [ECommerceController::class, 'store'])->name('store');
+                        Route::get('{ecommerceChannel}', [ECommerceController::class, 'show'])->name('show');
+                        Route::put('{ecommerceChannel}', [ECommerceController::class, 'update'])->name('update');
+                        Route::delete('{ecommerceChannel}', [ECommerceController::class, 'destroy'])->name('destroy');
+                        Route::post('{ecommerceChannel}/sync', [ECommerceController::class, 'syncOrders'])->name('sync');
+                    });
+
+                    Route::post('orders/{ecommerceOrder}/convert', [ECommerceController::class, 'convertToInvoice'])->name('orders.convert');
                 });
             });
 

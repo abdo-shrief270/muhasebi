@@ -40,6 +40,7 @@ return [
         'manage_cost_centers',
         'manage_tax',
         'manage_inventory',
+        'manage_integrations',
         'view_audit',
     ],
 
@@ -64,6 +65,7 @@ return [
         'manage_cost_centers',
         'manage_tax',
         'manage_inventory',
+        'manage_integrations',
     ],
 
     'auditor' => [
