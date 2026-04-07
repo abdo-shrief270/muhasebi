@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Redis;
 
 class HealthCheckController extends Controller
 {
@@ -32,6 +34,24 @@ class HealthCheckController extends Controller
             Cache::forget('health_check');
         } catch (\Throwable $e) {
             $checks['cache'] = 'error';
+            $healthy = false;
+        }
+
+        // Redis
+        try {
+            $checks['redis'] = Redis::ping() ? 'ok' : 'error';
+        } catch (\Throwable) {
+            $checks['redis'] = 'error';
+            $healthy = false;
+        }
+
+        // Queue
+        try {
+            $queueSize = Queue::size();
+            $checks['queue'] = $queueSize < 1000 ? 'ok' : 'degraded';
+            $checks['queue_size'] = $queueSize;
+        } catch (\Throwable) {
+            $checks['queue'] = 'error';
             $healthy = false;
         }
 
