@@ -1,0 +1,61 @@
+name: PR Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      php: ${{ steps.filter.outputs.php }}
+      migrations: ${{ steps.filter.outputs.migrations }}
+      docker: ${{ steps.filter.outputs.docker }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            php:
+              - 'app/**'
+              - 'config/**'
+              - 'routes/**'
+              - 'tests/**'
+            migrations:
+              - 'database/migrations/**'
+            docker:
+              - 'docker/**'
+              - 'docker-compose*.yml'
+
+  lint:
+    needs: changes
+    if: needs.changes.outputs.php == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+      - run: composer install --no-interaction --prefer-dist
+      - name: Pint
+        run: ./vendor/bin/pint --test
+      - name: PHPStan
+        run: ./vendor/bin/phpstan analyse app --memory-limit=512M
+
+  migration-safety:
+    needs: changes
+    if: needs.changes.outputs.migrations == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Migration Safety
+        run: |
+          echo "## Migration Changes Detected" >> $GITHUB_STEP_SUMMARY
+          echo "Review these migration files for:" >> $GITHUB_STEP_SUMMARY
+          echo "- Destructive operations (DROP, DELETE)" >> $GITHUB_STEP_SUMMARY
+          echo "- Missing rollback methods" >> $GITHUB_STEP_SUMMARY
+          echo "- Long-running operations on large tables" >> $GITHUB_STEP_SUMMARY
+          git diff --name-only origin/main...HEAD -- 'database/migrations/' >> $GITHUB_STEP_SUMMARY
