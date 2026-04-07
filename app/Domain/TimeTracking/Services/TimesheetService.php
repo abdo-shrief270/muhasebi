@@ -166,11 +166,11 @@ class TimesheetService
      */
     public function reject(TimesheetEntry $entry, ?string $reason = null): TimesheetEntry
     {
-        if (! $entry->status->canApprove()) {
+        if (! $entry->status->canReject()) {
             throw ValidationException::withMessages([
                 'status' => [
-                    'Only submitted entries can be rejected.',
-                    'يمكن رفض القيود المقدمة فقط.',
+                    'This timesheet entry cannot be rejected.',
+                    'لا يمكن رفض هذا القيد.',
                 ],
             ]);
         }

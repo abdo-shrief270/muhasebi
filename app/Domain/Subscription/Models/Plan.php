@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 #[Table('plans')]
 #[Fillable([
@@ -33,6 +35,7 @@ class Plan extends Model
 {
     use HasFactory;
     use SoftDeletes;
+    use LogsActivity;
 
     /** @return array<string, string> */
     protected function casts(): array
@@ -55,6 +58,14 @@ class Plan extends Model
         'is_active' => true,
         'sort_order' => 0,
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['name_en', 'price_monthly', 'price_annual', 'is_active'])
+            ->logOnlyDirty()
+            ->setDescriptionForEvent(fn (string $eventName) => "Plan {$eventName}");
+    }
 
     // ──────────────────────────────────────
     // Factory

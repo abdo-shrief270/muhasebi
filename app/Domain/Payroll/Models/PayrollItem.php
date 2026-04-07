@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 #[Table('payroll_items')]
 #[Fillable([
@@ -31,6 +33,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class PayrollItem extends Model
 {
     use HasFactory;
+    use LogsActivity;
 
     /** @return array<string, string> */
     protected function casts(): array
@@ -48,6 +51,14 @@ class PayrollItem extends Model
             'other_deductions' => 'decimal:2',
             'net_salary' => 'decimal:2',
         ];
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['base_salary', 'gross_salary', 'net_salary'])
+            ->logOnlyDirty()
+            ->setDescriptionForEvent(fn (string $eventName) => "Payroll item {$eventName}");
     }
 
     // ──────────────────────────────────────

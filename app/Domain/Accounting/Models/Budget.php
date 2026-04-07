@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Accounting\Models;
 
+use App\Domain\Accounting\Enums\BudgetStatus;
 use App\Domain\Shared\Traits\BelongsToTenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -34,6 +35,7 @@ class Budget extends Model
     {
         return [
             'approved_at' => 'datetime',
+            'status' => BudgetStatus::class,
         ];
     }
 
@@ -72,11 +74,11 @@ class Budget extends Model
 
     public function isDraft(): bool
     {
-        return $this->status === 'draft';
+        return $this->status === BudgetStatus::Draft;
     }
 
     public function isApproved(): bool
     {
-        return $this->status === 'approved';
+        return $this->status === BudgetStatus::Approved;
     }
 }

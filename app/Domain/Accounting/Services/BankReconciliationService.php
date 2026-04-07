@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Accounting\Services;
 
 use App\Domain\Accounting\Enums\JournalEntryStatus;
+use App\Domain\Accounting\Enums\ReconciliationStatus;
 use App\Domain\Accounting\Models\Account;
 use App\Domain\Accounting\Models\BankReconciliation;
 use App\Domain\Accounting\Models\BankStatementLine;
@@ -251,7 +252,7 @@ class BankReconciliationService
         }
 
         $reconciliation->update([
-            'status' => 'completed',
+            'status' => ReconciliationStatus::Completed,
             'reconciled_at' => now(),
             'reconciled_by' => auth()->id(),
         ]);
