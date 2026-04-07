@@ -12,7 +12,6 @@ use App\Http\Resources\EtaItemCodeResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Symfony\Component\HttpFoundation\Response;
 
 class EtaItemCodeController extends Controller
 {
@@ -64,6 +63,6 @@ class EtaItemCodeController extends Controller
 
         return response()->json([
             'message' => 'Item code deleted successfully.',
-        ], Response::HTTP_OK);
+        ]);
     }
 }

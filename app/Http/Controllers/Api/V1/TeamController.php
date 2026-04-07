@@ -13,7 +13,6 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Symfony\Component\HttpFoundation\Response;
 
 class TeamController extends Controller
 {
@@ -64,7 +63,7 @@ class TeamController extends Controller
     {
         $this->teamService->remove($user);
 
-        return response()->json(['message' => 'Team member removed successfully.'], Response::HTTP_OK);
+        return response()->json(['message' => 'Team member removed successfully.']);
     }
 
     public function assignRole(Request $request, User $user): TeamMemberResource
