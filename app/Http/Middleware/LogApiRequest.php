@@ -18,6 +18,7 @@ class LogApiRequest
     private const REDACTED_FIELDS = [
         'password', 'password_confirmation', 'token', 'secret',
         'authorization', 'cookie', 'api_key', 'credit_card',
+        'client_secret',
     ];
 
     public function handle(Request $request, Closure $next): Response

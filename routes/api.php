@@ -138,6 +138,7 @@ Route::prefix('v1')->group(function (): void {
     Route::post('/webhooks/beon-chat', function (Request $request) {
         $signature = $request->header('X-Beon-Signature') ?? $request->header('X-Webhook-Signature');
         if (!$signature) {
+            \Log::warning('BeonChat webhook: missing signature', ['ip' => $request->ip()]);
             return response()->json(['error' => 'Missing signature'], 401);
         }
         $result = BeonChatService::handleWebhook($request->all(), $signature);
@@ -565,7 +566,7 @@ Route::prefix('v1')->group(function (): void {
             Route::post('tenants/{tenant}/suspend', [AdminTenantController::class, 'suspend'])->middleware('throttle:10,1')->name('tenants.suspend');
             Route::post('tenants/{tenant}/activate', [AdminTenantController::class, 'activate'])->middleware('throttle:10,1')->name('tenants.activate');
             Route::post('tenants/{tenant}/cancel', [AdminTenantController::class, 'cancel'])->middleware('throttle:10,1')->name('tenants.cancel');
-            Route::post('tenants/{tenant}/impersonate', [AdminTenantController::class, 'impersonate'])->name('tenants.impersonate');
+            Route::post('tenants/{tenant}/impersonate', [AdminTenantController::class, 'impersonate'])->middleware('throttle:5,1')->name('tenants.impersonate');
 
             // Subscription Management
             Route::post('subscriptions/assign', [AdminSubscriptionController::class, 'assign'])->name('subscriptions.assign');
@@ -716,9 +717,9 @@ Route::prefix('v1')->group(function (): void {
 
             // Roles & Permissions
             Route::get('roles', [AdminRoleController::class, 'index'])->name('roles.index');
-            Route::post('roles', [AdminRoleController::class, 'store'])->name('roles.store');
+            Route::post('roles', [AdminRoleController::class, 'store'])->middleware('throttle:30,1')->name('roles.store');
             Route::get('roles/{role}', [AdminRoleController::class, 'show'])->name('roles.show');
-            Route::put('roles/{role}', [AdminRoleController::class, 'update'])->name('roles.update');
+            Route::put('roles/{role}', [AdminRoleController::class, 'update'])->middleware('throttle:30,1')->name('roles.update');
             Route::delete('roles/{role}', [AdminRoleController::class, 'destroy'])->name('roles.destroy');
             Route::get('permissions', [AdminRoleController::class, 'permissions'])->name('permissions.index');
         });
