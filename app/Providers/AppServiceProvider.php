@@ -14,6 +14,8 @@ use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\Payment;
 use App\Domain\Billing\Observers\InvoiceObserver;
 use App\Domain\Billing\Observers\PaymentObserver;
+use App\Domain\AccountsPayable\Models\Bill;
+use App\Domain\AccountsPayable\Models\Vendor;
 use App\Domain\Client\Models\Client;
 use App\Domain\Document\Models\Document;
 use App\Domain\Payroll\Models\Employee;
@@ -23,6 +25,7 @@ use App\Domain\Shared\Services\QueryAnalyzer;
 use App\Domain\TimeTracking\Models\TimesheetEntry;
 use App\Models\User;
 use App\Policies\AccountPolicy;
+use App\Policies\BillPolicy;
 use App\Policies\ClientPolicy;
 use App\Policies\DocumentPolicy;
 use App\Policies\EmployeePolicy;
@@ -32,6 +35,7 @@ use App\Policies\JournalEntryPolicy;
 use App\Policies\PaymentPolicy;
 use App\Policies\PayrollRunPolicy;
 use App\Policies\TimesheetEntryPolicy;
+use App\Policies\VendorPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -131,6 +135,7 @@ class AppServiceProvider extends ServiceProvider
     private function registerPolicies(): void
     {
         Gate::policy(Account::class, AccountPolicy::class);
+        Gate::policy(Bill::class, BillPolicy::class);
         Gate::policy(Client::class, ClientPolicy::class);
         Gate::policy(Document::class, DocumentPolicy::class);
         Gate::policy(Employee::class, EmployeePolicy::class);
@@ -140,6 +145,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Payment::class, PaymentPolicy::class);
         Gate::policy(PayrollRun::class, PayrollRunPolicy::class);
         Gate::policy(TimesheetEntry::class, TimesheetEntryPolicy::class);
+        Gate::policy(Vendor::class, VendorPolicy::class);
     }
 
     private function registerPermissionGates(): void
