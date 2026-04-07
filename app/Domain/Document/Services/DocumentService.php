@@ -260,14 +260,15 @@ class DocumentService
                 ->whereNull('deleted_at')
                 ->exists();
 
-            // If no other references, delete the physical file
-            if (! $otherReferences && Storage::disk($document->disk)->exists($document->path)) {
-                Storage::disk($document->disk)->delete($document->path);
-            }
-
             // Update StorageQuota
             $quota = $this->getOrCreateQuota($tenantId);
-            $quota->decrement('used_bytes', (int) $document->size_bytes);
+
+            // If no other references, delete the physical file and decrement bytes
+            if (! $otherReferences && Storage::disk($document->disk)->exists($document->path)) {
+                Storage::disk($document->disk)->delete($document->path);
+                $quota->decrement('used_bytes', (int) $document->size_bytes);
+            }
+
             $quota->decrement('used_files');
 
             // Soft delete the Document record
