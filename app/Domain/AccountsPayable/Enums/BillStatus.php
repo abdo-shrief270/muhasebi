@@ -8,8 +8,9 @@ enum BillStatus: string
 {
     case Draft = 'draft';
     case Approved = 'approved';
-    case PartiallyPaid = 'partially_paid';
     case Paid = 'paid';
+    case PartiallyPaid = 'partially_paid';
+    case Overdue = 'overdue';
     case Cancelled = 'cancelled';
 
     public function label(): string
@@ -17,8 +18,9 @@ enum BillStatus: string
         return match ($this) {
             self::Draft => 'Draft',
             self::Approved => 'Approved',
-            self::PartiallyPaid => 'Partially Paid',
             self::Paid => 'Paid',
+            self::PartiallyPaid => 'Partially Paid',
+            self::Overdue => 'Overdue',
             self::Cancelled => 'Cancelled',
         };
     }
@@ -27,11 +29,17 @@ enum BillStatus: string
     {
         return match ($this) {
             self::Draft => 'مسودة',
-            self::Approved => 'معتمد',
-            self::PartiallyPaid => 'مدفوع جزئياً',
-            self::Paid => 'مدفوع',
-            self::Cancelled => 'ملغي',
+            self::Approved => 'معتمدة',
+            self::Paid => 'مدفوعة',
+            self::PartiallyPaid => 'مدفوعة جزئياً',
+            self::Overdue => 'متأخرة',
+            self::Cancelled => 'ملغاة',
         };
+    }
+
+    public function canEdit(): bool
+    {
+        return $this === self::Draft;
     }
 
     public function canApprove(): bool
@@ -41,16 +49,23 @@ enum BillStatus: string
 
     public function canPay(): bool
     {
-        return in_array($this, [self::Approved, self::PartiallyPaid], true);
+        return in_array($this, [self::Approved, self::PartiallyPaid, self::Overdue], true);
     }
 
     public function canCancel(): bool
     {
-        return in_array($this, [self::Draft, self::Approved], true);
+        return in_array($this, [self::Draft, self::Approved, self::Overdue], true);
     }
 
-    public function canEdit(): bool
+    public function color(): string
     {
-        return $this === self::Draft;
+        return match ($this) {
+            self::Draft => 'gray',
+            self::Approved => 'blue',
+            self::Paid => 'green',
+            self::PartiallyPaid => 'yellow',
+            self::Overdue => 'red',
+            self::Cancelled => 'red',
+        };
     }
 }

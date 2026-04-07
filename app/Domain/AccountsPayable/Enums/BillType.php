@@ -7,15 +7,15 @@ namespace App\Domain\AccountsPayable\Enums;
 enum BillType: string
 {
     case Bill = 'bill';
-    case DebitNote = 'debit_note';
     case CreditNote = 'credit_note';
+    case DebitNote = 'debit_note';
 
     public function label(): string
     {
         return match ($this) {
             self::Bill => 'Bill',
-            self::DebitNote => 'Debit Note',
             self::CreditNote => 'Credit Note',
+            self::DebitNote => 'Debit Note',
         };
     }
 
@@ -23,8 +23,8 @@ enum BillType: string
     {
         return match ($this) {
             self::Bill => 'فاتورة مشتريات',
-            self::DebitNote => 'إشعار مدين',
             self::CreditNote => 'إشعار دائن',
+            self::DebitNote => 'إشعار مدين',
         };
     }
 }
