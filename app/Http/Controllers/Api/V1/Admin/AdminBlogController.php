@@ -26,7 +26,7 @@ class AdminBlogController extends Controller
     public function listPosts(Request $request): AnonymousResourceCollection
     {
         return BlogPostResource::collection(
-            $this->blogService->listAdminPosts($request->only('search', 'is_published', 'category_id', 'per_page', 'page'))
+            $this->blogService->listAdminPosts(array_merge($request->only('search', 'is_published', 'category_id', 'page'), ['per_page' => min((int) ($request->query('per_page', 15)), 100)]))
         );
     }
 

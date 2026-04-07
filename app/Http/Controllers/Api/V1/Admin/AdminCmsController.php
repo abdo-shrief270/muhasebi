@@ -101,7 +101,7 @@ class AdminCmsController extends Controller
 
     public function listPages(Request $request): AnonymousResourceCollection
     {
-        $pages = $this->cmsService->listPages($request->only('search', 'per_page', 'page'));
+        $pages = $this->cmsService->listPages(array_merge($request->only('search', 'page'), ['per_page' => min((int) ($request->query('per_page', 15)), 100)]));
 
         return CmsPageResource::collection($pages);
     }
@@ -167,7 +167,7 @@ class AdminCmsController extends Controller
     public function listTestimonials(Request $request): AnonymousResourceCollection
     {
         return TestimonialResource::collection(
-            $this->cmsService->listTestimonials($request->only('per_page', 'page'))
+            $this->cmsService->listTestimonials(array_merge($request->only('page'), ['per_page' => min((int) ($request->query('per_page', 15)), 100)]))
         );
     }
 
@@ -217,7 +217,7 @@ class AdminCmsController extends Controller
     public function listFaqs(Request $request): AnonymousResourceCollection
     {
         return FaqResource::collection(
-            $this->cmsService->listFaqs($request->only('per_page', 'page'))
+            $this->cmsService->listFaqs(array_merge($request->only('page'), ['per_page' => min((int) ($request->query('per_page', 15)), 100)]))
         );
     }
 
@@ -261,7 +261,7 @@ class AdminCmsController extends Controller
     public function listContacts(Request $request): AnonymousResourceCollection
     {
         return ContactSubmissionResource::collection(
-            $this->cmsService->listContacts($request->only('search', 'is_read', 'per_page', 'page'))
+            $this->cmsService->listContacts(array_merge($request->only('search', 'is_read', 'page'), ['per_page' => min((int) ($request->query('per_page', 15)), 100)]))
         );
     }
 

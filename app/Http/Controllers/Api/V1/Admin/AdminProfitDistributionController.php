@@ -30,7 +30,7 @@ class AdminProfitDistributionController extends Controller
                 'month' => $request->query('month'),
                 'year' => $request->query('year'),
                 'status' => $request->query('status'),
-                'per_page' => $request->query('per_page', 15),
+                'per_page' => min((int) ($request->query('per_page', 15)), 100),
             ]),
         );
     }

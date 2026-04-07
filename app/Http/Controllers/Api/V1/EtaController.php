@@ -54,7 +54,7 @@ class EtaController extends Controller
             'from' => $request->query('from'),
             'to' => $request->query('to'),
             'search' => $request->query('search'),
-            'per_page' => $request->query('per_page', 15),
+            'per_page' => min((int) ($request->query('per_page', 15)), 100),
         ]);
 
         return EtaDocumentResource::collection($documents);

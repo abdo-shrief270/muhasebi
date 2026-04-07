@@ -31,7 +31,7 @@ class PaymentController extends Controller
             'to' => $request->query('to'),
             'sort_by' => $request->query('sort_by', 'date'),
             'sort_dir' => $request->query('sort_dir', 'desc'),
-            'per_page' => $request->query('per_page', 15),
+            'per_page' => min((int) ($request->query('per_page', 15)), 100),
         ]);
 
         return PaymentResource::collection($payments);

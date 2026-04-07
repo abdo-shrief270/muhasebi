@@ -33,7 +33,7 @@ class TimesheetController extends Controller
                     ? filter_var($request->query('is_billable'), FILTER_VALIDATE_BOOLEAN)
                     : null,
                 'search' => $request->query('search'),
-                'per_page' => $request->query('per_page', 15),
+                'per_page' => min((int) ($request->query('per_page', 15)), 100),
             ]),
         );
     }

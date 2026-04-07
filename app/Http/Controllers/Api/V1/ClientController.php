@@ -37,7 +37,7 @@ class ClientController extends Controller
             'city' => $request->query('city'),
             'sort_by' => $request->query('sort_by', 'name'),
             'sort_dir' => $request->query('sort_dir', 'asc'),
-            'per_page' => $request->query('per_page', 15),
+            'per_page' => min((int) ($request->query('per_page', 15)), 100),
         ]);
 
         return ClientResource::collection($clients);
@@ -110,7 +110,7 @@ class ClientController extends Controller
     {
         return MessageResource::collection(
             $this->messageService->listForFirm($client, [
-                'per_page' => $request->query('per_page', 15),
+                'per_page' => min((int) ($request->query('per_page', 15)), 100),
             ]),
         );
     }

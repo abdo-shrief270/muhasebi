@@ -101,7 +101,7 @@ class MessagingController extends Controller
     public function conversations(Request $request): JsonResponse
     {
         return response()->json(
-            BeonChatService::listConversations($request->only('status', 'channel', 'page', 'per_page'))
+            BeonChatService::listConversations(array_merge($request->only('status', 'channel', 'page'), ['per_page' => min((int) ($request->query('per_page', 15)), 100)]))
         );
     }
 

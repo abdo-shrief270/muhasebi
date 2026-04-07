@@ -30,7 +30,7 @@ class AdminInvestorController extends Controller
                 'is_active' => $request->query('is_active') !== null
                     ? filter_var($request->query('is_active'), FILTER_VALIDATE_BOOLEAN)
                     : null,
-                'per_page' => $request->query('per_page', 15),
+                'per_page' => min((int) ($request->query('per_page', 15)), 100),
             ]),
         );
     }

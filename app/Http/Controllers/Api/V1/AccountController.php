@@ -31,7 +31,7 @@ class AccountController extends Controller
             'parent_id' => $request->query('parent_id'),
             'sort_by' => $request->query('sort_by', 'code'),
             'sort_dir' => $request->query('sort_dir', 'asc'),
-            'per_page' => $request->query('per_page', 15),
+            'per_page' => min((int) ($request->query('per_page', 15)), 100),
         ]);
 
         return AccountResource::collection($accounts);

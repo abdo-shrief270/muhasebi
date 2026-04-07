@@ -27,7 +27,7 @@ class FiscalYearController extends Controller
             'is_closed' => $request->has('is_closed') ? filter_var($request->query('is_closed'), FILTER_VALIDATE_BOOLEAN) : null,
             'sort_by' => $request->query('sort_by', 'start_date'),
             'sort_dir' => $request->query('sort_dir', 'desc'),
-            'per_page' => $request->query('per_page', 15),
+            'per_page' => min((int) ($request->query('per_page', 15)), 100),
         ]);
 
         return FiscalYearResource::collection($years);

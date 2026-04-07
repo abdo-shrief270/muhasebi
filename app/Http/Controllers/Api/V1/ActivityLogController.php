@@ -26,7 +26,7 @@ class ActivityLogController extends Controller
             'from' => $request->query('from'),
             'to' => $request->query('to'),
             'search' => $request->query('search'),
-            'per_page' => $request->query('per_page', 20),
+            'per_page' => min((int) ($request->query('per_page', 20)), 100),
         ]);
 
         // Transform the paginated results

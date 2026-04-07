@@ -42,7 +42,7 @@ class AdminSubscriptionController extends Controller
                 'status' => $request->query('status'),
                 'plan_id' => $request->query('plan_id'),
                 'search' => $request->query('search'),
-                'per_page' => $request->query('per_page', 15),
+                'per_page' => min((int) ($request->query('per_page', 15)), 100),
             ]),
         );
     }

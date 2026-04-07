@@ -38,7 +38,7 @@ class DocumentController extends Controller
             'date_to' => $request->query('to'),
             'sort_by' => $request->query('sort_by'),
             'sort_direction' => $request->query('sort_direction'),
-            'per_page' => $request->query('per_page', 15),
+            'per_page' => min((int) ($request->query('per_page', 15)), 100),
         ]);
 
         return DocumentResource::collection($documents);
