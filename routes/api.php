@@ -107,6 +107,7 @@ use App\Http\Controllers\Api\V1\EngagementController;
 use App\Http\Controllers\Api\V1\WebhookEndpointController;
 use App\Http\Controllers\Api\V1\WhtCertificateController;
 use App\Http\Controllers\Api\V1\WorkingPaperController;
+use App\Http\Controllers\Api\V1\AlertRuleController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
@@ -804,6 +805,17 @@ Route::prefix('v1')->group(function (): void {
                     Route::get('pending', [ApprovalController::class, 'pending'])->name('pending');
                     Route::get('history', [ApprovalController::class, 'history'])->name('history');
                 });
+            });
+
+            // ── Alert Rules (admin + accountant) ──
+            Route::middleware('permission:manage_alerts')->prefix('alert-rules')->name('alert-rules.')->group(function (): void {
+                Route::get('/', [AlertRuleController::class, 'index'])->name('index');
+                Route::post('/', [AlertRuleController::class, 'store'])->name('store');
+                Route::get('history', [AlertRuleController::class, 'history'])->name('history');
+                Route::get('{alertRule}', [AlertRuleController::class, 'show'])->name('show');
+                Route::put('{alertRule}', [AlertRuleController::class, 'update'])->name('update');
+                Route::delete('{alertRule}', [AlertRuleController::class, 'destroy'])->name('destroy');
+                Route::post('{alertRule}/toggle', [AlertRuleController::class, 'toggle'])->name('toggle');
             });
         });
 
