@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Accounting\Services;
 
+use App\Domain\Accounting\Enums\JournalEntryStatus;
 use App\Domain\Accounting\Models\AccountSuggestion;
 
 /**
@@ -117,7 +118,7 @@ class AccountSuggestionService
         $entries = \Illuminate\Support\Facades\DB::table('journal_entry_lines')
             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
             ->where('journal_entries.tenant_id', $tenantId)
-            ->where('journal_entries.status', 'posted')
+            ->where('journal_entries.status', JournalEntryStatus::Posted->value)
             ->whereNull('journal_entries.deleted_at')
             ->whereNotNull('journal_entry_lines.description')
             ->where('journal_entry_lines.description', '!=', '')

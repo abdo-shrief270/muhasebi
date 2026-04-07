@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Domain\Billing\Services\AgingReminderService;
+use App\Domain\Shared\Enums\TenantStatus;
 use App\Domain\Tenant\Models\Tenant;
 use Illuminate\Console\Command;
 
@@ -16,7 +17,7 @@ class SendAgingRemindersCommand extends Command
 
     public function handle(AgingReminderService $service): int
     {
-        $tenantQuery = Tenant::where('status', 'active');
+        $tenantQuery = Tenant::where('status', TenantStatus::Active);
 
         if ($tenantId = $this->option('tenant')) {
             $tenantQuery->where('id', $tenantId);

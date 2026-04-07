@@ -77,11 +77,9 @@ class RecurringInvoiceService
                 $unitPrice = (float) ($item['unit_price'] ?? 0);
 
                 if ($quantity <= 0 || $unitPrice < 0) {
-                    Log::warning('Skipping invalid recurring invoice line', [
-                        'recurring_id' => $recurring->id,
-                        'index' => $index,
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        "line_items.{$index}" => ['Invalid quantity or unit price.'],
                     ]);
-                    continue;
                 }
 
                 $line = new InvoiceLine([

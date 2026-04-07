@@ -23,7 +23,7 @@ class RetryStuckWebhooksCommand extends Command
 
         if ($stuck->isEmpty()) {
             $this->info('No stuck webhook deliveries found.');
-            return 0;
+            return self::SUCCESS;
         }
 
         $this->info("Found {$stuck->count()} stuck webhook delivery(ies). Re-queuing...");
@@ -34,6 +34,6 @@ class RetryStuckWebhooksCommand extends Command
         }
 
         $this->info('Done.');
-        return 0;
+        return self::SUCCESS;
     }
 }
