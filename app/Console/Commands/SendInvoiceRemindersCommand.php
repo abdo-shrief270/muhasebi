@@ -65,8 +65,7 @@ class SendInvoiceRemindersCommand extends Command
 
                 if ($dryRun) {
                     $this->line("  [DRY RUN] {$schedule['type']}: Invoice #{$invoice->invoice_number} → {$client->email}");
-                    $sent++;
-                    continue;
+                    continue; // Don't increment $sent — it's not really sent
                 }
 
                 try {
