@@ -254,10 +254,10 @@ class InvoiceService
 
             // Resolve account IDs
             $arAccountId = $settings->ar_account_id
-                ?? $this->resolveAccountByCode('1121', $tenantId);
+                ?? $this->resolveAccountByCode(config('accounting.default_accounts.accounts_receivable'), $tenantId);
 
             $vatAccountId = $settings->vat_account_id
-                ?? $this->resolveAccountByCode('2131', $tenantId);
+                ?? $this->resolveAccountByCode(config('accounting.default_accounts.vat_output'), $tenantId);
 
             // Build journal entry lines
             $jeLines = [];
@@ -275,7 +275,7 @@ class InvoiceService
             // Credit: Revenue — group by account_id from lines
             $revenueByAccount = [];
             $defaultRevenueAccountId = $settings->revenue_account_id
-                ?? $this->resolveAccountByCode('4110', $tenantId);
+                ?? $this->resolveAccountByCode(config('accounting.default_accounts.revenue'), $tenantId);
 
             foreach ($invoice->lines as $line) {
                 $accountId = $line->account_id ?? $defaultRevenueAccountId;

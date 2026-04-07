@@ -93,7 +93,7 @@ class PaymentService
             // Resolve GL accounts
             $paymentAccountId = $this->getPaymentAccountId($method, $tenantId);
             $arAccountId = $settings->ar_account_id
-                ?? $this->resolveAccountByCode('1121', $tenantId);
+                ?? $this->resolveAccountByCode(config('accounting.default_accounts.accounts_receivable'), $tenantId);
 
             // Create the journal entry for this payment
             $journalEntry = $this->journalEntryService->create([
@@ -387,8 +387,8 @@ class PaymentService
     public function getPaymentAccountId(PaymentMethod $method, int $tenantId): int
     {
         $code = match ($method) {
-            PaymentMethod::Cash, PaymentMethod::Other => '1111',
-            PaymentMethod::BankTransfer, PaymentMethod::Check, PaymentMethod::CreditCard, PaymentMethod::MobileWallet => '1112',
+            PaymentMethod::Cash, PaymentMethod::Other => config('accounting.default_accounts.cash'),
+            PaymentMethod::BankTransfer, PaymentMethod::Check, PaymentMethod::CreditCard, PaymentMethod::MobileWallet => config('accounting.default_accounts.bank'),
         };
 
         return $this->resolveAccountByCode($code, $tenantId);
