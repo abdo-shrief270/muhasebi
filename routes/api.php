@@ -112,6 +112,7 @@ use App\Http\Controllers\Api\V1\WebhookEndpointController;
 use App\Http\Controllers\Api\V1\WhtCertificateController;
 use App\Http\Controllers\Api\V1\WorkingPaperController;
 use App\Http\Controllers\Api\V1\AlertRuleController;
+use App\Http\Controllers\Api\V1\BankConnectionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
@@ -330,6 +331,20 @@ Route::prefix('v1')->group(function (): void {
                 // Bank Statement Line actions
                 Route::post('bank-statement-lines/{bankStatementLine}/apply-suggestion', [BankCategorizationController::class, 'applySuggestion'])->name('bank-statement-lines.apply-suggestion');
                 Route::post('bank-statement-lines/{bankStatementLine}/learn', [BankCategorizationController::class, 'learn'])->name('bank-statement-lines.learn');
+
+                // Bank Connections (Egyptian Bank API Integration)
+                Route::prefix('bank-connections')->name('bank-connections.')->group(function (): void {
+                    Route::get('dashboard', [BankConnectionController::class, 'dashboard'])->name('dashboard');
+                    Route::get('supported-formats', [BankConnectionController::class, 'supportedFormats'])->name('supported-formats');
+                    Route::post('generate-instruction', [BankConnectionController::class, 'generateInstruction'])->name('generate-instruction');
+                    Route::get('/', [BankConnectionController::class, 'index'])->name('index');
+                    Route::post('/', [BankConnectionController::class, 'store'])->name('store');
+                    Route::get('{bankConnection}', [BankConnectionController::class, 'show'])->name('show');
+                    Route::put('{bankConnection}', [BankConnectionController::class, 'update'])->name('update');
+                    Route::delete('{bankConnection}', [BankConnectionController::class, 'destroy'])->name('destroy');
+                    Route::post('{bankConnection}/sync-balance', [BankConnectionController::class, 'syncBalance'])->name('sync-balance');
+                    Route::post('{bankConnection}/import-statement', [BankConnectionController::class, 'importStatement'])->name('import-statement');
+                });
 
                 // FX Revaluations
                 Route::prefix('fx-revaluations')->name('fx-revaluations.')->group(function (): void {
