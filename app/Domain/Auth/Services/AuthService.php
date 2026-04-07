@@ -47,7 +47,10 @@ class AuthService
             ]);
 
             // Assign Spatie role
-            try { $user->assignRole('admin'); } catch (\Throwable) { /* role may not exist yet */ }
+            try {
+                $user->assignRole('admin');
+            } catch (\Throwable) { /* role may not exist yet */
+            }
 
             $token = $user->createToken('auth-token')->plainTextToken;
 
@@ -86,7 +89,7 @@ class AuthService
         // Check tenant accessibility (skip for super admins)
         if ($user->tenant_id && $user->tenant && ! $user->tenant->isAccessible()) {
             throw ValidationException::withMessages([
-                'email' => ['Your organization account is currently ' . $user->tenant->status->label() . '.'],
+                'email' => ['Your organization account is currently '.$user->tenant->status->label().'.'],
             ]);
         }
 

@@ -25,29 +25,58 @@ class ReportService
         $cacheKey = "trial_balance:{$tenantId}:{$fromDate}:{$toDate}";
 
         return Cache::remember($cacheKey, now()->addHour(), function () use ($fromDate, $toDate) {
-        // Get all active leaf accounts
-        $accounts = Account::query()
-            ->active()
-            ->leafAccounts()
-            ->orderBy('code')
-            ->get();
+            // Get all active leaf accounts
+            $accounts = Account::query()
+                ->active()
+                ->leafAccounts()
+                ->orderBy('code')
+                ->get();
 
-        // Build opening balances query (all posted entries before fromDate)
-        // Only compute opening balances when a fromDate is specified
-        $openingBalances = collect();
+            // Build opening balances query (all posted entries before fromDate)
+            // Only compute opening balances when a fromDate is specified
+            $openingBalances = collect();
 
-        if ($fromDate) {
-            $openingQuery = DB::table('journal_entry_lines')
-                ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
-                ->where('journal_entries.status', JournalEntryStatus::Posted->value)
-                ->whereNull('journal_entries.deleted_at')
-                ->where('journal_entries.date', '<', $fromDate);
+            if ($fromDate) {
+                $openingQuery = DB::table('journal_entry_lines')
+                    ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
+                    ->where('journal_entries.status', JournalEntryStatus::Posted->value)
+                    ->whereNull('journal_entries.deleted_at')
+                    ->where('journal_entries.date', '<', $fromDate);
 
-            if (app('tenant.id')) {
-                $openingQuery->where('journal_entries.tenant_id', app('tenant.id'));
+                if (app('tenant.id')) {
+                    $openingQuery->where('journal_entries.tenant_id', app('tenant.id'));
+                }
+
+                $openingBalances = $openingQuery
+                    ->select(
+                        'journal_entry_lines.account_id',
+                        DB::raw('COALESCE(SUM(journal_entry_lines.debit), 0) as total_debit'),
+                        DB::raw('COALESCE(SUM(journal_entry_lines.credit), 0) as total_credit')
+                    )
+                    ->groupBy('journal_entry_lines.account_id')
+                    ->get()
+                    ->keyBy('account_id');
             }
 
-            $openingBalances = $openingQuery
+            // Build period movements query (posted entries within date range)
+            $periodQuery = DB::table('journal_entry_lines')
+                ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
+                ->where('journal_entries.status', JournalEntryStatus::Posted->value)
+                ->whereNull('journal_entries.deleted_at');
+
+            if (app('tenant.id')) {
+                $periodQuery->where('journal_entries.tenant_id', app('tenant.id'));
+            }
+
+            if ($fromDate) {
+                $periodQuery->where('journal_entries.date', '>=', $fromDate);
+            }
+
+            if ($toDate) {
+                $periodQuery->where('journal_entries.date', '<=', $toDate);
+            }
+
+            $periodMovements = $periodQuery
                 ->select(
                     'journal_entry_lines.account_id',
                     DB::raw('COALESCE(SUM(journal_entry_lines.debit), 0) as total_debit'),
@@ -56,141 +85,112 @@ class ReportService
                 ->groupBy('journal_entry_lines.account_id')
                 ->get()
                 ->keyBy('account_id');
-        }
 
-        // Build period movements query (posted entries within date range)
-        $periodQuery = DB::table('journal_entry_lines')
-            ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
-            ->where('journal_entries.status', JournalEntryStatus::Posted->value)
-            ->whereNull('journal_entries.deleted_at');
-
-        if (app('tenant.id')) {
-            $periodQuery->where('journal_entries.tenant_id', app('tenant.id'));
-        }
-
-        if ($fromDate) {
-            $periodQuery->where('journal_entries.date', '>=', $fromDate);
-        }
-
-        if ($toDate) {
-            $periodQuery->where('journal_entries.date', '<=', $toDate);
-        }
-
-        $periodMovements = $periodQuery
-            ->select(
-                'journal_entry_lines.account_id',
-                DB::raw('COALESCE(SUM(journal_entry_lines.debit), 0) as total_debit'),
-                DB::raw('COALESCE(SUM(journal_entry_lines.credit), 0) as total_credit')
-            )
-            ->groupBy('journal_entry_lines.account_id')
-            ->get()
-            ->keyBy('account_id');
-
-        $rows = [];
-        $totals = [
-            'opening_debit' => '0.00',
-            'opening_credit' => '0.00',
-            'period_debit' => '0.00',
-            'period_credit' => '0.00',
-            'closing_debit' => '0.00',
-            'closing_credit' => '0.00',
-        ];
-
-        foreach ($accounts as $account) {
-            $opening = $openingBalances->get($account->id);
-            $openingDebit = (string) ($opening->total_debit ?? '0');
-            $openingCredit = (string) ($opening->total_credit ?? '0');
-
-            $period = $periodMovements->get($account->id);
-            $periodDebit = (string) ($period->total_debit ?? '0');
-            $periodCredit = (string) ($period->total_credit ?? '0');
-
-            // Calculate opening balance as debit/credit columns
-            $openingBalance = $account->normal_balance === NormalBalance::Debit
-                ? bcsub($openingDebit, $openingCredit, 2)
-                : bcsub($openingCredit, $openingDebit, 2);
-
-            $openingDebitCol = '0.00';
-            $openingCreditCol = '0.00';
-
-            if (bccomp($openingBalance, '0', 2) > 0) {
-                if ($account->normal_balance === NormalBalance::Debit) {
-                    $openingDebitCol = $openingBalance;
-                } else {
-                    $openingCreditCol = $openingBalance;
-                }
-            } elseif (bccomp($openingBalance, '0', 2) < 0) {
-                if ($account->normal_balance === NormalBalance::Debit) {
-                    $openingCreditCol = bcmul($openingBalance, '-1', 2);
-                } else {
-                    $openingDebitCol = bcmul($openingBalance, '-1', 2);
-                }
-            }
-
-            // Calculate closing balance
-            $closingDebitTotal = bcadd($openingDebit, $periodDebit, 2);
-            $closingCreditTotal = bcadd($openingCredit, $periodCredit, 2);
-
-            $closingBalance = $account->normal_balance === NormalBalance::Debit
-                ? bcsub($closingDebitTotal, $closingCreditTotal, 2)
-                : bcsub($closingCreditTotal, $closingDebitTotal, 2);
-
-            $closingDebitCol = '0.00';
-            $closingCreditCol = '0.00';
-
-            if (bccomp($closingBalance, '0', 2) > 0) {
-                if ($account->normal_balance === NormalBalance::Debit) {
-                    $closingDebitCol = $closingBalance;
-                } else {
-                    $closingCreditCol = $closingBalance;
-                }
-            } elseif (bccomp($closingBalance, '0', 2) < 0) {
-                if ($account->normal_balance === NormalBalance::Debit) {
-                    $closingCreditCol = bcmul($closingBalance, '-1', 2);
-                } else {
-                    $closingDebitCol = bcmul($closingBalance, '-1', 2);
-                }
-            }
-
-            // Skip accounts with zero activity (no opening and no period movement)
-            if (
-                bccomp($openingDebitCol, '0.00', 2) === 0
-                && bccomp($openingCreditCol, '0.00', 2) === 0
-                && bccomp($periodDebit, '0.00', 2) === 0
-                && bccomp($periodCredit, '0.00', 2) === 0
-            ) {
-                continue;
-            }
-
-            $row = [
-                'account_id' => $account->id,
-                'account_code' => $account->code,
-                'account_name_ar' => $account->name_ar,
-                'account_name_en' => $account->name_en,
-                'account_type' => $account->type->value,
-                'opening_debit' => $openingDebitCol,
-                'opening_credit' => $openingCreditCol,
-                'period_debit' => number_format((float) $periodDebit, 2, '.', ''),
-                'period_credit' => number_format((float) $periodCredit, 2, '.', ''),
-                'closing_debit' => $closingDebitCol,
-                'closing_credit' => $closingCreditCol,
+            $rows = [];
+            $totals = [
+                'opening_debit' => '0.00',
+                'opening_credit' => '0.00',
+                'period_debit' => '0.00',
+                'period_credit' => '0.00',
+                'closing_debit' => '0.00',
+                'closing_credit' => '0.00',
             ];
 
-            $rows[] = $row;
+            foreach ($accounts as $account) {
+                $opening = $openingBalances->get($account->id);
+                $openingDebit = (string) ($opening->total_debit ?? '0');
+                $openingCredit = (string) ($opening->total_credit ?? '0');
 
-            // Accumulate totals
-            $totals['opening_debit'] = bcadd($totals['opening_debit'], $openingDebitCol, 2);
-            $totals['opening_credit'] = bcadd($totals['opening_credit'], $openingCreditCol, 2);
-            $totals['period_debit'] = bcadd($totals['period_debit'], $row['period_debit'], 2);
-            $totals['period_credit'] = bcadd($totals['period_credit'], $row['period_credit'], 2);
-            $totals['closing_debit'] = bcadd($totals['closing_debit'], $closingDebitCol, 2);
-            $totals['closing_credit'] = bcadd($totals['closing_credit'], $closingCreditCol, 2);
-        }
+                $period = $periodMovements->get($account->id);
+                $periodDebit = (string) ($period->total_debit ?? '0');
+                $periodCredit = (string) ($period->total_credit ?? '0');
 
-        return [
-            'rows' => $rows,
-            'totals' => $totals,
-        ];
+                // Calculate opening balance as debit/credit columns
+                $openingBalance = $account->normal_balance === NormalBalance::Debit
+                    ? bcsub($openingDebit, $openingCredit, 2)
+                    : bcsub($openingCredit, $openingDebit, 2);
+
+                $openingDebitCol = '0.00';
+                $openingCreditCol = '0.00';
+
+                if (bccomp($openingBalance, '0', 2) > 0) {
+                    if ($account->normal_balance === NormalBalance::Debit) {
+                        $openingDebitCol = $openingBalance;
+                    } else {
+                        $openingCreditCol = $openingBalance;
+                    }
+                } elseif (bccomp($openingBalance, '0', 2) < 0) {
+                    if ($account->normal_balance === NormalBalance::Debit) {
+                        $openingCreditCol = bcmul($openingBalance, '-1', 2);
+                    } else {
+                        $openingDebitCol = bcmul($openingBalance, '-1', 2);
+                    }
+                }
+
+                // Calculate closing balance
+                $closingDebitTotal = bcadd($openingDebit, $periodDebit, 2);
+                $closingCreditTotal = bcadd($openingCredit, $periodCredit, 2);
+
+                $closingBalance = $account->normal_balance === NormalBalance::Debit
+                    ? bcsub($closingDebitTotal, $closingCreditTotal, 2)
+                    : bcsub($closingCreditTotal, $closingDebitTotal, 2);
+
+                $closingDebitCol = '0.00';
+                $closingCreditCol = '0.00';
+
+                if (bccomp($closingBalance, '0', 2) > 0) {
+                    if ($account->normal_balance === NormalBalance::Debit) {
+                        $closingDebitCol = $closingBalance;
+                    } else {
+                        $closingCreditCol = $closingBalance;
+                    }
+                } elseif (bccomp($closingBalance, '0', 2) < 0) {
+                    if ($account->normal_balance === NormalBalance::Debit) {
+                        $closingCreditCol = bcmul($closingBalance, '-1', 2);
+                    } else {
+                        $closingDebitCol = bcmul($closingBalance, '-1', 2);
+                    }
+                }
+
+                // Skip accounts with zero activity (no opening and no period movement)
+                if (
+                    bccomp($openingDebitCol, '0.00', 2) === 0
+                    && bccomp($openingCreditCol, '0.00', 2) === 0
+                    && bccomp($periodDebit, '0.00', 2) === 0
+                    && bccomp($periodCredit, '0.00', 2) === 0
+                ) {
+                    continue;
+                }
+
+                $row = [
+                    'account_id' => $account->id,
+                    'account_code' => $account->code,
+                    'account_name_ar' => $account->name_ar,
+                    'account_name_en' => $account->name_en,
+                    'account_type' => $account->type->value,
+                    'opening_debit' => $openingDebitCol,
+                    'opening_credit' => $openingCreditCol,
+                    'period_debit' => number_format((float) $periodDebit, 2, '.', ''),
+                    'period_credit' => number_format((float) $periodCredit, 2, '.', ''),
+                    'closing_debit' => $closingDebitCol,
+                    'closing_credit' => $closingCreditCol,
+                ];
+
+                $rows[] = $row;
+
+                // Accumulate totals
+                $totals['opening_debit'] = bcadd($totals['opening_debit'], $openingDebitCol, 2);
+                $totals['opening_credit'] = bcadd($totals['opening_credit'], $openingCreditCol, 2);
+                $totals['period_debit'] = bcadd($totals['period_debit'], $row['period_debit'], 2);
+                $totals['period_credit'] = bcadd($totals['period_credit'], $row['period_credit'], 2);
+                $totals['closing_debit'] = bcadd($totals['closing_debit'], $closingDebitCol, 2);
+                $totals['closing_credit'] = bcadd($totals['closing_credit'], $closingCreditCol, 2);
+            }
+
+            return [
+                'rows' => $rows,
+                'totals' => $totals,
+            ];
         }); // end Cache::remember
     }
 
@@ -298,55 +298,55 @@ class ReportService
         $cacheKey = "income_statement:{$tenantId}:{$fromDate}:{$toDate}";
 
         return Cache::remember($cacheKey, now()->addHour(), function () use ($fromDate, $toDate) {
-        $revenueAccounts = Account::query()
-            ->active()
-            ->leafAccounts()
-            ->ofType(AccountType::Revenue)
-            ->orderBy('code')
-            ->get();
+            $revenueAccounts = Account::query()
+                ->active()
+                ->leafAccounts()
+                ->ofType(AccountType::Revenue)
+                ->orderBy('code')
+                ->get();
 
-        $expenseAccounts = Account::query()
-            ->active()
-            ->leafAccounts()
-            ->ofType(AccountType::Expense)
-            ->orderBy('code')
-            ->get();
+            $expenseAccounts = Account::query()
+                ->active()
+                ->leafAccounts()
+                ->ofType(AccountType::Expense)
+                ->orderBy('code')
+                ->get();
 
-        $allAccounts = $revenueAccounts->merge($expenseAccounts);
-        $balances = $this->getAccountBalances(
-            [AccountType::Revenue, AccountType::Expense],
-            $fromDate,
-            $toDate
-        );
+            $allAccounts = $revenueAccounts->merge($expenseAccounts);
+            $balances = $this->getAccountBalances(
+                [AccountType::Revenue, AccountType::Expense],
+                $fromDate,
+                $toDate
+            );
 
-        // Revenue: credit - debit (credit-normal)
-        $revenueGroups = $this->groupAccountsByParent($revenueAccounts, $balances, false);
-        $revenueTotal = '0.00';
-        foreach ($revenueGroups as $group) {
-            $revenueTotal = bcadd($revenueTotal, $group['subtotal'], 2);
-        }
+            // Revenue: credit - debit (credit-normal)
+            $revenueGroups = $this->groupAccountsByParent($revenueAccounts, $balances, false);
+            $revenueTotal = '0.00';
+            foreach ($revenueGroups as $group) {
+                $revenueTotal = bcadd($revenueTotal, $group['subtotal'], 2);
+            }
 
-        // Expenses: debit - credit (debit-normal)
-        $expenseGroups = $this->groupAccountsByParent($expenseAccounts, $balances, true);
-        $expensesTotal = '0.00';
-        foreach ($expenseGroups as $group) {
-            $expensesTotal = bcadd($expensesTotal, $group['subtotal'], 2);
-        }
+            // Expenses: debit - credit (debit-normal)
+            $expenseGroups = $this->groupAccountsByParent($expenseAccounts, $balances, true);
+            $expensesTotal = '0.00';
+            foreach ($expenseGroups as $group) {
+                $expensesTotal = bcadd($expensesTotal, $group['subtotal'], 2);
+            }
 
-        $netIncome = bcsub($revenueTotal, $expensesTotal, 2);
+            $netIncome = bcsub($revenueTotal, $expensesTotal, 2);
 
-        return [
-            'revenue' => [
-                'groups' => $revenueGroups,
-                'total' => $revenueTotal,
-            ],
-            'expenses' => [
-                'groups' => $expenseGroups,
-                'total' => $expensesTotal,
-            ],
-            'net_income' => $netIncome,
-            'period' => ['from' => $fromDate, 'to' => $toDate],
-        ];
+            return [
+                'revenue' => [
+                    'groups' => $revenueGroups,
+                    'total' => $revenueTotal,
+                ],
+                'expenses' => [
+                    'groups' => $expenseGroups,
+                    'total' => $expensesTotal,
+                ],
+                'net_income' => $netIncome,
+                'period' => ['from' => $fromDate, 'to' => $toDate],
+            ];
         }); // end Cache::remember
     }
 
@@ -396,7 +396,7 @@ class ReportService
         }
 
         // Calculate current year net income: fiscal year start to asOfDate
-        $fiscalYearStart = substr($asOfDate, 0, 4) . '-01-01';
+        $fiscalYearStart = substr($asOfDate, 0, 4).'-01-01';
         $incomeData = $this->incomeStatement($fiscalYearStart, $asOfDate);
         $netIncome = $incomeData['net_income'];
 
@@ -470,10 +470,10 @@ class ReportService
             $query = Account::query()
                 ->active()
                 ->leafAccounts()
-                ->where('code', 'like', $prefix . '%');
+                ->where('code', 'like', $prefix.'%');
 
             foreach ($excludePrefixes as $excludePrefix) {
-                $query->where('code', 'not like', $excludePrefix . '%');
+                $query->where('code', 'not like', $excludePrefix.'%');
             }
 
             $accountIds = $query->pluck('id')->toArray();
@@ -563,11 +563,11 @@ class ReportService
 
         // Taxes payable (2131-2134)
         $taxesChange = $getBalanceChange([
-                config('accounting.default_accounts.vat_output'),
-                config('accounting.default_accounts.wht_services'),
-                config('accounting.default_accounts.wht_supplies'),
-                config('accounting.default_accounts.wht_equipment'),
-            ], false);
+            config('accounting.default_accounts.vat_output'),
+            config('accounting.default_accounts.wht_services'),
+            config('accounting.default_accounts.wht_supplies'),
+            config('accounting.default_accounts.wht_equipment'),
+        ], false);
         if (bccomp($taxesChange, '0.00', 2) !== 0) {
             $workingCapitalChanges[] = [
                 'description_ar' => 'التغير في الضرائب المستحقة',

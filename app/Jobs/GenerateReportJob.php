@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Domain\Accounting\Services\ReportPdfService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Http\Response;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
@@ -20,7 +22,9 @@ class GenerateReportJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 2;
+
     public int $timeout = 300;
+
     public int $backoff = 30;
 
     public function __construct(
@@ -46,9 +50,9 @@ class GenerateReportJob implements ShouldQueue
         );
 
         if ($this->format === 'pdf') {
-            $pdfService = app(\App\Domain\Accounting\Services\ReportPdfService::class);
+            $pdfService = app(ReportPdfService::class);
 
-            /** @var \Illuminate\Http\Response $response */
+            /** @var Response $response */
             $response = match ($this->reportType) {
                 'trial_balance' => $pdfService->trialBalancePdf($this->filters['from'] ?? null, $this->filters['to'] ?? null),
                 'income_statement' => $pdfService->incomeStatementPdf($this->filters['from'] ?? null, $this->filters['to'] ?? null),

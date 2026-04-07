@@ -27,7 +27,7 @@ class InvoiceFactory extends Factory
             'tenant_id' => Tenant::factory(),
             'client_id' => Client::factory(),
             'type' => InvoiceType::Invoice,
-            'invoice_number' => 'INV-' . (string) fake()->unique()->numberBetween(1000, 9999),
+            'invoice_number' => 'INV-'.(string) fake()->unique()->numberBetween(1000, 9999),
             'date' => today(),
             'due_date' => today()->addDays(30),
             'status' => InvoiceStatus::Draft,
@@ -100,7 +100,7 @@ class InvoiceFactory extends Factory
     {
         return $this->state(fn () => [
             'type' => InvoiceType::CreditNote,
-            'invoice_number' => 'CN-' . (string) fake()->unique()->numberBetween(1000, 9999),
+            'invoice_number' => 'CN-'.(string) fake()->unique()->numberBetween(1000, 9999),
         ]);
     }
 
@@ -108,7 +108,7 @@ class InvoiceFactory extends Factory
     {
         return $this->state(fn () => [
             'type' => InvoiceType::DebitNote,
-            'invoice_number' => 'DN-' . (string) fake()->unique()->numberBetween(1000, 9999),
+            'invoice_number' => 'DN-'.(string) fake()->unique()->numberBetween(1000, 9999),
         ]);
     }
 }

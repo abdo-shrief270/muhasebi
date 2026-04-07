@@ -250,7 +250,7 @@ class PaymentService
                 'description' => $isCredit ? "إشعار دائن {$invoice->invoice_number}" : "فاتورة {$invoice->invoice_number}",
                 'debit' => $isCredit ? '0.00' : (string) $invoice->total,
                 'credit' => $isCredit ? (string) $invoice->total : '0.00',
-                'sort_key' => $invoice->date->toDateString() . '_0_' . $invoice->invoice_number,
+                'sort_key' => $invoice->date->toDateString().'_0_'.$invoice->invoice_number,
             ];
         }
 
@@ -262,7 +262,7 @@ class PaymentService
                 'description' => "دفعة - {$payment->method->labelAr()}",
                 'debit' => '0.00',
                 'credit' => (string) $payment->amount,
-                'sort_key' => $payment->date->toDateString() . '_1_' . ($payment->reference ?? ''),
+                'sort_key' => $payment->date->toDateString().'_1_'.($payment->reference ?? ''),
             ];
         }
 

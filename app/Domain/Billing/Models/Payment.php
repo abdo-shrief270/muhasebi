@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Billing\Models;
 
-use App\Domain\Billing\Enums\PaymentMethod;
 use App\Domain\Accounting\Models\JournalEntry;
+use App\Domain\Billing\Enums\PaymentMethod;
 use App\Domain\Shared\Traits\BelongsToTenant;
 use App\Domain\Tenant\Models\Tenant;
 use App\Models\User;
@@ -34,10 +34,10 @@ use Spatie\Activitylog\Support\LogOptions;
 ])]
 class Payment extends Model
 {
-    use HasFactory;
-    use SoftDeletes;
     use BelongsToTenant;
+    use HasFactory;
     use LogsActivity;
+    use SoftDeletes;
 
     /** @return array<string, string> */
     protected function casts(): array

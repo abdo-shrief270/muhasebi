@@ -536,7 +536,7 @@ describe('GET /api/v1/reports/comparative/income-statement', function (): void {
         );
 
         $response = $this->withHeader('X-Tenant', $this->tenant->slug)
-            ->getJson('/api/v1/reports/comparative/income-statement?' . http_build_query([
+            ->getJson('/api/v1/reports/comparative/income-statement?'.http_build_query([
                 'current_from' => '2026-02-01',
                 'current_to' => '2026-02-28',
                 'prior_from' => '2026-01-01',
@@ -577,7 +577,7 @@ describe('GET /api/v1/reports/comparative/balance-sheet', function (): void {
         );
 
         $response = $this->withHeader('X-Tenant', $this->tenant->slug)
-            ->getJson('/api/v1/reports/comparative/balance-sheet?' . http_build_query([
+            ->getJson('/api/v1/reports/comparative/balance-sheet?'.http_build_query([
                 'current_as_of' => '2026-02-28',
                 'prior_as_of' => '2026-01-31',
             ]));

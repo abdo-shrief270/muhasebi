@@ -36,7 +36,7 @@ class MeterApiUsage
 
     private function bufferIncrement(int $tenantId): void
     {
-        $key = "usage_buffer:{$tenantId}:" . now()->toDateString();
+        $key = "usage_buffer:{$tenantId}:".now()->toDateString();
 
         $count = Cache::increment($key);
 

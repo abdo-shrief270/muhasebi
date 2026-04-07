@@ -4,6 +4,23 @@ declare(strict_types=1);
 
 namespace App\Domain\Shared\Services;
 
+use App\Domain\Accounting\Models\Account;
+use App\Domain\Accounting\Models\BankReconciliation;
+use App\Domain\Accounting\Models\JournalEntry;
+use App\Domain\Billing\Models\Invoice;
+use App\Domain\Billing\Models\Payment;
+use App\Domain\Blog\Models\BlogPost;
+use App\Domain\Client\Models\Client;
+use App\Domain\Cms\Models\CmsPage;
+use App\Domain\Cms\Models\ContactSubmission;
+use App\Domain\Document\Models\Document;
+use App\Domain\EInvoice\Models\EtaDocument;
+use App\Domain\Payroll\Models\Employee;
+use App\Domain\Payroll\Models\PayrollRun;
+use App\Domain\Subscription\Models\Subscription;
+use App\Domain\Tenant\Models\Tenant;
+use App\Domain\TimeTracking\Models\TimesheetEntry;
+use App\Domain\Webhook\Models\WebhookEndpoint;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -51,7 +68,7 @@ class ActivityLogService
             )
             ->when(
                 isset($filters['to']),
-                fn ($q) => $q->where('created_at', '<=', $filters['to'] . ' 23:59:59'),
+                fn ($q) => $q->where('created_at', '<=', $filters['to'].' 23:59:59'),
             )
             ->when(
                 isset($filters['search']),
@@ -120,7 +137,7 @@ class ActivityLogService
             $baseQuery->where('created_at', '>=', $from);
         }
         if ($to) {
-            $baseQuery->where('created_at', '<=', $to . ' 23:59:59');
+            $baseQuery->where('created_at', '<=', $to.' 23:59:59');
         }
 
         // Changes by event type
@@ -158,21 +175,21 @@ class ActivityLogService
         $users = User::withoutGlobalScopes()->whereIn('id', $userIds)->get(['id', 'name', 'email'])->keyBy('id');
 
         $byUser = $byUserRows->map(function ($row) use ($users) {
-                $user = $users->get($row->causer_id);
+            $user = $users->get($row->causer_id);
 
-                return [
-                    'user_id' => $row->causer_id,
-                    'name' => $user?->name,
-                    'email' => $user?->email,
-                    'count' => $row->count,
-                ];
-            })
+            return [
+                'user_id' => $row->causer_id,
+                'name' => $user?->name,
+                'email' => $user?->email,
+                'count' => $row->count,
+            ];
+        })
             ->toArray();
 
         // Daily activity (last 30 days)
         $dailyActivity = (clone $baseQuery)
             ->where('created_at', '>=', now()->subDays(30))
-            ->select(DB::raw("DATE(created_at) as date"), DB::raw('COUNT(*) as count'))
+            ->select(DB::raw('DATE(created_at) as date'), DB::raw('COUNT(*) as count'))
             ->groupBy(DB::raw('DATE(created_at)'))
             ->orderBy('date')
             ->pluck('count', 'date')
@@ -193,24 +210,24 @@ class ActivityLogService
     private function resolveSubjectType(string $shortName): string
     {
         $map = [
-            'Invoice' => \App\Domain\Billing\Models\Invoice::class,
-            'Client' => \App\Domain\Client\Models\Client::class,
-            'Account' => \App\Domain\Accounting\Models\Account::class,
-            'JournalEntry' => \App\Domain\Accounting\Models\JournalEntry::class,
-            'Payment' => \App\Domain\Billing\Models\Payment::class,
-            'Document' => \App\Domain\Document\Models\Document::class,
-            'Employee' => \App\Domain\Payroll\Models\Employee::class,
-            'PayrollRun' => \App\Domain\Payroll\Models\PayrollRun::class,
-            'TimesheetEntry' => \App\Domain\TimeTracking\Models\TimesheetEntry::class,
-            'Tenant' => \App\Domain\Tenant\Models\Tenant::class,
-            'User' => \App\Models\User::class,
-            'Subscription' => \App\Domain\Subscription\Models\Subscription::class,
-            'EtaDocument' => \App\Domain\EInvoice\Models\EtaDocument::class,
-            'WebhookEndpoint' => \App\Domain\Webhook\Models\WebhookEndpoint::class,
-            'BankReconciliation' => \App\Domain\Accounting\Models\BankReconciliation::class,
-            'BlogPost' => \App\Domain\Blog\Models\BlogPost::class,
-            'CmsPage' => \App\Domain\Cms\Models\CmsPage::class,
-            'ContactSubmission' => \App\Domain\Cms\Models\ContactSubmission::class,
+            'Invoice' => Invoice::class,
+            'Client' => Client::class,
+            'Account' => Account::class,
+            'JournalEntry' => JournalEntry::class,
+            'Payment' => Payment::class,
+            'Document' => Document::class,
+            'Employee' => Employee::class,
+            'PayrollRun' => PayrollRun::class,
+            'TimesheetEntry' => TimesheetEntry::class,
+            'Tenant' => Tenant::class,
+            'User' => User::class,
+            'Subscription' => Subscription::class,
+            'EtaDocument' => EtaDocument::class,
+            'WebhookEndpoint' => WebhookEndpoint::class,
+            'BankReconciliation' => BankReconciliation::class,
+            'BlogPost' => BlogPost::class,
+            'CmsPage' => CmsPage::class,
+            'ContactSubmission' => ContactSubmission::class,
         ];
 
         return $map[$shortName] ?? $shortName;

@@ -38,7 +38,7 @@ class GeneratePostmanCollectionCommand extends Command
                 'bearer' => [['key' => 'token', 'value' => '{{auth_token}}', 'type' => 'string']],
             ],
             'variable' => [
-                ['key' => 'base_url', 'value' => config('app.url') . '/api/v1'],
+                ['key' => 'base_url', 'value' => config('app.url').'/api/v1'],
                 ['key' => 'auth_token', 'value' => ''],
                 ['key' => 'tenant_id', 'value' => '1'],
             ],
@@ -63,7 +63,7 @@ class GeneratePostmanCollectionCommand extends Command
                     'request' => [
                         'method' => strtoupper($method),
                         'url' => [
-                            'raw' => '{{base_url}}/' . preg_replace('/\{(\w+)\}/', ':$1', $path),
+                            'raw' => '{{base_url}}/'.preg_replace('/\{(\w+)\}/', ':$1', $path),
                             'host' => ['{{base_url}}'],
                             'path' => explode('/', preg_replace('/\{(\w+)\}/', ':$1', $path)),
                         ],
@@ -91,7 +91,7 @@ class GeneratePostmanCollectionCommand extends Command
                     $item['request']['url']['variable'] = array_map(fn ($p) => [
                         'key' => $p,
                         'value' => '1',
-                        'description' => ucfirst($p) . ' ID',
+                        'description' => ucfirst($p).' ID',
                     ], $matches[1]);
                 }
 
@@ -122,10 +122,10 @@ class GeneratePostmanCollectionCommand extends Command
         $parts = explode('/', $path);
 
         if ($parts[0] === 'admin') {
-            return 'Admin: ' . Str::title($parts[1] ?? 'General');
+            return 'Admin: '.Str::title($parts[1] ?? 'General');
         }
         if ($parts[0] === 'portal') {
-            return 'Portal: ' . Str::title($parts[1] ?? 'General');
+            return 'Portal: '.Str::title($parts[1] ?? 'General');
         }
 
         return Str::title($parts[0] ?? 'General');
@@ -139,6 +139,6 @@ class GeneratePostmanCollectionCommand extends Command
 
         $actions = ['get' => 'List/Get', 'post' => 'Create', 'put' => 'Update', 'delete' => 'Delete'];
 
-        return ($actions[$method] ?? $method) . ' ' . basename($route->uri());
+        return ($actions[$method] ?? $method).' '.basename($route->uri());
     }
 }

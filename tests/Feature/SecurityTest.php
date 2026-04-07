@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domain\Auth\Services\PasswordPolicyService;
+use App\Domain\Cms\Models\SlugRedirect;
 use App\Domain\Shared\Services\HtmlSanitizer;
 
 describe('Password Policy', function (): void {
@@ -175,25 +176,25 @@ describe('API Response Standardization', function (): void {
 describe('Slug Redirects', function (): void {
 
     it('tracks slug changes for blog posts', function (): void {
-        \App\Domain\Cms\Models\SlugRedirect::track('old-post', 'new-post', 'blog');
+        SlugRedirect::track('old-post', 'new-post', 'blog');
 
-        $redirect = \App\Domain\Cms\Models\SlugRedirect::resolve('old-post', 'blog');
+        $redirect = SlugRedirect::resolve('old-post', 'blog');
 
         expect($redirect)->toBe('new-post');
     });
 
     it('chain-updates existing redirects', function (): void {
-        \App\Domain\Cms\Models\SlugRedirect::track('version-1', 'version-2', 'blog');
-        \App\Domain\Cms\Models\SlugRedirect::track('version-2', 'version-3', 'blog');
+        SlugRedirect::track('version-1', 'version-2', 'blog');
+        SlugRedirect::track('version-2', 'version-3', 'blog');
 
         // version-1 should now point to version-3
-        $redirect = \App\Domain\Cms\Models\SlugRedirect::resolve('version-1', 'blog');
+        $redirect = SlugRedirect::resolve('version-1', 'blog');
 
         expect($redirect)->toBe('version-3');
     });
 
     it('ignores same slug', function (): void {
-        \App\Domain\Cms\Models\SlugRedirect::track('same', 'same', 'page');
+        SlugRedirect::track('same', 'same', 'page');
 
         $this->assertDatabaseCount('slug_redirects', 0);
     });

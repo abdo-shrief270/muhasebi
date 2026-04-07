@@ -19,9 +19,13 @@ use Illuminate\Support\Facades\Log;
 class GoogleWorkspaceService
 {
     private const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
+
     private const TOKEN_URL = 'https://oauth2.googleapis.com/token';
+
     private const CALENDAR_API = 'https://www.googleapis.com/calendar/v3';
+
     private const DRIVE_API = 'https://www.googleapis.com/upload/drive/v3';
+
     private const DRIVE_FILES_API = 'https://www.googleapis.com/drive/v3';
 
     /**
@@ -54,7 +58,7 @@ class GoogleWorkspaceService
             'state' => $state,
         ]);
 
-        return self::AUTH_URL . '?' . $params;
+        return self::AUTH_URL.'?'.$params;
     }
 
     /**
@@ -91,9 +95,11 @@ class GoogleWorkspaceService
             }
 
             Log::error('Google OAuth exchange failed', ['body' => $response->body()]);
+
             return null;
         } catch (\Throwable $e) {
             Log::error('Google OAuth exception', ['error' => $e->getMessage()]);
+
             return null;
         }
     }
@@ -104,7 +110,9 @@ class GoogleWorkspaceService
     private static function getAccessToken(): ?string
     {
         $setting = IntegrationSetting::forProvider('google');
-        if (! $setting) return null;
+        if (! $setting) {
+            return null;
+        }
 
         $credentials = $setting->credentials ?? [];
         $accessToken = $credentials['access_token'] ?? null;
@@ -117,7 +125,9 @@ class GoogleWorkspaceService
         }
 
         // Refresh the token
-        if (! $refreshToken) return null;
+        if (! $refreshToken) {
+            return null;
+        }
 
         try {
             $response = Http::post(self::TOKEN_URL, [
@@ -150,14 +160,16 @@ class GoogleWorkspaceService
     public static function createCalendarEvent(array $event): ?array
     {
         $token = self::getAccessToken();
-        if (! $token) return null;
+        if (! $token) {
+            return null;
+        }
 
         $calendarId = IntegrationSetting::configValue('google', 'calendar_id', 'primary');
 
         try {
             $response = Http::withToken($token)
                 ->timeout(10)
-                ->post(self::CALENDAR_API . "/calendars/{$calendarId}/events", [
+                ->post(self::CALENDAR_API."/calendars/{$calendarId}/events", [
                     'summary' => $event['title'],
                     'description' => $event['description'] ?? '',
                     'start' => [
@@ -182,9 +194,11 @@ class GoogleWorkspaceService
             }
 
             Log::error('Google Calendar event creation failed', ['body' => $response->body()]);
+
             return null;
         } catch (\Throwable $e) {
             Log::error('Google Calendar exception', ['error' => $e->getMessage()]);
+
             return null;
         }
     }
@@ -197,7 +211,9 @@ class GoogleWorkspaceService
     public static function uploadFile(string $filePath, string $filename, ?string $folderId = null, string $mimeType = 'application/pdf'): ?array
     {
         $token = self::getAccessToken();
-        if (! $token) return null;
+        if (! $token) {
+            return null;
+        }
 
         $folderId = $folderId ?? IntegrationSetting::configValue('google', 'drive_folder_id');
 
@@ -212,16 +228,18 @@ class GoogleWorkspaceService
                 ->timeout(30)
                 ->attach('metadata', json_encode($metadata), 'metadata.json', ['Content-Type' => 'application/json'])
                 ->attach('file', file_get_contents($filePath), $filename, ['Content-Type' => $mimeType])
-                ->post(self::DRIVE_API . '/files?uploadType=multipart');
+                ->post(self::DRIVE_API.'/files?uploadType=multipart');
 
             if ($response->successful()) {
                 return $response->json();
             }
 
             Log::error('Google Drive upload failed', ['body' => $response->body()]);
+
             return null;
         } catch (\Throwable $e) {
             Log::error('Google Drive exception', ['error' => $e->getMessage()]);
+
             return null;
         }
     }
@@ -232,16 +250,18 @@ class GoogleWorkspaceService
     public static function listFiles(?string $folderId = null, int $limit = 20): array
     {
         $token = self::getAccessToken();
-        if (! $token) return [];
+        if (! $token) {
+            return [];
+        }
 
         $folderId = $folderId ?? IntegrationSetting::configValue('google', 'drive_folder_id');
 
         try {
-            $query = $folderId ? "'{$folderId}' in parents and trashed=false" : "trashed=false";
+            $query = $folderId ? "'{$folderId}' in parents and trashed=false" : 'trashed=false';
 
             $response = Http::withToken($token)
                 ->timeout(10)
-                ->get(self::DRIVE_FILES_API . '/files', [
+                ->get(self::DRIVE_FILES_API.'/files', [
                     'q' => $query,
                     'pageSize' => $limit,
                     'fields' => 'files(id,name,mimeType,size,createdTime,webViewLink)',
@@ -255,6 +275,7 @@ class GoogleWorkspaceService
             return [];
         } catch (\Throwable $e) {
             Log::error('Google Drive list error', ['error' => $e->getMessage()]);
+
             return [];
         }
     }

@@ -59,6 +59,7 @@ class ExportTenantDataCommand extends Command
 
         if (! $tenant) {
             $this->error("Tenant not found: {$identifier}");
+
             return self::FAILURE;
         }
 
@@ -138,7 +139,7 @@ class ExportTenantDataCommand extends Command
         $sizeMb = round(filesize($path) / 1024 / 1024, 2);
 
         $this->info("Export complete: {$filename} ({$sizeMb} MB)");
-        $this->info("Tables exported: " . count(array_filter($export, fn ($v) => is_array($v) && isset($v['count']))));
+        $this->info('Tables exported: '.count(array_filter($export, fn ($v) => is_array($v) && isset($v['count']))));
 
         return self::SUCCESS;
     }

@@ -67,8 +67,8 @@ class NotificationPreferenceController extends Controller
     {
         $validated = $request->validate([
             'preferences' => ['required', 'array', 'min:1'],
-            'preferences.*.type' => ['required', 'string', 'in:' . implode(',', self::NOTIFICATION_TYPES)],
-            'preferences.*.channel' => ['required', 'string', 'in:' . implode(',', self::CHANNELS)],
+            'preferences.*.type' => ['required', 'string', 'in:'.implode(',', self::NOTIFICATION_TYPES)],
+            'preferences.*.channel' => ['required', 'string', 'in:'.implode(',', self::CHANNELS)],
             'preferences.*.enabled' => ['required', 'boolean'],
         ]);
 

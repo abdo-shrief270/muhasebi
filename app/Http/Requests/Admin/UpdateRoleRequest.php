@@ -9,7 +9,10 @@ use Illuminate\Validation\Rule;
 
 class UpdateRoleRequest extends FormRequest
 {
-    public function authorize(): bool { return $this->user()?->isSuperAdmin() === true; }
+    public function authorize(): bool
+    {
+        return $this->user()?->isSuperAdmin() === true;
+    }
 
     /** @return array<string, array<int, mixed>> */
     public function rules(): array

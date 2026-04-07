@@ -398,7 +398,7 @@ class InvoiceService
                 ->first();
 
             $number = $settings->{$nextNumberField};
-            $formatted = $prefix . '-' . str_pad((string) $number, 6, '0', STR_PAD_LEFT);
+            $formatted = $prefix.'-'.str_pad((string) $number, 6, '0', STR_PAD_LEFT);
             $settings->increment($nextNumberField);
 
             return $formatted;

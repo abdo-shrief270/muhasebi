@@ -38,7 +38,7 @@ class SecurityHeaders
             "frame-ancestors 'none'",
             "base-uri 'self'",
             "form-action 'self'",
-            "upgrade-insecure-requests",
+            'upgrade-insecure-requests',
         ];
 
         if ($reportUri = config('app.csp_report_uri')) {

@@ -20,7 +20,7 @@ use Spatie\Activitylog\Support\LogOptions;
 #[Fillable(['tenant_id', 'client_id', 'created_by', 'frequency', 'day_of_month', 'day_of_week', 'start_date', 'end_date', 'next_run_date', 'last_run_date', 'line_items', 'currency', 'notes', 'terms', 'due_days', 'is_active', 'auto_send', 'invoices_generated', 'max_occurrences'])]
 class RecurringInvoice extends Model
 {
-    use BelongsToTenant, SoftDeletes, LogsActivity;
+    use BelongsToTenant, LogsActivity, SoftDeletes;
 
     protected function casts(): array
     {
@@ -48,11 +48,25 @@ class RecurringInvoice extends Model
             ->setDescriptionForEvent(fn (string $eventName) => "Recurring invoice {$eventName}");
     }
 
-    public function tenant(): BelongsTo { return $this->belongsTo(Tenant::class); }
-    public function client(): BelongsTo { return $this->belongsTo(Client::class); }
-    public function createdByUser(): BelongsTo { return $this->belongsTo(User::class, 'created_by'); }
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
+    }
 
-    public function scopeActive($query) { return $query->where('is_active', true); }
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(Client::class);
+    }
+
+    public function createdByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
 
     public function scopeDue($query)
     {
@@ -63,7 +77,7 @@ class RecurringInvoice extends Model
             })
             ->where(function ($q) {
                 $q->whereNull('max_occurrences')
-                  ->orWhereColumn('invoices_generated', '<', 'max_occurrences');
+                    ->orWhereColumn('invoices_generated', '<', 'max_occurrences');
             });
     }
 
@@ -88,7 +102,10 @@ class RecurringInvoice extends Model
      */
     public function hasReachedLimit(): bool
     {
-        if ($this->max_occurrences === null) return false;
+        if ($this->max_occurrences === null) {
+            return false;
+        }
+
         return $this->invoices_generated >= $this->max_occurrences;
     }
 
@@ -97,7 +114,10 @@ class RecurringInvoice extends Model
      */
     public function hasExpired(): bool
     {
-        if ($this->end_date === null) return false;
+        if ($this->end_date === null) {
+            return false;
+        }
+
         return $this->end_date->isPast();
     }
 }

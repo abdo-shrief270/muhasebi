@@ -24,7 +24,8 @@ class GenerateTypescriptSdkCommand extends Command
         $specPath = base_path($this->option('spec'));
 
         if (! file_exists($specPath)) {
-            $this->error("OpenAPI spec not found. Run: php artisan api:docs");
+            $this->error('OpenAPI spec not found. Run: php artisan api:docs');
+
             return self::FAILURE;
         }
 
@@ -37,7 +38,9 @@ class GenerateTypescriptSdkCommand extends Command
         $outputPath = $this->option('output');
         $fullPath = base_path($outputPath);
         $dir = dirname($fullPath);
-        if (! is_dir($dir)) mkdir($dir, 0755, true);
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
 
         file_put_contents($fullPath, $ts);
 
@@ -140,7 +143,9 @@ TS;
                 $paramList = array_map(fn ($p) => "{$p}: string | number", $params);
                 $hasBody = in_array(strtoupper($method), ['POST', 'PUT', 'PATCH']);
 
-                if ($hasBody) $paramList[] = 'body?: any';
+                if ($hasBody) {
+                    $paramList[] = 'body?: any';
+                }
                 $paramList[] = 'params?: Record<string, string>';
 
                 $paramString = implode(', ', $paramList);
@@ -185,7 +190,7 @@ TS;
 
     private function generateOperationId(string $method, string $path): string
     {
-        return Str::camel($method . '_' . str_replace(['/', '{', '}'], ['_', '', ''], $path));
+        return Str::camel($method.'_'.str_replace(['/', '{', '}'], ['_', '', ''], $path));
     }
 
     private function countMethods(array $paths): int
@@ -194,6 +199,7 @@ TS;
         foreach ($paths as $methods) {
             $count += count($methods);
         }
+
         return $count;
     }
 }

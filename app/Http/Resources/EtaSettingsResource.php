@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Domain\EInvoice\Models\EtaSettings;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Domain\EInvoice\Models\EtaSettings */
+/** @mixin EtaSettings */
 class EtaSettingsResource extends JsonResource
 {
     /** @return array<string, mixed> */
@@ -17,7 +18,7 @@ class EtaSettingsResource extends JsonResource
             'id' => $this->id,
             'is_enabled' => $this->is_enabled,
             'environment' => $this->environment,
-            'client_id' => $this->client_id ? '****' . substr($this->client_id, -4) : null,
+            'client_id' => $this->client_id ? '****'.substr($this->client_id, -4) : null,
             'has_client_secret' => ! empty($this->client_secret),
             'branch_id' => $this->branch_id,
             'branch_address_country' => $this->branch_address_country,

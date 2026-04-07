@@ -6,8 +6,9 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Spatie\Permission\Models\Permission;
 
-/** @mixin \Spatie\Permission\Models\Permission */
+/** @mixin Permission */
 class PermissionResource extends JsonResource
 {
     /** @return array<string, mixed> */

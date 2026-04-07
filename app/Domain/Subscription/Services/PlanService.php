@@ -54,7 +54,6 @@ class PlanService
      * Warns (via metadata) if the plan has active subscriptions, but does not block the update.
      *
      * @param  array<string, mixed>  $data
-     *
      * @return Plan The updated plan. Check $plan->getMeta('has_active_subscriptions') for warning.
      */
     public function updatePlan(Plan $plan, array $data): Plan

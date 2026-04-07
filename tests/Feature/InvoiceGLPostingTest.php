@@ -7,8 +7,6 @@ use App\Domain\Accounting\Models\Account;
 use App\Domain\Accounting\Models\FiscalPeriod;
 use App\Domain\Accounting\Models\FiscalYear;
 use App\Domain\Accounting\Models\JournalEntry;
-use App\Domain\Accounting\Models\JournalEntryLine;
-use App\Domain\Billing\Enums\InvoiceStatus;
 use App\Domain\Billing\Enums\PaymentMethod;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\InvoiceLine;

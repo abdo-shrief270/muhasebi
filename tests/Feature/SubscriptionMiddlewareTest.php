@@ -29,7 +29,7 @@ describe('CheckSubscription middleware', function (): void {
 
         app()->instance('tenant.id', $this->tenant->id);
 
-        $middleware = new CheckSubscription();
+        $middleware = new CheckSubscription;
         $request = Request::create('/test', 'GET');
 
         $response = $middleware->handle($request, fn ($req) => new Response('OK', 200));
@@ -46,7 +46,7 @@ describe('CheckSubscription middleware', function (): void {
 
         app()->instance('tenant.id', $this->tenant->id);
 
-        $middleware = new CheckSubscription();
+        $middleware = new CheckSubscription;
         $request = Request::create('/test', 'GET');
 
         $response = $middleware->handle($request, fn ($req) => new Response('OK', 200));
@@ -60,7 +60,7 @@ describe('CheckSubscription middleware', function (): void {
     it('blocks access with no subscription', function (): void {
         app()->instance('tenant.id', $this->tenant->id);
 
-        $middleware = new CheckSubscription();
+        $middleware = new CheckSubscription;
         $request = Request::create('/test', 'GET');
 
         $response = $middleware->handle($request, fn ($req) => new Response('OK', 200));
@@ -81,7 +81,7 @@ describe('CheckSubscription middleware', function (): void {
 
         app()->instance('tenant.id', $this->tenant->id);
 
-        $middleware = new CheckSubscription();
+        $middleware = new CheckSubscription;
         $request = Request::create('/test', 'GET');
 
         $response = $middleware->handle($request, fn ($req) => new Response('OK', 200));

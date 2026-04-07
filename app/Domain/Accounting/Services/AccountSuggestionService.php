@@ -6,6 +6,7 @@ namespace App\Domain\Accounting\Services;
 
 use App\Domain\Accounting\Enums\JournalEntryStatus;
 use App\Domain\Accounting\Models\AccountSuggestion;
+use Illuminate\Support\Facades\DB;
 
 /**
  * AI-powered transaction categorization.
@@ -115,7 +116,7 @@ class AccountSuggestionService
         $tenantId = (int) app('tenant.id');
         $learned = 0;
 
-        $entries = \Illuminate\Support\Facades\DB::table('journal_entry_lines')
+        $entries = DB::table('journal_entry_lines')
             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
             ->where('journal_entries.tenant_id', $tenantId)
             ->where('journal_entries.status', JournalEntryStatus::Posted->value)

@@ -29,7 +29,7 @@ class EtaApiService
         $settings = $this->settingsService->ensureEnabled();
         $token = $this->getAccessToken($settings);
 
-        $response = $this->makeRequest('POST', $settings->getBaseUrl() . '/documentsubmissions', [
+        $response = $this->makeRequest('POST', $settings->getBaseUrl().'/documentsubmissions', [
             'documents' => $documents,
         ], $token);
 
@@ -42,8 +42,8 @@ class EtaApiService
 
             throw ValidationException::withMessages([
                 'eta' => [
-                    'Failed to submit documents to ETA. Status: ' . $response->status(),
-                    'فشل إرسال المستندات إلى مصلحة الضرائب. الحالة: ' . $response->status(),
+                    'Failed to submit documents to ETA. Status: '.$response->status(),
+                    'فشل إرسال المستندات إلى مصلحة الضرائب. الحالة: '.$response->status(),
                 ],
             ]);
         }
@@ -63,7 +63,7 @@ class EtaApiService
         $settings = $this->settingsService->ensureEnabled();
         $token = $this->getAccessToken($settings);
 
-        $response = $this->makeRequest('GET', $settings->getBaseUrl() . "/documents/{$etaUuid}/raw", token: $token);
+        $response = $this->makeRequest('GET', $settings->getBaseUrl()."/documents/{$etaUuid}/raw", token: $token);
 
         if (! $response->successful()) {
             Log::error('ETA document status check failed.', [
@@ -94,7 +94,7 @@ class EtaApiService
         $settings = $this->settingsService->ensureEnabled();
         $token = $this->getAccessToken($settings);
 
-        $response = $this->makeRequest('GET', $settings->getBaseUrl() . "/documentsubmissions/{$submissionUuid}", token: $token);
+        $response = $this->makeRequest('GET', $settings->getBaseUrl()."/documentsubmissions/{$submissionUuid}", token: $token);
 
         if (! $response->successful()) {
             Log::error('ETA submission status check failed.', [
@@ -125,7 +125,7 @@ class EtaApiService
         $settings = $this->settingsService->ensureEnabled();
         $token = $this->getAccessToken($settings);
 
-        $response = $this->makeRequest('PUT', $settings->getBaseUrl() . "/documents/state/{$etaUuid}/state", [
+        $response = $this->makeRequest('PUT', $settings->getBaseUrl()."/documents/state/{$etaUuid}/state", [
             'status' => 'cancelled',
             'reason' => $reason,
         ], $token);
@@ -162,7 +162,7 @@ class EtaApiService
 
         $response = $this->makeRequest(
             'GET',
-            $settings->getBaseUrl() . "/documents/recent?PageSize={$pageSize}&PageNo={$page}",
+            $settings->getBaseUrl()."/documents/recent?PageSize={$pageSize}&PageNo={$page}",
             token: $token,
         );
 

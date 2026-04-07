@@ -44,8 +44,8 @@ class SubscriptionPaymentFactory extends Factory
     {
         return $this->state(fn () => [
             'status' => PaymentStatus::Completed,
-            'gateway_transaction_id' => 'txn_' . fake()->unique()->numerify('##########'),
-            'gateway_order_id' => 'ord_' . fake()->unique()->numerify('########'),
+            'gateway_transaction_id' => 'txn_'.fake()->unique()->numerify('##########'),
+            'gateway_order_id' => 'ord_'.fake()->unique()->numerify('########'),
             'payment_method_type' => fake()->randomElement(['card', 'wallet', 'bank_transfer']),
             'paid_at' => now(),
             'receipt_url' => fake()->optional(0.5)->url(),
@@ -70,7 +70,7 @@ class SubscriptionPaymentFactory extends Factory
     {
         return $this->state(fn () => [
             'status' => PaymentStatus::Refunded,
-            'gateway_transaction_id' => 'txn_' . fake()->unique()->numerify('##########'),
+            'gateway_transaction_id' => 'txn_'.fake()->unique()->numerify('##########'),
             'paid_at' => now()->subDays(7),
             'refunded_at' => now(),
         ]);

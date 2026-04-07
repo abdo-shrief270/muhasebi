@@ -6,7 +6,6 @@ namespace App\Domain\Investor\Models;
 
 use App\Domain\Investor\Enums\DistributionStatus;
 use App\Domain\Shared\Traits\BelongsToTenant;
-use App\Domain\Tenant\Models\Tenant;
 use Database\Factories\ProfitDistributionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
@@ -34,8 +33,8 @@ use Spatie\Activitylog\Support\LogOptions;
 ])]
 class ProfitDistribution extends Model
 {
-    use HasFactory;
     use BelongsToTenant;
+    use HasFactory;
     use LogsActivity;
 
     /** @var array<string, mixed> */

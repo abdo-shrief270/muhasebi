@@ -11,6 +11,7 @@ use Illuminate\Console\Command;
 class RetryStuckWebhooksCommand extends Command
 {
     protected $signature = 'webhooks:retry-stuck {--hours=2 : Re-queue deliveries stuck longer than N hours}';
+
     protected $description = 'Retry webhook deliveries stuck in "retrying" status past their next_retry_at';
 
     public function handle(): int
@@ -23,6 +24,7 @@ class RetryStuckWebhooksCommand extends Command
 
         if ($stuck->isEmpty()) {
             $this->info('No stuck webhook deliveries found.');
+
             return self::SUCCESS;
         }
 
@@ -34,6 +36,7 @@ class RetryStuckWebhooksCommand extends Command
         }
 
         $this->info('Done.');
+
         return self::SUCCESS;
     }
 }

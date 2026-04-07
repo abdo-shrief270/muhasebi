@@ -26,13 +26,13 @@ return new class extends Migration
             });
         }
 
-        if (Schema::hasTable('fiscal_years') && !Schema::hasColumn('fiscal_years', 'deleted_at')) {
+        if (Schema::hasTable('fiscal_years') && ! Schema::hasColumn('fiscal_years', 'deleted_at')) {
             Schema::table('fiscal_years', function (Blueprint $table) {
                 $table->softDeletes();
             });
         }
 
-        if (Schema::hasTable('fiscal_periods') && !Schema::hasColumn('fiscal_periods', 'deleted_at')) {
+        if (Schema::hasTable('fiscal_periods') && ! Schema::hasColumn('fiscal_periods', 'deleted_at')) {
             Schema::table('fiscal_periods', function (Blueprint $table) {
                 $table->softDeletes();
             });

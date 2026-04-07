@@ -5,15 +5,17 @@ declare(strict_types=1);
 namespace App\Domain\Tenant\Models;
 
 use App\Domain\Shared\Enums\TenantStatus;
+use App\Models\User;
 use Database\Factories\TenantFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 #[Table('tenants')]
 #[Fillable([
@@ -45,8 +47,8 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 class Tenant extends Model
 {
     use HasFactory;
-    use SoftDeletes;
     use LogsActivity;
+    use SoftDeletes;
 
     /** @var array<string, mixed> */
     protected $attributes = [
@@ -71,19 +73,19 @@ class Tenant extends Model
 
     public function users(): HasMany
     {
-        return $this->hasMany(\App\Models\User::class);
+        return $this->hasMany(User::class);
     }
 
     // ──────────────────────────────────────
     // Scopes
     // ──────────────────────────────────────
 
-    public function scopeActive(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', TenantStatus::Active);
     }
 
-    public function scopeAccessible(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    public function scopeAccessible(Builder $query): Builder
     {
         return $query->whereIn('status', [TenantStatus::Active, TenantStatus::Trial]);
     }

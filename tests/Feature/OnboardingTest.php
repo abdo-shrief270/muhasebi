@@ -6,7 +6,6 @@ use App\Domain\Accounting\Models\Account;
 use App\Domain\Accounting\Models\FiscalYear;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Client\Models\Client;
-use App\Domain\Notification\Models\OnboardingStep;
 use App\Models\User;
 
 beforeEach(function (): void {

@@ -49,6 +49,7 @@ class PurgeTrashedTenantsCommand extends Command
 
         if ($tenants->isEmpty()) {
             $this->info('No tenants to purge.');
+
             return self::SUCCESS;
         }
 
@@ -56,6 +57,7 @@ class PurgeTrashedTenantsCommand extends Command
 
         if (! $this->option('force') && ! $this->confirm('Permanently delete these tenants and ALL their data?')) {
             $this->info('Aborted.');
+
             return self::SUCCESS;
         }
 

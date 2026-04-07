@@ -10,7 +10,6 @@ use App\Domain\Billing\Enums\InvoiceStatus;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\Payment;
 use App\Domain\Client\Models\Client;
-use App\Domain\Onboarding\Models\OnboardingStep;
 use App\Domain\Subscription\Enums\SubscriptionStatus;
 use App\Domain\Subscription\Models\Subscription;
 use Carbon\Carbon;
@@ -169,12 +168,12 @@ class DashboardService
                 SubscriptionStatus::Active,
                 SubscriptionStatus::PastDue,
             ])
-            ->orderByRaw("CASE
+            ->orderByRaw('CASE
                 WHEN status = ? THEN 1
                 WHEN status = ? THEN 2
                 WHEN status = ? THEN 3
                 ELSE 4
-            END", [
+            END', [
                 SubscriptionStatus::Active->value,
                 SubscriptionStatus::Trial->value,
                 SubscriptionStatus::PastDue->value,

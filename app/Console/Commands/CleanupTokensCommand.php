@@ -10,6 +10,7 @@ use Laravel\Sanctum\PersonalAccessToken;
 class CleanupTokensCommand extends Command
 {
     protected $signature = 'tokens:cleanup {--days=7 : Delete tokens older than N days}';
+
     protected $description = 'Clean up expired and old impersonation tokens';
 
     public function handle(): int

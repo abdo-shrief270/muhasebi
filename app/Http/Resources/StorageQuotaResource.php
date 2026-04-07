@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Domain\Document\Models\StorageQuota;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Domain\Document\Models\StorageQuota */
+/** @mixin StorageQuota */
 class StorageQuotaResource extends JsonResource
 {
     /** @return array<string, mixed> */

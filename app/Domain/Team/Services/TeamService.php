@@ -82,7 +82,10 @@ class TeamService
         ]);
 
         // Assign Spatie role
-        try { $user->assignRole($userRole->value); } catch (\Throwable) {}
+        try {
+            $user->assignRole($userRole->value);
+        } catch (\Throwable) {
+        }
 
         $inviterName = Auth::user()?->name ?? 'مدير الحساب';
         $this->notificationService->sendTeamInvite($user->id, $inviterName);

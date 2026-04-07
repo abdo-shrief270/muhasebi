@@ -20,6 +20,7 @@ class DispatchWebhookJob implements ShouldQueue
     use SerializesModels;
 
     public int $tries = 1; // Retries handled by WebhookService
+
     public int $timeout = 30;
 
     public function __construct(

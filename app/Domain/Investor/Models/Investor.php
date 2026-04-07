@@ -27,8 +27,8 @@ use Spatie\Activitylog\Support\LogOptions;
 class Investor extends Model
 {
     use HasFactory;
-    use SoftDeletes;
     use LogsActivity;
+    use SoftDeletes;
 
     /** @return array<string, string> */
     protected function casts(): array

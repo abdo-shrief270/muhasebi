@@ -27,7 +27,7 @@ class TeamInviteMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "دعوة للانضمام إلى فريق العمل - محاسبي",
+            subject: 'دعوة للانضمام إلى فريق العمل - محاسبي',
         );
     }
 

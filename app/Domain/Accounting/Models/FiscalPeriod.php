@@ -33,10 +33,10 @@ use Spatie\Activitylog\Support\LogOptions;
 ])]
 class FiscalPeriod extends Model
 {
-    use HasFactory;
     use BelongsToTenant;
-    use SoftDeletes;
+    use HasFactory;
     use LogsActivity;
+    use SoftDeletes;
 
     /** @return array<string, string> */
     protected function casts(): array

@@ -14,10 +14,10 @@ use App\Domain\EInvoice\Models\EtaDocument;
 use App\Domain\EInvoice\Models\EtaItemCode;
 use App\Domain\EInvoice\Models\EtaSettings;
 use App\Domain\EInvoice\Models\EtaSubmission;
+use App\Domain\Tenant\Models\Tenant;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class EtaDocumentService
@@ -448,7 +448,7 @@ class EtaDocumentService
      */
     private function buildIssuerJson(EtaSettings $settings): array
     {
-        $tenant = \App\Domain\Tenant\Models\Tenant::query()->find((int) app('tenant.id'));
+        $tenant = Tenant::query()->find((int) app('tenant.id'));
 
         return [
             'type' => 'B',
@@ -583,7 +583,7 @@ class EtaDocumentService
             if (array_is_list($data)) {
                 $parts = array_map(fn ($item) => $this->canonicalize($item), $data);
 
-                return '"' . implode('"', $parts) . '"';
+                return '"'.implode('"', $parts).'"';
             }
 
             // Associative array: sort by key
@@ -592,7 +592,7 @@ class EtaDocumentService
             $parts = [];
 
             foreach ($data as $key => $value) {
-                $parts[] = '"' . strtoupper((string) $key) . '"';
+                $parts[] = '"'.strtoupper((string) $key).'"';
                 $parts[] = $this->canonicalize($value);
             }
 
@@ -600,18 +600,18 @@ class EtaDocumentService
         }
 
         if (is_float($data) || is_int($data)) {
-            return '"' . number_format((float) $data, 5, '.', '') . '"';
+            return '"'.number_format((float) $data, 5, '.', '').'"';
         }
 
         if (is_bool($data)) {
-            return '"' . ($data ? 'true' : 'false') . '"';
+            return '"'.($data ? 'true' : 'false').'"';
         }
 
         if (is_null($data)) {
             return '""';
         }
 
-        return '"' . (string) $data . '"';
+        return '"'.(string) $data.'"';
     }
 
     /**

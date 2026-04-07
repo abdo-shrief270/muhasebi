@@ -34,6 +34,7 @@ class BlogController extends Controller
             if ($newSlug) {
                 return response()->json(['redirect' => $newSlug], 301);
             }
+
             return response()->json(['message' => 'Post not found.'], 404);
         }
 

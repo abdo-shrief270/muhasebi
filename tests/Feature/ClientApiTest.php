@@ -3,8 +3,7 @@
 declare(strict_types=1);
 
 use App\Domain\Client\Models\Client;
-use App\Domain\Tenant\Models\Tenant;
-use App\Models\User;
+use Illuminate\Auth\Middleware\Authenticate;
 
 beforeEach(function (): void {
     $this->tenant = createTenant();
@@ -69,7 +68,7 @@ describe('GET /api/v1/clients', function (): void {
         Client::factory()->create(['tenant_id' => $this->tenant->id, 'city' => 'الإسكندرية']);
 
         $response = $this->withHeader('X-Tenant', $this->tenant->slug)
-            ->getJson('/api/v1/clients?city=' . urlencode('القاهرة'));
+            ->getJson('/api/v1/clients?city='.urlencode('القاهرة'));
 
         $response->assertOk()
             ->assertJsonCount(1, 'data');
@@ -91,7 +90,7 @@ describe('GET /api/v1/clients', function (): void {
         // Create a fresh test without auth
         $response = $this
             ->withHeader('X-Tenant', $this->tenant->slug)
-            ->withoutMiddleware(\Illuminate\Auth\Middleware\Authenticate::class . ':sanctum')
+            ->withoutMiddleware(Authenticate::class.':sanctum')
             ->getJson('/api/v1/clients');
 
         // Re-test without actingAs

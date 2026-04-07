@@ -28,7 +28,9 @@ class DynamicTemplateMail extends Mailable implements ShouldQueue
     use Queueable, SerializesModels;
 
     private ?EmailTemplate $template;
+
     private string $renderedSubject;
+
     private string $renderedBody;
 
     public function __construct(
@@ -73,11 +75,11 @@ class DynamicTemplateMail extends Mailable implements ShouldQueue
         }
 
         // Last resort: inline content
-        $message = e($this->data['message'] ?? 'No template configured for: ' . $this->templateKey);
+        $message = e($this->data['message'] ?? 'No template configured for: '.$this->templateKey);
 
         return new Content(
             view: 'emails.dynamic-template',
-            with: ['body' => '<p>' . $message . '</p>'],
+            with: ['body' => '<p>'.$message.'</p>'],
         );
     }
 }

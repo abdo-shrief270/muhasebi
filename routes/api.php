@@ -8,6 +8,7 @@ use App\Domain\Integration\Services\BeonChatService;
 use App\Domain\Tenant\Models\Tenant;
 use App\Http\Controllers\Api\V1\AccountController;
 use App\Http\Controllers\Api\V1\AccountSuggestionController;
+use App\Http\Controllers\Api\V1\ActivityLogController;
 use App\Http\Controllers\Api\V1\Admin\AdminActivityLogController;
 use App\Http\Controllers\Api\V1\Admin\AdminApiLogController;
 use App\Http\Controllers\Api\V1\Admin\AdminAuditLogController;
@@ -28,52 +29,51 @@ use App\Http\Controllers\Api\V1\Admin\AdminSubscriptionController;
 use App\Http\Controllers\Api\V1\Admin\AdminTenantController;
 use App\Http\Controllers\Api\V1\Admin\AdminUsageController;
 use App\Http\Controllers\Api\V1\Admin\AdminUserController;
+use App\Http\Controllers\Api\V1\AgingReminderController;
 use App\Http\Controllers\Api\V1\ApiDocsController;
+use App\Http\Controllers\Api\V1\BankReconciliationController;
+use App\Http\Controllers\Api\V1\BlogController;
+use App\Http\Controllers\Api\V1\BudgetController;
 use App\Http\Controllers\Api\V1\ClientController;
 use App\Http\Controllers\Api\V1\CsvImportController;
 use App\Http\Controllers\Api\V1\CurrencyController;
+use App\Http\Controllers\Api\V1\CustomReportController;
+use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DeviceTokenController;
+use App\Http\Controllers\Api\V1\DocumentController;
+use App\Http\Controllers\Api\V1\EtaController;
+use App\Http\Controllers\Api\V1\EtaItemCodeController;
 use App\Http\Controllers\Api\V1\ExportController;
 use App\Http\Controllers\Api\V1\FiscalPeriodController;
 use App\Http\Controllers\Api\V1\FiscalYearController;
 use App\Http\Controllers\Api\V1\HealthCheckController;
 use App\Http\Controllers\Api\V1\ImportController;
-use App\Http\Controllers\Api\V1\JournalEntryController;
-use App\Http\Controllers\Api\V1\DocumentController;
-use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\InvoiceController;
 use App\Http\Controllers\Api\V1\InvoiceSettingsController;
+use App\Http\Controllers\Api\V1\JournalEntryController;
+use App\Http\Controllers\Api\V1\LandingController;
+use App\Http\Controllers\Api\V1\LandingPageSettingsController;
 use App\Http\Controllers\Api\V1\MessagingController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\NotificationPreferenceController;
 use App\Http\Controllers\Api\V1\OnboardingController;
 use App\Http\Controllers\Api\V1\PaymentController;
-use App\Http\Controllers\Api\V1\PlanController;
-use App\Http\Controllers\Api\V1\RecurringInvoiceController;
-use App\Http\Controllers\Api\V1\ReportController;
-use App\Http\Controllers\Api\V1\RssFeedController;
-use App\Http\Controllers\Api\V1\SubscriptionController;
-use App\Http\Controllers\Api\V1\EtaController;
-use App\Http\Controllers\Api\V1\EtaItemCodeController;
 use App\Http\Controllers\Api\V1\PayrollController;
 use App\Http\Controllers\Api\V1\PayslipController;
-use App\Http\Controllers\Api\V1\TeamController;
-use App\Http\Controllers\Api\V1\TimeBillingController;
-use App\Http\Controllers\Api\V1\TimerController;
-use App\Http\Controllers\Api\V1\TimesheetController;
-use App\Http\Controllers\Api\V1\BlogController;
-use App\Http\Controllers\Api\V1\LandingController;
-use App\Http\Controllers\Api\V1\LandingPageSettingsController;
+use App\Http\Controllers\Api\V1\PlanController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalDocumentController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalInvoiceController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalMessageController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalNotificationController;
-use App\Http\Controllers\Api\V1\ActivityLogController;
-use App\Http\Controllers\Api\V1\AgingReminderController;
-use App\Http\Controllers\Api\V1\BankReconciliationController;
-use App\Http\Controllers\Api\V1\BudgetController;
-use App\Http\Controllers\Api\V1\CustomReportController;
+use App\Http\Controllers\Api\V1\RecurringInvoiceController;
+use App\Http\Controllers\Api\V1\ReportController;
+use App\Http\Controllers\Api\V1\RssFeedController;
+use App\Http\Controllers\Api\V1\SubscriptionController;
+use App\Http\Controllers\Api\V1\TeamController;
+use App\Http\Controllers\Api\V1\TimeBillingController;
+use App\Http\Controllers\Api\V1\TimerController;
+use App\Http\Controllers\Api\V1\TimesheetController;
 use App\Http\Controllers\Api\V1\TwoFactorController;
 use App\Http\Controllers\Api\V1\UserPreferenceController;
 use App\Http\Controllers\Api\V1\WebhookController;
@@ -137,11 +137,13 @@ Route::prefix('v1')->group(function (): void {
     // Beon.chat webhook (incoming messages, signature-verified)
     Route::post('/webhooks/beon-chat', function (Request $request) {
         $signature = $request->header('X-Beon-Signature') ?? $request->header('X-Webhook-Signature');
-        if (!$signature) {
-            \Log::warning('BeonChat webhook: missing signature', ['ip' => $request->ip()]);
+        if (! $signature) {
+            Log::warning('BeonChat webhook: missing signature', ['ip' => $request->ip()]);
+
             return response()->json(['error' => 'Missing signature'], 401);
         }
         $result = BeonChatService::handleWebhook($request->all(), $signature);
+
         return response()->json($result);
     })->name('webhooks.beon-chat');
 
@@ -293,6 +295,7 @@ Route::prefix('v1')->group(function (): void {
                         newInvoiceTotal: (float) $request->input('total'),
                         date: $request->input('date'),
                     );
+
                     return response()->json(['data' => ['warnings' => $warnings, 'can_proceed' => empty(array_filter($warnings, fn ($w) => $w['severity'] === 'error'))]]);
                 })->name('invoices.pre-check');
                 Route::post('invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])->name('invoices.cancel');
@@ -668,6 +671,7 @@ Route::prefix('v1')->group(function (): void {
             // Tenant Data Export (GDPR)
             Route::post('tenants/{tenant}/export', function (Tenant $tenant) {
                 Artisan::call('tenant:export', ['tenant' => $tenant->id]);
+
                 return response()->json(['message' => 'Export started. Check storage/app/exports/ for the file.']);
             })->name('tenants.export');
 

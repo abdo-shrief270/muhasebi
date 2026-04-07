@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Domain\Accounting\Models\JournalEntry;
+use App\Domain\Billing\Models\Invoice;
+use App\Domain\Client\Models\Client;
 use App\Domain\Shared\Services\ExportService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -20,7 +23,7 @@ class ExportController extends Controller
     {
         $tenantId = app('tenant.id');
 
-        $query = \App\Domain\Client\Models\Client::where('tenant_id', $tenantId)
+        $query = Client::where('tenant_id', $tenantId)
             ->orderBy('name');
 
         $headers = ['ID', 'Name', 'Email', 'Phone', 'Tax ID', 'Address', 'Created At'];
@@ -51,7 +54,7 @@ class ExportController extends Controller
     {
         $tenantId = app('tenant.id');
 
-        $query = \App\Domain\Billing\Models\Invoice::where('tenant_id', $tenantId)
+        $query = Invoice::where('tenant_id', $tenantId)
             ->with(['client:id,name'])
             ->orderByDesc('created_at');
 
@@ -95,7 +98,7 @@ class ExportController extends Controller
     {
         $tenantId = app('tenant.id');
 
-        $query = \App\Domain\Accounting\Models\JournalEntry::where('tenant_id', $tenantId)
+        $query = JournalEntry::where('tenant_id', $tenantId)
             ->with(['lines.account:id,name_ar,name_en,code'])
             ->orderByDesc('date');
 

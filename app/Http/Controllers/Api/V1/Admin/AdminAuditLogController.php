@@ -21,7 +21,7 @@ class AdminAuditLogController extends Controller
 
         // Filter by subject type (e.g., "CmsPage", "BlogPost", "User")
         if ($request->filled('subject_type')) {
-            $query->where('subject_type', 'like', '%' . $request->input('subject_type') . '%');
+            $query->where('subject_type', 'like', '%'.$request->input('subject_type').'%');
         }
 
         // Filter by subject ID
@@ -44,7 +44,7 @@ class AdminAuditLogController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('description', 'like', "%{$search}%")
-                  ->orWhere('subject_type', 'like', "%{$search}%");
+                    ->orWhere('subject_type', 'like', "%{$search}%");
             });
         }
 
@@ -91,12 +91,12 @@ class AdminAuditLogController extends Controller
         $total = Activity::where('created_at', '>=', $since)->count();
 
         $byEvent = Activity::where('created_at', '>=', $since)
-            ->selectRaw("event, COUNT(*) as count")
+            ->selectRaw('event, COUNT(*) as count')
             ->groupBy('event')
             ->pluck('count', 'event');
 
         $bySubject = Activity::where('created_at', '>=', $since)
-            ->selectRaw("subject_type, COUNT(*) as count")
+            ->selectRaw('subject_type, COUNT(*) as count')
             ->groupBy('subject_type')
             ->get()
             ->map(fn ($row) => [

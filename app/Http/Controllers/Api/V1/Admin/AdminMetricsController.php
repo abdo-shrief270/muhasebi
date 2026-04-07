@@ -42,7 +42,7 @@ class AdminMetricsController extends Controller
         ];
 
         try {
-            $result = DB::select("SELECT count(*) as count FROM information_schema.processlist WHERE db = ?", [config('database.connections.' . config('database.default') . '.database')]);
+            $result = DB::select('SELECT count(*) as count FROM information_schema.processlist WHERE db = ?', [config('database.connections.'.config('database.default').'.database')]);
             $dbStats['active_connections'] = $result[0]->count ?? null;
         } catch (\Throwable) {
             $dbStats['active_connections'] = null;

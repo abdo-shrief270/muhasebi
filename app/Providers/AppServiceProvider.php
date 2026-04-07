@@ -7,14 +7,19 @@ namespace App\Providers;
 use App\Domain\Accounting\Models\Account;
 use App\Domain\Accounting\Models\FiscalYear;
 use App\Domain\Accounting\Models\JournalEntry;
+use App\Domain\Accounting\Observers\AccountObserver;
+use App\Domain\Accounting\Observers\JournalEntryObserver;
 use App\Domain\Auth\Services\PermissionService;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\Payment;
+use App\Domain\Billing\Observers\InvoiceObserver;
+use App\Domain\Billing\Observers\PaymentObserver;
 use App\Domain\Client\Models\Client;
 use App\Domain\Document\Models\Document;
 use App\Domain\Payroll\Models\Employee;
 use App\Domain\Payroll\Models\PayrollRun;
 use App\Domain\Shared\Enums\UserRole;
+use App\Domain\Shared\Services\QueryAnalyzer;
 use App\Domain\TimeTracking\Models\TimesheetEntry;
 use App\Models\User;
 use App\Policies\AccountPolicy;
@@ -27,8 +32,8 @@ use App\Policies\JournalEntryPolicy;
 use App\Policies\PaymentPolicy;
 use App\Policies\PayrollRunPolicy;
 use App\Policies\TimesheetEntryPolicy;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -52,7 +57,7 @@ class AppServiceProvider extends ServiceProvider
         $this->registerModelObservers();
 
         // Register N+1 query analyzer (works in all environments)
-        \App\Domain\Shared\Services\QueryAnalyzer::register(threshold: 5);
+        QueryAnalyzer::register(threshold: 5);
 
         // Enforce strict model behavior in non-production
         Model::shouldBeStrict(! $this->app->isProduction());
@@ -69,7 +74,7 @@ class AppServiceProvider extends ServiceProvider
                 if ($query->time > 500) {
                     logger()->warning('Slow query detected', [
                         'sql' => $query->sql,
-                        'time' => $query->time . 'ms',
+                        'time' => $query->time.'ms',
                         'bindings' => $query->bindings,
                     ]);
                 }
@@ -117,10 +122,10 @@ class AppServiceProvider extends ServiceProvider
 
     private function registerModelObservers(): void
     {
-        Invoice::observe(\App\Domain\Billing\Observers\InvoiceObserver::class);
-        Payment::observe(\App\Domain\Billing\Observers\PaymentObserver::class);
-        JournalEntry::observe(\App\Domain\Accounting\Observers\JournalEntryObserver::class);
-        Account::observe(\App\Domain\Accounting\Observers\AccountObserver::class);
+        Invoice::observe(InvoiceObserver::class);
+        Payment::observe(PaymentObserver::class);
+        JournalEntry::observe(JournalEntryObserver::class);
+        Account::observe(AccountObserver::class);
     }
 
     private function registerPolicies(): void

@@ -40,8 +40,8 @@ use Spatie\Activitylog\Support\LogOptions;
 ])]
 class SubscriptionPayment extends Model
 {
-    use HasFactory;
     use BelongsToTenant;
+    use HasFactory;
     use LogsActivity;
 
     /** @return array<string, string> */

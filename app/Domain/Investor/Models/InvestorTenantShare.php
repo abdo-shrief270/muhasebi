@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Domain\Investor\Models;
 
 use App\Domain\Shared\Traits\BelongsToTenant;
-use App\Domain\Tenant\Models\Tenant;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Model;
@@ -37,5 +36,4 @@ class InvestorTenantShare extends Model
     {
         return $this->belongsTo(Investor::class);
     }
-
 }

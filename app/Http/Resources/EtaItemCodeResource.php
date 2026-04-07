@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Domain\EInvoice\Models\EtaItemCode;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Domain\EInvoice\Models\EtaItemCode */
+/** @mixin EtaItemCode */
 class EtaItemCodeResource extends JsonResource
 {
     /** @return array<string, mixed> */

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\Activitylog\Models\Activity;
@@ -30,7 +31,7 @@ class AdminActivityLogController extends Controller
             ->with('causer:id,name,email')
             ->whereJsonContains('properties->attributes->tenant_id', $tenantId)
             ->orWhere(function ($q) use ($tenantId) {
-                $q->whereHasMorph('causer', [\App\Models\User::class], function ($q) use ($tenantId) {
+                $q->whereHasMorph('causer', [User::class], function ($q) use ($tenantId) {
                     $q->withoutGlobalScopes()->where('tenant_id', $tenantId);
                 });
             })

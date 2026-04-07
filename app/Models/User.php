@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Domain\Client\Models\Client;
+use App\Domain\Payroll\Models\Employee;
 use App\Domain\Shared\Enums\UserRole;
 use App\Domain\Shared\Traits\BelongsToTenant;
 use App\Domain\Tenant\Models\Tenant;
+use App\Domain\TimeTracking\Models\Timer;
+use App\Domain\TimeTracking\Models\TimesheetEntry;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -18,8 +23,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
 
 #[Fillable([
@@ -43,18 +48,18 @@ use Spatie\Permission\Traits\HasRoles;
 #[Hidden(['password', 'remember_token', 'two_factor_recovery_codes'])]
 class User extends Authenticatable
 {
-    use HasApiTokens;
-    use HasFactory;
-    use HasRoles;
-    use Notifiable;
-    use SoftDeletes;
-    use LogsActivity;
-
     /**
      * Super admins are NOT tenant-scoped.
      * We apply BelongsToTenant manually for tenant-level users only.
      */
     use BelongsToTenant;
+    use HasApiTokens;
+    use HasFactory;
+    use HasRoles;
+    use LogsActivity;
+    use Notifiable;
+
+    use SoftDeletes;
 
     /** @var array<string, mixed> */
     protected $attributes = [
@@ -77,7 +82,7 @@ class User extends Authenticatable
         ];
     }
 
-        // ──────────────────────────────────────
+    // ──────────────────────────────────────
     // Relationships
     // ──────────────────────────────────────
 
@@ -88,34 +93,34 @@ class User extends Authenticatable
 
     public function client(): BelongsTo
     {
-        return $this->belongsTo(\App\Domain\Client\Models\Client::class);
+        return $this->belongsTo(Client::class);
     }
 
     public function employee(): HasOne
     {
-        return $this->hasOne(\App\Domain\Payroll\Models\Employee::class);
+        return $this->hasOne(Employee::class);
     }
 
     public function timesheetEntries(): HasMany
     {
-        return $this->hasMany(\App\Domain\TimeTracking\Models\TimesheetEntry::class);
+        return $this->hasMany(TimesheetEntry::class);
     }
 
     public function timers(): HasMany
     {
-        return $this->hasMany(\App\Domain\TimeTracking\Models\Timer::class);
+        return $this->hasMany(Timer::class);
     }
 
     // ──────────────────────────────────────
     // Scopes
     // ──────────────────────────────────────
 
-    public function scopeActive(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }
 
-    public function scopeSuperAdmins(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    public function scopeSuperAdmins(Builder $query): Builder
     {
         return $query->withoutGlobalScope('tenant')->where('role', UserRole::SuperAdmin);
     }
@@ -160,7 +165,6 @@ class User extends Authenticatable
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }
-
 
     protected static function newFactory(): UserFactory
     {

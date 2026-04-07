@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Domain\Client\Models;
 
+use App\Domain\ClientPortal\Models\Message;
 use App\Domain\Shared\Traits\BelongsToTenant;
 use App\Domain\Tenant\Models\Tenant;
+use App\Models\User;
 use Database\Factories\ClientFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,10 +39,10 @@ use Spatie\Activitylog\Support\LogOptions;
 ])]
 class Client extends Model
 {
-    use HasFactory;
-    use SoftDeletes;
     use BelongsToTenant;
+    use HasFactory;
     use LogsActivity;
+    use SoftDeletes;
 
     /** @return array<string, string> */
     protected function casts(): array
@@ -74,30 +77,30 @@ class Client extends Model
 
     public function portalUsers(): HasMany
     {
-        return $this->hasMany(\App\Models\User::class, 'client_id');
+        return $this->hasMany(User::class, 'client_id');
     }
 
     public function messages(): HasMany
     {
-        return $this->hasMany(\App\Domain\ClientPortal\Models\Message::class);
+        return $this->hasMany(Message::class);
     }
 
     // ──────────────────────────────────────
     // Scopes
     // ──────────────────────────────────────
 
-    public function scopeActive(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }
 
-    public function scopeSearch(\Illuminate\Database\Eloquent\Builder $query, ?string $term): \Illuminate\Database\Eloquent\Builder
+    public function scopeSearch(Builder $query, ?string $term): Builder
     {
         if (! $term) {
             return $query;
         }
 
-        return $query->where(function (\Illuminate\Database\Eloquent\Builder $q) use ($term): void {
+        return $query->where(function (Builder $q) use ($term): void {
             $q->where('name', 'ilike', "%{$term}%")
                 ->orWhere('trade_name', 'ilike', "%{$term}%")
                 ->orWhere('tax_id', 'ilike', "%{$term}%")

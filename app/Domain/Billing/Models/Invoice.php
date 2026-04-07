@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Domain\Billing\Models;
 
+use App\Domain\Accounting\Models\JournalEntry;
 use App\Domain\Billing\Enums\InvoiceStatus;
 use App\Domain\Billing\Enums\InvoiceType;
 use App\Domain\Client\Models\Client;
-use App\Domain\Accounting\Models\JournalEntry;
+use App\Domain\EInvoice\Models\EtaDocument;
 use App\Domain\Shared\Traits\BelongsToTenant;
 use App\Domain\Tenant\Models\Tenant;
 use App\Models\User;
@@ -50,10 +51,10 @@ use Spatie\Activitylog\Support\LogOptions;
 ])]
 class Invoice extends Model
 {
-    use HasFactory;
-    use SoftDeletes;
     use BelongsToTenant;
+    use HasFactory;
     use LogsActivity;
+    use SoftDeletes;
 
     /** @return array<string, string> */
     protected function casts(): array
@@ -146,7 +147,7 @@ class Invoice extends Model
 
     public function etaDocument(): HasOne
     {
-        return $this->hasOne(\App\Domain\EInvoice\Models\EtaDocument::class);
+        return $this->hasOne(EtaDocument::class);
     }
 
     // ──────────────────────────────────────

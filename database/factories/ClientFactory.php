@@ -34,10 +34,10 @@ class ClientFactory extends Factory
             ]),
             'address' => fake()->address(),
             'city' => fake()->randomElement(['القاهرة', 'الإسكندرية', 'الجيزة', 'المنصورة', 'أسيوط', 'طنطا']),
-            'phone' => '+20' . fake()->numberBetween(1000000000, 1999999999),
+            'phone' => '+20'.fake()->numberBetween(1000000000, 1999999999),
             'email' => fake()->unique()->companyEmail(),
             'contact_person' => fake()->name(),
-            'contact_phone' => '+20' . fake()->numberBetween(1000000000, 1999999999),
+            'contact_phone' => '+20'.fake()->numberBetween(1000000000, 1999999999),
             'notes' => fake()->optional(0.3)->sentence(),
             'is_active' => true,
         ];

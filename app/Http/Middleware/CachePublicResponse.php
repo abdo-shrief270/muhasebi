@@ -19,7 +19,7 @@ class CachePublicResponse
         $response = $next($request);
 
         if ($request->isMethod('GET') && $response->isSuccessful()) {
-            $response->headers->set('Cache-Control', "public, max-age={$maxAge}, s-maxage=" . ($maxAge * 2));
+            $response->headers->set('Cache-Control', "public, max-age={$maxAge}, s-maxage=".($maxAge * 2));
             $response->headers->set('Vary', 'Accept-Language, Accept');
 
             // ETag for conditional requests

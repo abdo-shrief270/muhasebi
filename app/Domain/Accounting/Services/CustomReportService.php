@@ -9,6 +9,7 @@ use App\Domain\Accounting\Enums\JournalEntryStatus;
 use App\Domain\Accounting\Enums\NormalBalance;
 use App\Domain\Accounting\Models\Account;
 use App\Domain\Accounting\Models\SavedReport;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class CustomReportService
@@ -118,7 +119,6 @@ class CustomReportService
      * Resolve which accounts to include based on config filters.
      *
      * @param  array<string, mixed>  $filters
-     * @return \Illuminate\Database\Eloquent\Collection
      */
     private function resolveAccounts(array $filters): \Illuminate\Database\Eloquent\Collection
     {
@@ -251,7 +251,7 @@ class CustomReportService
     /**
      * Query aggregated balances from journal entry lines.
      */
-    private function queryBalances(int $tenantId, array $accountIds, ?string $fromDate, ?string $toDate): \Illuminate\Support\Collection
+    private function queryBalances(int $tenantId, array $accountIds, ?string $fromDate, ?string $toDate): Collection
     {
         $query = DB::table('journal_entry_lines')
             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')

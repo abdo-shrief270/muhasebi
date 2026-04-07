@@ -8,9 +8,12 @@ use App\Domain\Auth\Requests\LoginRequest;
 use App\Domain\Auth\Requests\RegisterRequest;
 use App\Domain\Auth\Services\AuthService;
 use App\Domain\Auth\Services\PermissionService;
+use App\Domain\Tenant\Models\Tenant;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 
 class AuthController extends Controller
@@ -75,7 +78,7 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         $user = $request->user();
-        $tenant = $user->tenant_id ? \App\Domain\Tenant\Models\Tenant::find($user->tenant_id) : null;
+        $tenant = $user->tenant_id ? Tenant::find($user->tenant_id) : null;
 
         return response()->json([
             'data' => [
@@ -135,8 +138,8 @@ class AuthController extends Controller
 
         $user = $request->user();
 
-        if (! \Illuminate\Support\Facades\Hash::check($request->input('current_password'), $user->password)) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
+        if (! Hash::check($request->input('current_password'), $user->password)) {
+            throw ValidationException::withMessages([
                 'current_password' => [
                     'The current password is incorrect.',
                     'كلمة المرور الحالية غير صحيحة.',
@@ -144,7 +147,7 @@ class AuthController extends Controller
             ]);
         }
 
-        $user->update(['password' => \Illuminate\Support\Facades\Hash::make($request->input('password'))]);
+        $user->update(['password' => Hash::make($request->input('password'))]);
 
         return response()->json(['message' => 'Password changed successfully.']);
     }

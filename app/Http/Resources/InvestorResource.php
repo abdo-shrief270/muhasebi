@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Domain\Investor\Models\Investor;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Domain\Investor\Models\Investor */
+/** @mixin Investor */
 class InvestorResource extends JsonResource
 {
     /** @return array<string, mixed> */

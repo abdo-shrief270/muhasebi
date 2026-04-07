@@ -11,6 +11,7 @@ use App\Domain\Accounting\Models\JournalEntry;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class JournalEntryService
@@ -118,7 +119,7 @@ class JournalEntryService
                     try {
                         app(AccountSuggestionService::class)->learn($line['description'], $line['account_id']);
                     } catch (\Throwable $e) {
-                        \Illuminate\Support\Facades\Log::warning('Account suggestion learning failed', [
+                        Log::warning('Account suggestion learning failed', [
                             'description' => $line['description'] ?? '',
                             'account_id' => $line['account_id'] ?? null,
                             'error' => $e->getMessage(),
@@ -329,14 +330,14 @@ class JournalEntryService
 
         $maxNumber = JournalEntry::query()
             ->forTenant($tenantId)
-            ->where('entry_number', 'like', $prefix . '%')
+            ->where('entry_number', 'like', $prefix.'%')
             ->pluck('entry_number')
             ->map(fn (string $num): int => (int) str_replace($prefix, '', $num))
             ->max() ?? 0;
 
         $nextNumber = $maxNumber + 1;
 
-        return $prefix . str_pad((string) $nextNumber, 6, '0', STR_PAD_LEFT);
+        return $prefix.str_pad((string) $nextNumber, 6, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -400,7 +401,7 @@ class JournalEntryService
 
         if (bccomp($totalDebit, $totalCredit, 2) !== 0) {
             throw ValidationException::withMessages([
-                'lines' => ['Total debits must equal total credits. Debit: ' . $totalDebit . ', Credit: ' . $totalCredit],
+                'lines' => ['Total debits must equal total credits. Debit: '.$totalDebit.', Credit: '.$totalCredit],
             ]);
         }
     }

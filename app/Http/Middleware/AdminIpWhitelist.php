@@ -48,23 +48,23 @@ class AdminIpWhitelist
      */
     private function ipInRange(string $ip, string $range): bool
     {
-        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+        if (! filter_var($ip, FILTER_VALIDATE_IP)) {
             return false;
         }
 
-        if (!str_contains($range, '/')) {
+        if (! str_contains($range, '/')) {
             return $ip === $range;
         }
 
         // CIDR matching is IPv4-only; IPv6 addresses can only match exactly (above)
-        if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+        if (! filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
             return false;
         }
 
         [$subnet, $mask] = explode('/', $range, 2);
         $mask = (int) $mask;
 
-        if ($mask < 0 || $mask > 32 || !filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+        if ($mask < 0 || $mask > 32 || ! filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
             return false;
         }
 

@@ -31,6 +31,7 @@ class SyncPaymentStatusCommand extends Command
 
         if ($pending->isEmpty()) {
             $this->info('No pending payments to sync.');
+
             return self::SUCCESS;
         }
 

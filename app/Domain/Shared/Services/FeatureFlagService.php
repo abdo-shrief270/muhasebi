@@ -24,10 +24,14 @@ class FeatureFlagService
     public static function isEnabled(string $key, ?int $tenantId = null, ?int $planId = null): bool
     {
         $tenantId = $tenantId ?? app('tenant.id');
-        if (! $tenantId) return false;
+        if (! $tenantId) {
+            return false;
+        }
 
         $flag = self::getFlag($key);
-        if (! $flag) return false;
+        if (! $flag) {
+            return false;
+        }
 
         return $flag->isEnabledFor($tenantId, $planId);
     }

@@ -177,7 +177,7 @@ class TimesheetService
 
         $notes = $entry->notes;
         if ($reason) {
-            $notes = ($notes ? $notes . "\n" : '') . "سبب الرفض: {$reason}";
+            $notes = ($notes ? $notes."\n" : '')."سبب الرفض: {$reason}";
         }
 
         $entry->update([

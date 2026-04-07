@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Domain\Subscription\Models\Plan;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Domain\Subscription\Models\Plan */
+/** @mixin Plan */
 class PlanResource extends JsonResource
 {
     /** @return array<string, mixed> */

@@ -182,7 +182,7 @@ class PaymobService
      */
     private function authenticate(): string
     {
-        $response = Http::post(self::BASE_URL . '/auth/tokens', [
+        $response = Http::post(self::BASE_URL.'/auth/tokens', [
             'api_key' => config('services.paymob.api_key'),
         ]);
 
@@ -217,7 +217,7 @@ class PaymobService
     {
         $amountCents = (int) round((float) $payment->amount * 100);
 
-        $response = Http::post(self::BASE_URL . '/ecommerce/orders', [
+        $response = Http::post(self::BASE_URL.'/ecommerce/orders', [
             'auth_token' => $authToken,
             'delivery_needed' => false,
             'amount_cents' => $amountCents,
@@ -279,7 +279,7 @@ class PaymobService
             'state' => 'N/A',
         ];
 
-        $response = Http::post(self::BASE_URL . '/acceptance/payment_keys', [
+        $response = Http::post(self::BASE_URL.'/acceptance/payment_keys', [
             'auth_token' => $authToken,
             'amount_cents' => $amountCents,
             'expiration' => 3600,

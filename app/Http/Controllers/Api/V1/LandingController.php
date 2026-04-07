@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Domain\Cms\Models\CmsPage;
 use App\Domain\Cms\Models\SlugRedirect;
 use App\Domain\Cms\Services\CmsService;
+use App\Http\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CmsPageResource;
 use App\Http\Resources\FaqResource;
@@ -51,7 +51,7 @@ class LandingController extends Controller
                 ], 301);
             }
 
-            return \App\Http\ApiResponse::notFound(__('messages.error.not_found'));
+            return ApiResponse::notFound(__('messages.error.not_found'));
         }
 
         return response()->json([

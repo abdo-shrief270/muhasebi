@@ -23,7 +23,7 @@ class AccountFactory extends Factory
         return [
             'tenant_id' => Tenant::factory(),
             'parent_id' => null,
-            'code' => '1' . (string) fake()->numberBetween(1000, 999999),
+            'code' => '1'.(string) fake()->numberBetween(1000, 999999),
             'name_ar' => fake()->randomElement([
                 'النقدية',
                 'البنك',

@@ -34,8 +34,8 @@ use Spatie\Activitylog\Support\LogOptions;
 class Plan extends Model
 {
     use HasFactory;
-    use SoftDeletes;
     use LogsActivity;
+    use SoftDeletes;
 
     /** @return array<string, string> */
     protected function casts(): array

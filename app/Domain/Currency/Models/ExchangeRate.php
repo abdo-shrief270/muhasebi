@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Model;
 #[Fillable(['base_currency', 'target_currency', 'rate', 'effective_date', 'source'])]
 class ExchangeRate extends Model
 {
-
     protected function casts(): array
     {
         return ['rate' => 'decimal:6', 'effective_date' => 'date'];
@@ -21,7 +20,9 @@ class ExchangeRate extends Model
      */
     public static function getRate(string $from, string $to, ?string $date = null): ?float
     {
-        if ($from === $to) return 1.0;
+        if ($from === $to) {
+            return 1.0;
+        }
 
         $date = $date ?? now()->toDateString();
 
@@ -32,7 +33,9 @@ class ExchangeRate extends Model
             ->orderByDesc('effective_date')
             ->value('rate');
 
-        if ($rate) return (float) $rate;
+        if ($rate) {
+            return (float) $rate;
+        }
 
         // Inverse rate
         $inverseRate = static::where('base_currency', $to)

@@ -79,7 +79,7 @@ class InvoicePdfService
             'footerText' => $settings?->pdf_footer_text ?? null,
             'headerText' => $settings?->pdf_header_text ?? null,
             'accentColor' => $settings?->pdf_accent_color ?? ($tenant->primary_color ?? '#2c3e50'),
-            'logoUrl' => $tenant->logo_path ? storage_path('app/public/' . $tenant->logo_path) : null,
+            'logoUrl' => $tenant->logo_path ? storage_path('app/public/'.$tenant->logo_path) : null,
         ];
     }
 }

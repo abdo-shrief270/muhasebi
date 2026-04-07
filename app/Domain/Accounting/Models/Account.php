@@ -37,10 +37,10 @@ use Spatie\Activitylog\Support\LogOptions;
 ])]
 class Account extends Model
 {
-    use HasFactory;
-    use SoftDeletes;
     use BelongsToTenant;
+    use HasFactory;
     use LogsActivity;
+    use SoftDeletes;
 
     /** @return array<string, string> */
     protected function casts(): array

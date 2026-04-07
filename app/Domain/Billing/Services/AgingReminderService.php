@@ -195,7 +195,7 @@ class AgingReminderService
             ->when(isset($filters['milestone']), fn ($q) => $q->where('milestone', $filters['milestone']))
             ->when(isset($filters['status']), fn ($q) => $q->where('status', $filters['status']))
             ->when(isset($filters['from']), fn ($q) => $q->where('sent_at', '>=', $filters['from']))
-            ->when(isset($filters['to']), fn ($q) => $q->where('sent_at', '<=', $filters['to'] . ' 23:59:59'))
+            ->when(isset($filters['to']), fn ($q) => $q->where('sent_at', '<=', $filters['to'].' 23:59:59'))
             ->orderByDesc('sent_at')
             ->paginate($filters['per_page'] ?? 20);
     }

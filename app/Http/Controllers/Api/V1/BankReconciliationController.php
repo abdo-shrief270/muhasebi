@@ -10,6 +10,7 @@ use App\Domain\Accounting\Services\BankReconciliationService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -93,13 +94,13 @@ class BankReconciliationController extends Controller
             'journal_entry_line_id' => ['required', 'integer', 'exists:journal_entry_lines,id'],
         ]);
 
-        $tenantOwns = \Illuminate\Support\Facades\DB::table('journal_entry_lines')
+        $tenantOwns = DB::table('journal_entry_lines')
             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
             ->where('journal_entry_lines.id', $data['journal_entry_line_id'])
             ->where('journal_entries.tenant_id', app('tenant.id'))
             ->exists();
 
-        if (!$tenantOwns) {
+        if (! $tenantOwns) {
             return response()->json(['message' => 'Journal entry line not found.'], 404);
         }
 

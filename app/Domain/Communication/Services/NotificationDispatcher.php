@@ -4,9 +4,14 @@ declare(strict_types=1);
 
 namespace App\Domain\Communication\Services;
 
-use App\Domain\Shared\Models\AppNotification;
+use App\Domain\Notification\Services\PushNotificationService;
+use App\Events\NotificationBroadcast;
+use App\Mail\DynamicTemplateMail;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 /**
  * Unified notification dispatcher.
@@ -84,9 +89,9 @@ class NotificationDispatcher
         ?string $actionUrl,
     ): void {
         // Use the existing notifications table
-        \Illuminate\Support\Facades\DB::table('notifications')->insert([
-            'id' => \Illuminate\Support\Str::uuid()->toString(),
-            'type' => 'App\\Notifications\\' . \Illuminate\Support\Str::studly($type),
+        DB::table('notifications')->insert([
+            'id' => Str::uuid()->toString(),
+            'type' => 'App\\Notifications\\'.Str::studly($type),
             'notifiable_type' => User::class,
             'notifiable_id' => $userId,
             'data' => json_encode([
@@ -110,7 +115,7 @@ class NotificationDispatcher
             return;
         }
 
-        event(new \App\Events\NotificationBroadcast($userId, [
+        event(new NotificationBroadcast($userId, [
             'title' => $title,
             'body' => $body,
             'type' => $type,
@@ -126,8 +131,8 @@ class NotificationDispatcher
             return;
         }
 
-        \Illuminate\Support\Facades\Mail::to($user->email)->send(
-            new \App\Mail\DynamicTemplateMail('notification', $user->locale ?? 'ar', [
+        Mail::to($user->email)->send(
+            new DynamicTemplateMail('notification', $user->locale ?? 'ar', [
                 'name' => $user->name,
                 'subject' => $title,
                 'message' => $body,
@@ -147,7 +152,7 @@ class NotificationDispatcher
 
     private static function sendPush(int $userId, string $title, string $body, array $data = []): void
     {
-        $pushService = app(\App\Domain\Notification\Services\PushNotificationService::class);
+        $pushService = app(PushNotificationService::class);
 
         if (! $pushService->isConfigured()) {
             return;

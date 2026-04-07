@@ -93,7 +93,7 @@ class TimeBillingService
                     $rate = (string) ($defaultRate ?? $groupEntries->first()->hourly_rate ?? '0');
 
                     $lines[] = [
-                        'description' => $description . " ({$dateFrom} - {$dateTo})",
+                        'description' => $description." ({$dateFrom} - {$dateTo})",
                         'quantity' => $totalHours,
                         'unit_price' => $rate,
                         'vat_rate' => $vatRate,
@@ -105,7 +105,7 @@ class TimeBillingService
                     $rate = (string) ($defaultRate ?? $entry->hourly_rate ?? '0');
 
                     $lines[] = [
-                        'description' => $entry->task_description . ' - ' . $entry->date->toDateString(),
+                        'description' => $entry->task_description.' - '.$entry->date->toDateString(),
                         'quantity' => (string) $entry->hours,
                         'unit_price' => $rate,
                         'vat_rate' => $vatRate,

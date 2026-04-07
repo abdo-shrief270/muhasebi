@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 #[Fillable(['old_slug', 'new_slug', 'type'])]
 class SlugRedirect extends Model
 {
-
     public static function track(string $oldSlug, string $newSlug, string $type): void
     {
         if ($oldSlug === $newSlug) {

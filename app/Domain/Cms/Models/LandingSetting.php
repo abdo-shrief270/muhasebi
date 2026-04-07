@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Model;
 #[Fillable(['section', 'data'])]
 class LandingSetting extends Model
 {
-
     protected function casts(): array
     {
         return [

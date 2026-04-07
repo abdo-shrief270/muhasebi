@@ -34,7 +34,7 @@ class UserFactory extends Factory
             'client_id' => null,
             'is_active' => true,
             'remember_token' => Str::random(10),
-            'last_login_at' => null
+            'last_login_at' => null,
         ];
     }
 

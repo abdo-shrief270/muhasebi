@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 class ValidateEnvironmentCommand extends Command
 {
     protected $signature = 'env:validate {--strict : Fail on warnings too}';
+
     protected $description = 'Validate environment configuration and service connectivity';
 
     private const REQUIRED_VARS = [
@@ -86,7 +87,7 @@ class ValidateEnvironmentCommand extends Command
 
         // 4. Storage
         try {
-            $testFile = 'health_check_' . uniqid() . '.tmp';
+            $testFile = 'health_check_'.uniqid().'.tmp';
             Storage::put($testFile, 'ok');
             Storage::delete($testFile);
             $this->line('  ✓ Storage');
@@ -116,15 +117,18 @@ class ValidateEnvironmentCommand extends Command
         $this->line('');
         if ($errors > 0) {
             $this->error("Failed: {$errors} error(s), {$warnings} warning(s)");
+
             return 1;
         }
 
         if ($warnings > 0 && $this->option('strict')) {
             $this->warn("Strict mode: {$warnings} warning(s) treated as errors");
+
             return 1;
         }
 
         $this->info("Passed: 0 errors, {$warnings} warning(s)");
+
         return 0;
     }
 }

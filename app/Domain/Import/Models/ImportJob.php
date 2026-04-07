@@ -29,9 +29,15 @@ class ImportJob extends Model
         ];
     }
 
-    public function user(): BelongsTo { return $this->belongsTo(User::class); }
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 
-    public function scopePending($query) { return $query->where('status', 'pending'); }
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
 
     public function markProcessing(): void
     {

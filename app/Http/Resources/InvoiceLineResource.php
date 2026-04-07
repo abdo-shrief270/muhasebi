@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Domain\Billing\Models\InvoiceLine;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Domain\Billing\Models\InvoiceLine */
+/** @mixin InvoiceLine */
 class InvoiceLineResource extends JsonResource
 {
     /** @return array<string, mixed> */

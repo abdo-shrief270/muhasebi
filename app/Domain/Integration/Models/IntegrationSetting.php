@@ -37,6 +37,7 @@ class IntegrationSetting extends Model
     public static function isActive(string $provider): bool
     {
         $setting = static::forProvider($provider);
+
         return $setting && $setting->is_enabled && ! empty($setting->credentials);
     }
 
@@ -46,6 +47,7 @@ class IntegrationSetting extends Model
     public static function credential(string $provider, string $key, mixed $default = null): mixed
     {
         $setting = static::forProvider($provider);
+
         return $setting?->credentials[$key] ?? $default;
     }
 
@@ -55,6 +57,7 @@ class IntegrationSetting extends Model
     public static function configValue(string $provider, string $key, mixed $default = null): mixed
     {
         $setting = static::forProvider($provider);
+
         return $setting?->config[$key] ?? $default;
     }
 

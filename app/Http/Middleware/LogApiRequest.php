@@ -50,7 +50,7 @@ class LogApiRequest
             ApiRequestLog::create([
                 'request_id' => $response->headers->get('X-Request-Id', bin2hex(random_bytes(12))),
                 'method' => $request->method(),
-                'path' => '/' . ltrim($path, '/'),
+                'path' => '/'.ltrim($path, '/'),
                 'status_code' => $response->getStatusCode(),
                 'duration_ms' => $durationMs,
                 'ip' => $request->ip(),
@@ -121,7 +121,7 @@ class LogApiRequest
             } elseif (is_array($value)) {
                 $data[$key] = $this->redactArray($value);
             } elseif (is_string($value) && strlen($value) > 500) {
-                $data[$key] = mb_substr($value, 0, 200) . '...[truncated]';
+                $data[$key] = mb_substr($value, 0, 200).'...[truncated]';
             }
         }
 
@@ -136,6 +136,7 @@ class LogApiRequest
         }
 
         $json = json_decode($content, true);
+
         return $json['message'] ?? $json['error'] ?? '';
     }
 }

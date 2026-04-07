@@ -20,7 +20,7 @@ class JournalEntryFactory extends Factory
         return [
             'tenant_id' => Tenant::factory(),
             'fiscal_period_id' => null,
-            'entry_number' => 'JE-' . (string) fake()->unique()->numberBetween(1000, 9999),
+            'entry_number' => 'JE-'.(string) fake()->unique()->numberBetween(1000, 9999),
             'date' => today(),
             'description' => fake()->randomElement([
                 'قيد يومية عام',

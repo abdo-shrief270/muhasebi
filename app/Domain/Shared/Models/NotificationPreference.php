@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['user_id', 'channel', 'type', 'enabled'])]
 class NotificationPreference extends Model
 {
-
     protected function casts(): array
     {
         return ['enabled' => 'boolean'];

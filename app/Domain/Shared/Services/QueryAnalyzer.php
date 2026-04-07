@@ -35,14 +35,20 @@ class QueryAnalyzer
      */
     public static function register(int $threshold = 5): void
     {
-        if (self::$registered) return;
-        if (! config('app.debug') && ! config('api.logging.enabled')) return;
+        if (self::$registered) {
+            return;
+        }
+        if (! config('app.debug') && ! config('api.logging.enabled')) {
+            return;
+        }
 
         self::$threshold = $threshold;
         self::$registered = true;
 
         DB::listen(function ($query) {
-            if (count(self::$queryPatterns) >= self::$maxPatterns) return;
+            if (count(self::$queryPatterns) >= self::$maxPatterns) {
+                return;
+            }
 
             // Normalize: replace specific values with ?
             $normalized = preg_replace('/= ?\?|= ?\'[^\']*\'|= ?[0-9]+/', '= ?', $query->sql);
@@ -83,15 +89,18 @@ class QueryAnalyzer
             }
         }
 
-        if (empty($violations)) return;
+        if (empty($violations)) {
+            return;
+        }
 
         // Sort by count descending
         usort($violations, fn ($a, $b) => $b['count'] - $a['count']);
 
         $requestPath = '';
         try {
-            $requestPath = request()?->method() . ' ' . request()?->path();
-        } catch (\Throwable) {}
+            $requestPath = request()?->method().' '.request()?->path();
+        } catch (\Throwable) {
+        }
 
         $report = [
             'request' => $requestPath,
@@ -109,7 +118,7 @@ class QueryAnalyzer
         if ($violations[0]['count'] >= self::$threshold * 3) {
             ErrorReporter::alert(
                 title: 'Severe N+1 Query Detected',
-                message: "Request: {$requestPath}\nQuery executed {$violations[0]['count']} times:\n" . mb_substr($violations[0]['sql'], 0, 200),
+                message: "Request: {$requestPath}\nQuery executed {$violations[0]['count']} times:\n".mb_substr($violations[0]['sql'], 0, 200),
                 level: 'warning',
                 context: ['violations' => count($violations)],
             );

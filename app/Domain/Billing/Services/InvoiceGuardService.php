@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Billing\Services;
 
+use App\Domain\Accounting\Services\FiscalPeriodLockService;
 use App\Domain\Billing\Enums\InvoiceStatus;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Client\Models\Client;
@@ -28,16 +29,22 @@ class InvoiceGuardService
 
         // 1. Credit limit check
         $creditWarning = self::checkCreditLimit($tenantId, $clientId, $newInvoiceTotal);
-        if ($creditWarning) $warnings[] = $creditWarning;
+        if ($creditWarning) {
+            $warnings[] = $creditWarning;
+        }
 
         // 2. Duplicate invoice detection
         $dupeWarning = self::checkDuplicate($tenantId, $clientId, $newInvoiceTotal);
-        if ($dupeWarning) $warnings[] = $dupeWarning;
+        if ($dupeWarning) {
+            $warnings[] = $dupeWarning;
+        }
 
         // 3. Fiscal period lock check
         if ($date) {
             $lockWarning = self::checkFiscalPeriod($tenantId, $date);
-            if ($lockWarning) $warnings[] = $lockWarning;
+            if ($lockWarning) {
+                $warnings[] = $lockWarning;
+            }
         }
 
         return $warnings;
@@ -144,7 +151,7 @@ class InvoiceGuardService
      */
     public static function checkFiscalPeriod(int $tenantId, string $date): ?array
     {
-        if (! \App\Domain\Accounting\Services\FiscalPeriodLockService::isPeriodOpen($tenantId, $date)) {
+        if (! FiscalPeriodLockService::isPeriodOpen($tenantId, $date)) {
             return [
                 'type' => 'fiscal_period_locked',
                 'severity' => 'error',

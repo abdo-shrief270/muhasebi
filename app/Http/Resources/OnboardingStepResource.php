@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Domain\Notification\Models\OnboardingStep;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Domain\Notification\Models\OnboardingStep */
+/** @mixin OnboardingStep */
 class OnboardingStepResource extends JsonResource
 {
     /** @return array<string, mixed> */

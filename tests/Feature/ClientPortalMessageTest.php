@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Domain\Client\Models\Client;
-use App\Domain\ClientPortal\Enums\MessageDirection;
 use App\Domain\ClientPortal\Models\Message;
 use App\Domain\Shared\Enums\UserRole;
 use App\Models\User;

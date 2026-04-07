@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1\Admin;
 
-use App\Domain\Billing\Models\Invoice;
+use App\Domain\Blog\Models\BlogPost;
 use App\Domain\Cms\Models\ContactSubmission;
-use App\Domain\Shared\Enums\TenantStatus;
 use App\Domain\Tenant\Models\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -193,7 +192,7 @@ class AdminBatchController extends Controller
             'ids.*' => 'integer',
         ]);
 
-        $posts = \App\Domain\Blog\Models\BlogPost::where('tenant_id', app('tenant.id'))->whereIn('id', $request->input('ids'))->get();
+        $posts = BlogPost::where('tenant_id', app('tenant.id'))->whereIn('id', $request->input('ids'))->get();
 
         $count = 0;
         foreach ($posts as $post) {
@@ -228,7 +227,7 @@ class AdminBatchController extends Controller
             $updates['published_at'] = now();
         }
 
-        $count = \App\Domain\Blog\Models\BlogPost::where('tenant_id', app('tenant.id'))
+        $count = BlogPost::where('tenant_id', app('tenant.id'))
             ->whereIn('id', $request->input('ids'))
             ->update($updates);
 

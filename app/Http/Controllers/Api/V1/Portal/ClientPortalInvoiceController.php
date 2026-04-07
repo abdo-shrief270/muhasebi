@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\Portal;
 
 use App\Domain\Billing\Models\Invoice;
+use App\Domain\Billing\Services\InvoicePdfService;
 use App\Domain\ClientPortal\Services\ClientPaymentService;
 use App\Domain\ClientPortal\Services\ClientPortalService;
 use App\Http\Controllers\Controller;
@@ -68,6 +69,6 @@ class ClientPortalInvoiceController extends Controller
             abort(403);
         }
 
-        return app(\App\Domain\Billing\Services\InvoicePdfService::class)->download($invoice);
+        return app(InvoicePdfService::class)->download($invoice);
     }
 }

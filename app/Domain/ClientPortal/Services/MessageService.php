@@ -13,7 +13,6 @@ use App\Domain\Notification\Services\NotificationService;
 use App\Domain\Shared\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Auth;
 
 class MessageService
 {

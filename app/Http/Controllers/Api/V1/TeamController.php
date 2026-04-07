@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Domain\Auth\Services\PermissionService;
+use App\Domain\Shared\Enums\UserRole;
 use App\Domain\Team\Services\TeamService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Team\InviteTeamMemberRequest;
@@ -72,10 +74,10 @@ class TeamController extends Controller
             'role' => ['required', 'string', 'exists:roles,name'],
         ]);
 
-        \App\Domain\Auth\Services\PermissionService::assignRole($user, $request->input('role'));
+        PermissionService::assignRole($user, $request->input('role'));
 
         // Also update the UserRole enum field for backward compat
-        $enumRole = \App\Domain\Shared\Enums\UserRole::tryFrom($request->input('role'));
+        $enumRole = UserRole::tryFrom($request->input('role'));
         if ($enumRole) {
             $user->update(['role' => $enumRole]);
         }

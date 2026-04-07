@@ -19,7 +19,7 @@ return new class extends Migration
         ];
 
         foreach ($tables as $child => $parent) {
-            Schema::table($child, function (Blueprint $table) use ($child): void {
+            Schema::table($child, function (Blueprint $table): void {
                 $table->foreignId('tenant_id')
                     ->after('id')
                     ->constrained()
@@ -50,7 +50,7 @@ return new class extends Migration
     public function down(): void
     {
         foreach (['bank_statement_lines', 'budget_lines', 'journal_entry_lines', 'invoice_lines'] as $table) {
-            Schema::table($table, function (Blueprint $blueprint) use ($table): void {
+            Schema::table($table, function (Blueprint $blueprint): void {
                 $blueprint->dropConstrainedForeignId('tenant_id');
             });
         }

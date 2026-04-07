@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Log;
 class FawryService
 {
     private const SANDBOX_URL = 'https://atfawry.fawrystaging.com/ECommerceWeb/Fawry/payments';
+
     private const PRODUCTION_URL = 'https://www.atfawry.com/ECommerceWeb/Fawry/payments';
 
     /**
@@ -39,16 +40,16 @@ class FawryService
 
         $baseUrl = $sandbox ? self::SANDBOX_URL : self::PRODUCTION_URL;
 
-        $merchantRefNum = $data['reference'] ?? 'MUH-' . time();
+        $merchantRefNum = $data['reference'] ?? 'MUH-'.time();
         $amount = number_format($data['amount'], 2, '.', '');
 
         // Build signature: merchantCode + merchantRefNum + customerProfileId + itemId + amount + securityKey
         $signatureString = $merchantCode
-            . $merchantRefNum
-            . ($data['customer_id'] ?? '')
-            . ($data['item_id'] ?? 'SUBSCRIPTION')
-            . $amount
-            . $securityKey;
+            .$merchantRefNum
+            .($data['customer_id'] ?? '')
+            .($data['item_id'] ?? 'SUBSCRIPTION')
+            .$amount
+            .$securityKey;
 
         $signature = hash('sha256', $signatureString);
 
@@ -95,9 +96,11 @@ class FawryService
             }
 
             Log::error('Fawry charge failed', ['status' => $response->status(), 'body' => $response->body()]);
-            return ['success' => false, 'error' => 'Fawry API error: ' . $response->status()];
+
+            return ['success' => false, 'error' => 'Fawry API error: '.$response->status()];
         } catch (\Throwable $e) {
             Log::error('Fawry exception', ['error' => $e->getMessage()]);
+
             return ['success' => false, 'error' => $e->getMessage()];
         }
     }
@@ -113,7 +116,7 @@ class FawryService
 
         $baseUrl = $sandbox ? self::SANDBOX_URL : self::PRODUCTION_URL;
 
-        $signature = hash('sha256', $merchantCode . $merchantRef . $securityKey);
+        $signature = hash('sha256', $merchantCode.$merchantRef.$securityKey);
 
         try {
             $response = Http::timeout(10)
@@ -142,17 +145,18 @@ class FawryService
 
         // Verify signature
         $expectedSignature = hash('sha256',
-            ($data['fawryRefNumber'] ?? '') .
-            ($data['merchantRefNum'] ?? '') .
-            ($data['paymentAmount'] ?? '') .
-            ($data['orderAmount'] ?? '') .
-            ($data['orderStatus'] ?? '') .
-            ($data['paymentMethod'] ?? '') .
+            ($data['fawryRefNumber'] ?? '').
+            ($data['merchantRefNum'] ?? '').
+            ($data['paymentAmount'] ?? '').
+            ($data['orderAmount'] ?? '').
+            ($data['orderStatus'] ?? '').
+            ($data['paymentMethod'] ?? '').
             $securityKey
         );
 
         if (! hash_equals($expectedSignature, $data['messageSignature'] ?? '')) {
             Log::warning('Fawry callback: invalid signature', ['ref' => $data['merchantRefNum'] ?? 'unknown']);
+
             return ['success' => false, 'error' => 'Invalid signature'];
         }
 
@@ -164,6 +168,7 @@ class FawryService
 
         if (! $payment) {
             Log::warning('Fawry callback: payment not found', ['ref' => $merchantRef]);
+
             return ['success' => false, 'error' => 'Payment not found'];
         }
 
@@ -173,11 +178,13 @@ class FawryService
 
         if ($status === 'PAID' || $status === 'DELIVERED') {
             app(SubscriptionService::class)->handlePaymentCompleted($payment);
+
             return ['success' => true, 'status' => 'completed'];
         }
 
         if (in_array($status, ['EXPIRED', 'CANCELED', 'FAILED'])) {
             app(SubscriptionService::class)->handlePaymentFailed($payment, "Fawry status: {$status}");
+
             return ['success' => true, 'status' => 'failed'];
         }
 

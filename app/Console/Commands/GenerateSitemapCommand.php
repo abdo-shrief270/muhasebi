@@ -22,14 +22,14 @@ class GenerateSitemapCommand extends Command
 
         // Static pages
         $urls->push(['loc' => $frontendUrl, 'priority' => '1.0', 'changefreq' => 'weekly']);
-        $urls->push(['loc' => $frontendUrl . '/blog', 'priority' => '0.8', 'changefreq' => 'daily']);
-        $urls->push(['loc' => $frontendUrl . '/contact', 'priority' => '0.6', 'changefreq' => 'monthly']);
-        $urls->push(['loc' => $frontendUrl . '/changelog', 'priority' => '0.5', 'changefreq' => 'weekly']);
+        $urls->push(['loc' => $frontendUrl.'/blog', 'priority' => '0.8', 'changefreq' => 'daily']);
+        $urls->push(['loc' => $frontendUrl.'/contact', 'priority' => '0.6', 'changefreq' => 'monthly']);
+        $urls->push(['loc' => $frontendUrl.'/changelog', 'priority' => '0.5', 'changefreq' => 'weekly']);
 
         // CMS pages
         CmsPage::published()->get()->each(function ($page) use ($urls, $frontendUrl) {
             $urls->push([
-                'loc' => $frontendUrl . '/' . $page->slug,
+                'loc' => $frontendUrl.'/'.$page->slug,
                 'lastmod' => $page->updated_at->toW3cString(),
                 'priority' => '0.6',
                 'changefreq' => 'monthly',
@@ -39,7 +39,7 @@ class GenerateSitemapCommand extends Command
         // Blog posts
         BlogPost::published()->latest('published_at')->get()->each(function ($post) use ($urls, $frontendUrl) {
             $urls->push([
-                'loc' => $frontendUrl . '/blog/' . $post->slug,
+                'loc' => $frontendUrl.'/blog/'.$post->slug,
                 'lastmod' => $post->updated_at->toW3cString(),
                 'priority' => '0.7',
                 'changefreq' => 'weekly',
@@ -47,8 +47,8 @@ class GenerateSitemapCommand extends Command
         });
 
         // Generate XML
-        $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-        $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
+        $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n";
 
         foreach ($urls as $url) {
             $xml .= "  <url>\n";

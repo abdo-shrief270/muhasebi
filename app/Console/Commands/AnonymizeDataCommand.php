@@ -7,7 +7,6 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 /**
  * Anonymizes PII (Personally Identifiable Information) in the database.
@@ -32,6 +31,7 @@ class AnonymizeDataCommand extends Command
         if (app()->isProduction() && ! $this->option('force')) {
             $this->error('REFUSED: This command cannot run in production without --force.');
             $this->error('This will PERMANENTLY destroy real user data.');
+
             return self::FAILURE;
         }
 
@@ -77,7 +77,7 @@ class AnonymizeDataCommand extends Command
                 DB::table('users')->where('id', $user->id)->update([
                     'name' => "مستخدم تجريبي {$i}",
                     'email' => "user{$i}@staging.muhasebi.test",
-                    'phone' => '+2010' . str_pad((string) ($i % 100000000), 8, '0', STR_PAD_LEFT),
+                    'phone' => '+2010'.str_pad((string) ($i % 100000000), 8, '0', STR_PAD_LEFT),
                     'password' => Hash::make('staging123'),
                     'two_factor_secret' => null,
                     'two_factor_recovery_codes' => null,
@@ -98,9 +98,9 @@ class AnonymizeDataCommand extends Command
                 DB::table('tenants')->where('id', $tenant->id)->update([
                     'name' => "شركة تجريبية {$i}",
                     'email' => "tenant{$i}@staging.muhasebi.test",
-                    'phone' => '+2012' . str_pad((string) ($i % 10000000), 7, '0', STR_PAD_LEFT),
-                    'tax_id' => $tenant->tax_id ? ('TAX' . str_pad((string) $i, 9, '0', STR_PAD_LEFT)) : null,
-                    'commercial_register' => $tenant->commercial_register ? ('CR' . str_pad((string) $i, 8, '0', STR_PAD_LEFT)) : null,
+                    'phone' => '+2012'.str_pad((string) ($i % 10000000), 7, '0', STR_PAD_LEFT),
+                    'tax_id' => $tenant->tax_id ? ('TAX'.str_pad((string) $i, 9, '0', STR_PAD_LEFT)) : null,
+                    'commercial_register' => $tenant->commercial_register ? ('CR'.str_pad((string) $i, 8, '0', STR_PAD_LEFT)) : null,
                     'address' => $tenant->address ? "عنوان تجريبي {$i}" : null,
                 ]);
             }
@@ -119,8 +119,8 @@ class AnonymizeDataCommand extends Command
                     'name' => "عميل {$i}",
                     'trade_name' => $client->trade_name ? "اسم تجاري {$i}" : null,
                     'email' => $client->email ? "client{$i}@staging.test" : null,
-                    'phone' => $client->phone ? ('+2011' . str_pad((string) ($i % 10000000), 7, '0', STR_PAD_LEFT)) : null,
-                    'tax_id' => $client->tax_id ? ('CT' . str_pad((string) $i, 9, '0', STR_PAD_LEFT)) : null,
+                    'phone' => $client->phone ? ('+2011'.str_pad((string) ($i % 10000000), 7, '0', STR_PAD_LEFT)) : null,
+                    'tax_id' => $client->tax_id ? ('CT'.str_pad((string) $i, 9, '0', STR_PAD_LEFT)) : null,
                     'address' => $client->address ? "شارع {$i}، القاهرة" : null,
                 ]);
             }
@@ -129,7 +129,9 @@ class AnonymizeDataCommand extends Command
 
     private function anonymizeContacts(): void
     {
-        if (! \Schema::hasTable('contact_submissions')) return;
+        if (! \Schema::hasTable('contact_submissions')) {
+            return;
+        }
 
         $count = DB::table('contact_submissions')->count();
         $this->info("  Anonymizing {$count} contact submissions...");
@@ -161,7 +163,9 @@ class AnonymizeDataCommand extends Command
 
     private function anonymizeEmployees(): void
     {
-        if (! \Schema::hasTable('employees')) return;
+        if (! \Schema::hasTable('employees')) {
+            return;
+        }
 
         $count = DB::table('employees')->count();
         $this->info("  Anonymizing {$count} employees...");
@@ -175,7 +179,7 @@ class AnonymizeDataCommand extends Command
                     $updates['email'] = "emp{$i}@staging.test";
                 }
                 if (\Schema::hasColumn('employees', 'phone')) {
-                    $updates['phone'] = '+2015' . str_pad((string) ($i % 10000000), 7, '0', STR_PAD_LEFT);
+                    $updates['phone'] = '+2015'.str_pad((string) ($i % 10000000), 7, '0', STR_PAD_LEFT);
                 }
                 if (\Schema::hasColumn('employees', 'national_id')) {
                     $updates['national_id'] = str_pad((string) $i, 14, '0', STR_PAD_LEFT);
@@ -191,7 +195,9 @@ class AnonymizeDataCommand extends Command
 
     private function anonymizeMessages(): void
     {
-        if (! \Schema::hasTable('messages')) return;
+        if (! \Schema::hasTable('messages')) {
+            return;
+        }
 
         $count = DB::table('messages')->count();
         $this->info("  Anonymizing {$count} messages...");
@@ -201,7 +207,9 @@ class AnonymizeDataCommand extends Command
 
     private function anonymizeActivityLogs(): void
     {
-        if (! \Schema::hasTable('activity_log')) return;
+        if (! \Schema::hasTable('activity_log')) {
+            return;
+        }
 
         // Remove activity log properties that may contain PII
         $count = DB::table('activity_log')->count();
@@ -212,7 +220,9 @@ class AnonymizeDataCommand extends Command
 
     private function anonymizeApiLogs(): void
     {
-        if (! \Schema::hasTable('api_request_logs')) return;
+        if (! \Schema::hasTable('api_request_logs')) {
+            return;
+        }
 
         $count = DB::table('api_request_logs')->count();
         $this->info("  Anonymizing {$count} API logs...");

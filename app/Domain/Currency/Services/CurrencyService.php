@@ -23,15 +23,19 @@ class CurrencyService
      * @param  string  $from  Source currency code (e.g. 'USD')
      * @param  string  $to  Target currency code (e.g. 'EGP')
      * @param  string|null  $date  Rate date (defaults to today)
-     * @return float|null  Converted amount, or null if rate unavailable
+     * @return float|null Converted amount, or null if rate unavailable
      */
     public static function convert(float $amount, string $from, string $to, ?string $date = null): ?float
     {
-        if ($from === $to) return $amount;
+        if ($from === $to) {
+            return $amount;
+        }
 
         $rate = ExchangeRate::getRate($from, $to, $date);
 
-        if ($rate === null) return null;
+        if ($rate === null) {
+            return null;
+        }
 
         return round($amount * $rate, 2);
     }
@@ -80,12 +84,15 @@ class CurrencyService
 
         try {
             $params = ['base' => $base];
-            if ($apiKey) $params['access_key'] = $apiKey;
+            if ($apiKey) {
+                $params['access_key'] = $apiKey;
+            }
 
             $response = Http::timeout(10)->get($apiUrl, $params);
 
             if (! $response->successful()) {
                 Log::warning('Currency rate fetch failed', ['status' => $response->status()]);
+
                 return 0;
             }
 
@@ -108,9 +115,11 @@ class CurrencyService
             }
 
             Log::info("Fetched {$stored} exchange rates for {$base}.");
+
             return $stored;
         } catch (\Throwable $e) {
             Log::error('Currency rate fetch error', ['error' => $e->getMessage()]);
+
             return 0;
         }
     }

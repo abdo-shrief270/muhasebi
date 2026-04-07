@@ -11,6 +11,7 @@ use Illuminate\Console\Command;
 class RecordUsageCommand extends Command
 {
     protected $signature = 'usage:record';
+
     protected $description = 'Record daily usage snapshot for all active tenants';
 
     public function handle(UsageService $usageService): int

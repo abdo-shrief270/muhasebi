@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domain\Cms\Models\CmsPage;
+use App\Domain\Cms\Models\SlugRedirect;
 
 describe('Public CMS Pages', function (): void {
 
@@ -48,7 +49,7 @@ describe('Public CMS Pages', function (): void {
             'is_published' => true,
         ]);
 
-        \App\Domain\Cms\Models\SlugRedirect::create([
+        SlugRedirect::create([
             'old_slug' => 'old-terms',
             'new_slug' => 'new-terms',
             'type' => 'page',

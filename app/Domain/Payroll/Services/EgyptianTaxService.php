@@ -8,7 +8,9 @@ class EgyptianTaxService
 {
     // 2025 Egyptian social insurance rates
     private const SI_EMPLOYEE_RATE = '0.11';
+
     private const SI_EMPLOYER_RATE = '0.1875';
+
     private const SI_MAX_BASIC_SALARY = '12600.00';
 
     // Annual personal exemption

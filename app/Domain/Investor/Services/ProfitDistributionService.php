@@ -90,7 +90,7 @@ class ProfitDistributionService
                 $tenantRevenue = (float) SubscriptionPayment::withoutGlobalScopes()
                     ->where('tenant_id', $tenantId)
                     ->where('status', 'completed')
-                    ->whereBetween('paid_at', [$periodStart, $periodEnd . ' 23:59:59'])
+                    ->whereBetween('paid_at', [$periodStart, $periodEnd.' 23:59:59'])
                     ->sum('amount');
 
                 $tenantExpenses = $expensesPerTenant[$tenantId] ?? 0.0;

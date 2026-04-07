@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Accounting\Services;
 
+use App\Domain\Accounting\Exceptions\FiscalPeriodLockedException;
 use App\Domain\Accounting\Models\FiscalPeriod;
 use App\Domain\Accounting\Models\JournalEntry;
 use Illuminate\Support\Carbon;
@@ -22,7 +23,7 @@ class FiscalPeriodLockService
      * Check if a date falls within an open fiscal period.
      * Throws exception if the period is closed/locked.
      *
-     * @throws \App\Domain\Accounting\Exceptions\FiscalPeriodLockedException
+     * @throws FiscalPeriodLockedException
      */
     public static function assertPeriodOpen(int $tenantId, string|Carbon $date): void
     {
@@ -39,7 +40,7 @@ class FiscalPeriodLockService
         }
 
         if ($period->is_locked || $period->status === 'closed') {
-            throw new \App\Domain\Accounting\Exceptions\FiscalPeriodLockedException(
+            throw new FiscalPeriodLockedException(
                 "Cannot modify entries in a closed fiscal period ({$period->start_date->format('Y/m')} — {$period->end_date->format('Y/m')})."
             );
         }
@@ -52,6 +53,7 @@ class FiscalPeriodLockService
     {
         try {
             self::assertPeriodOpen($tenantId, $date);
+
             return true;
         } catch (\Throwable) {
             return false;

@@ -78,6 +78,6 @@ class DemoTenantSeeder extends Seeder
         );
 
         // Seed Egyptian Chart of Accounts for the demo tenant
-        new EgyptianCoASeeder()->run($tenant->id);
+        (new EgyptianCoASeeder)->run($tenant->id);
     }
 }

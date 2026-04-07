@@ -22,6 +22,7 @@ use Symfony\Component\HttpFoundation\Response;
 class IdempotencyKey
 {
     private const TTL = 86400; // 24 hours
+
     private const HEADER = 'Idempotency-Key';
 
     public function handle(Request $request, Closure $next): Response
@@ -36,7 +37,7 @@ class IdempotencyKey
             return $next($request);
         }
 
-        if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $key)) {
+        if (! preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $key)) {
             return response()->json(['error' => 'Idempotency-Key must be a valid UUID v4'], 422);
         }
 

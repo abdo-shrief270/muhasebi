@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Domain\ClientPortal\Models\Message;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Domain\ClientPortal\Models\Message */
+/** @mixin Message */
 class MessageResource extends JsonResource
 {
     /** @return array<string, mixed> */

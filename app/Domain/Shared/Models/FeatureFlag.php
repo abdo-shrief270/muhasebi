@@ -50,6 +50,7 @@ class FeatureFlag extends Model
             $percentage = (int) $this->rollout_percentage;
             if ($percentage > 0) {
                 $hash = crc32("{$this->key}:{$tenantId}");
+
                 return (abs($hash) % 100) < $percentage;
             }
         }

@@ -34,7 +34,7 @@ class ApiVersion
                 $sunset = $route->defaults['sunset'] ?? null;
                 $replacement = $route->defaults['replacement'] ?? null;
 
-                $warning = "This endpoint is deprecated.";
+                $warning = 'This endpoint is deprecated.';
                 if ($replacement) {
                     $warning .= " Use {$replacement} instead.";
                 }

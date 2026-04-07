@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Domain\Shared\Enums\TenantStatus;
-
 beforeEach(function (): void {
     $this->superAdmin = createSuperAdmin();
     actingAsUser($this->superAdmin);

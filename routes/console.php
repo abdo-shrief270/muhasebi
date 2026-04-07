@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Notification\Services\PushNotificationService;
 use App\Jobs\CleanupJob;
 use App\Jobs\GenerateSitemapJob;
 use Illuminate\Support\Facades\Schedule;
@@ -39,7 +40,7 @@ Schedule::command('api-logs:clean --days=30')->dailyAt('02:30');
 Schedule::command('tokens:cleanup --days=30')->dailyAt('03:00');
 
 // Clean up stale push notification device tokens (weekly)
-Schedule::call(fn () => app(\App\Domain\Notification\Services\PushNotificationService::class)->cleanupStaleTokens(90))
+Schedule::call(fn () => app(PushNotificationService::class)->cleanupStaleTokens(90))
     ->weekly()->sundays()->at('04:30');
 
 // Daily cleanup job — API logs, temp files, old webhook deliveries (queued)

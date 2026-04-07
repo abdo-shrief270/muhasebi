@@ -13,6 +13,4 @@ use Illuminate\Database\Eloquent\Model;
     'key',
     'value',
 ])]
-class PlatformSetting extends Model
-{
-}
+class PlatformSetting extends Model {}

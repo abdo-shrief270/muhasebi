@@ -73,7 +73,7 @@ class HtmlSanitizer
         $html = preg_replace('/<form\b[^>]*>.*?<\/form>/is', '', $html);
 
         // Strip all remaining tags except allowed ones
-        $allowedTagsString = '<' . implode('><', self::ALLOWED_TAGS) . '>';
+        $allowedTagsString = '<'.implode('><', self::ALLOWED_TAGS).'>';
         $html = strip_tags($html, $allowedTagsString);
 
         // Parse and clean attributes

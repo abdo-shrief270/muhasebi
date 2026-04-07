@@ -6,7 +6,6 @@ namespace App\Domain\Onboarding\Services;
 
 use App\Domain\Accounting\Models\Account;
 use App\Domain\Accounting\Models\FiscalYear;
-use App\Domain\Accounting\Models\JournalEntry;
 use App\Domain\Accounting\Services\FiscalPeriodService;
 use App\Domain\Accounting\Services\JournalEntryService;
 use App\Domain\Billing\Enums\InvoiceStatus;
@@ -161,7 +160,7 @@ class OnboardingService
 
         if (! in_array($templateName, $validTemplates, true)) {
             throw ValidationException::withMessages([
-                'template_name' => ["Invalid template name: {$templateName}. Valid options: " . implode(', ', $validTemplates)],
+                'template_name' => ["Invalid template name: {$templateName}. Valid options: ".implode(', ', $validTemplates)],
             ]);
         }
 
@@ -177,7 +176,7 @@ class OnboardingService
         }
 
         // For MVP, all templates use the Egyptian CoA seeder (general purpose)
-        (new EgyptianCoASeeder())->run($tenantId);
+        (new EgyptianCoASeeder)->run($tenantId);
 
         // Mark the step as completed
         $onboarding = OnboardingStep::withoutGlobalScopes()

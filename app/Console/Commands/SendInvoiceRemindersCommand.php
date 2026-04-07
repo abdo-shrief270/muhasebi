@@ -57,14 +57,19 @@ class SendInvoiceRemindersCommand extends Command
 
             foreach ($invoices as $invoice) {
                 $client = $invoice->client;
-                if (! $client?->email) continue;
+                if (! $client?->email) {
+                    continue;
+                }
 
                 // Skip if already reminded today (prevent duplicate sends on re-run)
                 $cacheKey = "invoice_reminder:{$invoice->id}:{$schedule['type']}";
-                if (cache()->has($cacheKey)) continue;
+                if (cache()->has($cacheKey)) {
+                    continue;
+                }
 
                 if ($dryRun) {
                     $this->line("  [DRY RUN] {$schedule['type']}: Invoice #{$invoice->invoice_number} → {$client->email}");
+
                     continue; // Don't increment $sent — it's not really sent
                 }
 
@@ -76,7 +81,7 @@ class SendInvoiceRemindersCommand extends Command
                         data: [
                             'client_name' => $client->name,
                             'invoice_number' => $invoice->invoice_number,
-                            'amount' => number_format((float) $invoice->balanceDue(), 2) . ' ' . $invoice->currency,
+                            'amount' => number_format((float) $invoice->balanceDue(), 2).' '.$invoice->currency,
                             'due_date' => $invoice->due_date->format('Y/m/d'),
                             'subject' => $schedule['subject_ar'],
                         ],
@@ -87,7 +92,7 @@ class SendInvoiceRemindersCommand extends Command
                     if (BeonChatService::isConfigured() && $client->phone) {
                         BeonChatService::sendWhatsApp(
                             phone: $client->phone,
-                            message: "{$schedule['subject_ar']}\nفاتورة رقم: {$invoice->invoice_number}\nالمبلغ المتبقي: " . number_format((float) $invoice->balanceDue(), 2) . " {$invoice->currency}",
+                            message: "{$schedule['subject_ar']}\nفاتورة رقم: {$invoice->invoice_number}\nالمبلغ المتبقي: ".number_format((float) $invoice->balanceDue(), 2)." {$invoice->currency}",
                         );
                     }
 

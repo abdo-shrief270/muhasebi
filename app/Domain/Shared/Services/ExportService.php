@@ -89,7 +89,7 @@ class ExportService
             $handle = fopen('php://output', 'w');
 
             $query->cursor()->each(function ($model) use ($handle, $rowMapper) {
-                fwrite($handle, json_encode($rowMapper($model), JSON_UNESCAPED_UNICODE) . "\n");
+                fwrite($handle, json_encode($rowMapper($model), JSON_UNESCAPED_UNICODE)."\n");
             });
 
             fclose($handle);
@@ -114,12 +114,12 @@ class ExportService
         return new StreamedResponse(function () use ($query, $headers, $rowMapper, $sheetName) {
             $handle = fopen('php://output', 'w');
 
-            fwrite($handle, '<?xml version="1.0" encoding="UTF-8"?>' . "\n");
-            fwrite($handle, '<?mso-application progid="Excel.Sheet"?>' . "\n");
+            fwrite($handle, '<?xml version="1.0" encoding="UTF-8"?>'."\n");
+            fwrite($handle, '<?mso-application progid="Excel.Sheet"?>'."\n");
             fwrite($handle, '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"');
-            fwrite($handle, ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">' . "\n");
+            fwrite($handle, ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">'."\n");
             fwrite($handle, '<Styles><Style ss:ID="Header"><Font ss:Bold="1"/></Style>');
-            fwrite($handle, '<Style ss:ID="Number"><NumberFormat ss:Format="#,##0.00"/></Style></Styles>' . "\n");
+            fwrite($handle, '<Style ss:ID="Number"><NumberFormat ss:Format="#,##0.00"/></Style></Styles>'."\n");
             fwrite($handle, "<Worksheet ss:Name=\"{$sheetName}\"><Table>\n");
 
             fwrite($handle, '<Row ss:StyleID="Header">');
@@ -141,7 +141,7 @@ class ExportService
                 fwrite($handle, "</Row>\n");
             });
 
-            fwrite($handle, "</Table></Worksheet></Workbook>");
+            fwrite($handle, '</Table></Worksheet></Workbook>');
             fclose($handle);
         }, 200, [
             'Content-Type' => 'application/vnd.ms-excel',

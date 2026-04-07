@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Domain\Shared\Models\ApiRequestLog;
+use App\Domain\Webhook\Models\WebhookDelivery;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * Performs various cleanup tasks asynchronously:
@@ -23,6 +23,7 @@ class CleanupJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 1;
+
     public int $timeout = 600;
 
     public function __construct()
@@ -56,7 +57,7 @@ class CleanupJob implements ShouldQueue
         $cutoff = now()->subHours(24)->timestamp;
         $count = 0;
 
-        foreach (glob($tempDir . '/*') as $file) {
+        foreach (glob($tempDir.'/*') as $file) {
             if (is_file($file) && filemtime($file) < $cutoff) {
                 @unlink($file);
                 $count++;
@@ -70,7 +71,7 @@ class CleanupJob implements ShouldQueue
 
     private function cleanWebhookDeliveries(): void
     {
-        $deleted = \App\Domain\Webhook\Models\WebhookDelivery::where('created_at', '<', now()->subDays(30))
+        $deleted = WebhookDelivery::where('created_at', '<', now()->subDays(30))
             ->whereIn('status', ['success', 'failed'])
             ->delete();
 

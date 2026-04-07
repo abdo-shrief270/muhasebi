@@ -37,12 +37,12 @@ class SubscriptionService
                 SubscriptionStatus::Active,
                 SubscriptionStatus::PastDue,
             ])
-            ->orderByRaw("CASE
+            ->orderByRaw('CASE
                 WHEN status = ? THEN 1
                 WHEN status = ? THEN 2
                 WHEN status = ? THEN 3
                 ELSE 4
-            END", [
+            END', [
                 SubscriptionStatus::Active->value,
                 SubscriptionStatus::Trial->value,
                 SubscriptionStatus::PastDue->value,

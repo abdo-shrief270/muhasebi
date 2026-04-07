@@ -44,7 +44,7 @@ class SendAgingRemindersCommand extends Command
             $totalErrors += count($result['errors']);
 
             if ($result['sent'] > 0 || ! empty($result['errors'])) {
-                $this->line("  Tenant {$tenantId}: sent={$result['sent']}, skipped={$result['skipped']}, errors=" . count($result['errors']));
+                $this->line("  Tenant {$tenantId}: sent={$result['sent']}, skipped={$result['skipped']}, errors=".count($result['errors']));
             }
         }
 

@@ -1,6 +1,10 @@
 <?php
 
 declare(strict_types=1);
+use App\Domain\Tenant\Models\Tenant;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 /*
 |--------------------------------------------------------------------------
@@ -9,8 +13,8 @@ declare(strict_types=1);
 */
 
 uses(
-    Tests\TestCase::class,
-    Illuminate\Foundation\Testing\RefreshDatabase::class,
+    TestCase::class,
+    RefreshDatabase::class,
 )->in('Feature', 'Unit');
 
 /*
@@ -20,7 +24,7 @@ uses(
 */
 
 expect()->extend('toBeAccessibleTenant', function () {
-    return $this->toBeInstanceOf(\App\Domain\Tenant\Models\Tenant::class)
+    return $this->toBeInstanceOf(Tenant::class)
         ->and($this->value->isAccessible())->toBeTrue();
 });
 
@@ -30,29 +34,29 @@ expect()->extend('toBeAccessibleTenant', function () {
 |--------------------------------------------------------------------------
 */
 
-function createTenant(array $attributes = []): \App\Domain\Tenant\Models\Tenant
+function createTenant(array $attributes = []): Tenant
 {
-    return \App\Domain\Tenant\Models\Tenant::factory()->create($attributes);
+    return Tenant::factory()->create($attributes);
 }
 
-function createUser(array $attributes = []): \App\Models\User
+function createUser(array $attributes = []): User
 {
-    return \App\Models\User::factory()->create($attributes);
+    return User::factory()->create($attributes);
 }
 
-function createAdminUser(?\App\Domain\Tenant\Models\Tenant $tenant = null): \App\Models\User
+function createAdminUser(?Tenant $tenant = null): User
 {
-    return \App\Models\User::factory()->admin()->create([
+    return User::factory()->admin()->create([
         'tenant_id' => $tenant?->id ?? createTenant()->id,
     ]);
 }
 
-function createSuperAdmin(): \App\Models\User
+function createSuperAdmin(): User
 {
-    return \App\Models\User::factory()->superAdmin()->create();
+    return User::factory()->superAdmin()->create();
 }
 
-function actingAsUser(\App\Models\User $user): \App\Models\User
+function actingAsUser(User $user): User
 {
     test()->actingAs($user, 'sanctum');
 

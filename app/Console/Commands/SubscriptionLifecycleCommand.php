@@ -9,8 +9,8 @@ use App\Domain\Subscription\Enums\SubscriptionStatus;
 use App\Domain\Subscription\Models\Subscription;
 use App\Domain\Tenant\Models\Tenant;
 use App\Domain\Webhook\Services\WebhookService;
-use App\Mail\SubscriptionExpiringMail;
 use App\Mail\SubscriptionExpiredMail;
+use App\Mail\SubscriptionExpiringMail;
 use App\Mail\TrialExpiringMail;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
@@ -152,7 +152,7 @@ class SubscriptionLifecycleCommand extends Command
                     userName: $admin->name,
                     tenantName: $tenant->name,
                     daysLeft: $daysLeft,
-                    renewUrl: config('app.frontend_url', config('app.url')) . '/subscription',
+                    renewUrl: config('app.frontend_url', config('app.url')).'/subscription',
                 ));
             }
         }
@@ -179,7 +179,7 @@ class SubscriptionLifecycleCommand extends Command
                     userName: $admin->name,
                     tenantName: $tenant->name,
                     daysLeft: $daysLeft,
-                    upgradeUrl: config('app.frontend_url', config('app.url')) . '/subscription',
+                    upgradeUrl: config('app.frontend_url', config('app.url')).'/subscription',
                 ));
             }
         }

@@ -84,17 +84,17 @@ class BlogService
      */
     public function searchPosts(string $query, int $perPage = 9): LengthAwarePaginator
     {
-        $terms = '%' . $query . '%';
+        $terms = '%'.$query.'%';
 
         return BlogPost::published()
             ->with(['category', 'tags'])
             ->where(function ($q) use ($terms) {
                 $q->where('title_ar', 'like', $terms)
-                  ->orWhere('title_en', 'like', $terms)
-                  ->orWhere('content_ar', 'like', $terms)
-                  ->orWhere('content_en', 'like', $terms)
-                  ->orWhere('excerpt_ar', 'like', $terms)
-                  ->orWhere('excerpt_en', 'like', $terms);
+                    ->orWhere('title_en', 'like', $terms)
+                    ->orWhere('content_ar', 'like', $terms)
+                    ->orWhere('content_en', 'like', $terms)
+                    ->orWhere('excerpt_ar', 'like', $terms)
+                    ->orWhere('excerpt_en', 'like', $terms);
             })
             ->latest('published_at')
             ->paginate($perPage);

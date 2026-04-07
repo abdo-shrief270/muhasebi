@@ -66,6 +66,7 @@ class WebhookService
         $endpoint = $delivery->endpoint;
         if (! $endpoint || ! $endpoint->is_active) {
             $delivery->update(['status' => 'failed', 'error_message' => 'Endpoint disabled or deleted.']);
+
             return;
         }
 
@@ -85,9 +86,9 @@ class WebhookService
                 CURLOPT_HTTPHEADER => [
                     'Content-Type: application/json',
                     'User-Agent: Muhasebi-Webhook/1.0',
-                    config('api.webhooks.signing_secret_header', 'X-Muhasebi-Signature') . ': sha256=' . $signature,
-                    'X-Webhook-Event: ' . $delivery->event,
-                    'X-Webhook-Delivery-Id: ' . $delivery->id,
+                    config('api.webhooks.signing_secret_header', 'X-Muhasebi-Signature').': sha256='.$signature,
+                    'X-Webhook-Event: '.$delivery->event,
+                    'X-Webhook-Delivery-Id: '.$delivery->id,
                 ],
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_TIMEOUT => $timeout,
@@ -142,6 +143,7 @@ class WebhookService
 
         if ($delivery->attempt >= $maxRetries) {
             $delivery->update(['status' => 'failed']);
+
             return;
         }
 

@@ -10,6 +10,7 @@ use App\Domain\EInvoice\Enums\EtaDocumentStatus;
 use App\Domain\EInvoice\Models\EtaDocument;
 use App\Domain\EInvoice\Models\EtaItemCode;
 use App\Domain\EInvoice\Models\EtaSettings;
+use App\Domain\Tenant\Models\Tenant;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function (): void {
@@ -43,7 +44,7 @@ beforeEach(function (): void {
     ]);
 });
 
-function createSentInvoiceWithLines(\App\Domain\Tenant\Models\Tenant $tenant, Client $client): Invoice
+function createSentInvoiceWithLines(Tenant $tenant, Client $client): Invoice
 {
     $invoice = Invoice::factory()->sent()->create([
         'tenant_id' => $tenant->id,

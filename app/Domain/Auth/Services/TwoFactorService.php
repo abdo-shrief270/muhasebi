@@ -15,7 +15,9 @@ use Illuminate\Support\Str;
 class TwoFactorService
 {
     private const PERIOD = 30; // Seconds per code
+
     private const DIGITS = 6;
+
     private const ALGORITHM = 'sha1';
 
     /**
@@ -149,7 +151,7 @@ class TwoFactorService
         $issuer = rawurlencode(config('app.name', 'Muhasebi'));
         $email = rawurlencode($email);
 
-        return "otpauth://totp/{$issuer}:{$email}?secret={$secret}&issuer={$issuer}&algorithm=SHA1&digits=" . self::DIGITS . '&period=' . self::PERIOD;
+        return "otpauth://totp/{$issuer}:{$email}?secret={$secret}&issuer={$issuer}&algorithm=SHA1&digits=".self::DIGITS.'&period='.self::PERIOD;
     }
 
     private static function base32Encode(string $data): string
@@ -164,6 +166,7 @@ class TwoFactorService
             $chunk = str_pad($chunk, 5, '0', STR_PAD_RIGHT);
             $result .= $alphabet[bindec($chunk)];
         }
+
         return $result;
     }
 
@@ -183,6 +186,7 @@ class TwoFactorService
                 $result .= chr(bindec($byte));
             }
         }
+
         return $result;
     }
 }

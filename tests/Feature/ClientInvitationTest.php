@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domain\Client\Models\Client;
+use App\Domain\ClientPortal\Models\Message;
 use App\Domain\Shared\Enums\UserRole;
 use App\Models\User;
 
@@ -78,7 +79,7 @@ describe('Firm-side messaging', function (): void {
     });
 
     it('lists messages with a client', function (): void {
-        \App\Domain\ClientPortal\Models\Message::factory()->count(2)->create([
+        Message::factory()->count(2)->create([
             'tenant_id' => $this->tenant->id,
             'client_id' => $this->client->id,
             'user_id' => $this->admin->id,

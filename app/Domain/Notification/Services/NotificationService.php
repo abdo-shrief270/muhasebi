@@ -159,7 +159,7 @@ class NotificationService
             Mail::to($user->email)->send(new WelcomeMail(
                 userName: $user->name,
                 tenantName: $tenantName,
-                actionUrl: config('app.frontend_url', config('app.url')) . $actionUrl,
+                actionUrl: config('app.frontend_url', config('app.url')).$actionUrl,
             ));
         }
 
@@ -206,7 +206,7 @@ class NotificationService
                 invoiceNumber: $invoiceNumber,
                 clientName: $clientName,
                 totalAmount: $totalAmount,
-                actionUrl: config('app.frontend_url', config('app.url')) . $actionUrl,
+                actionUrl: config('app.frontend_url', config('app.url')).$actionUrl,
             ));
         }
 
@@ -236,7 +236,7 @@ class NotificationService
                 amount: $amount,
                 invoiceNumber: $invoiceNumber,
                 paymentMethod: $paymentMethod,
-                actionUrl: config('app.frontend_url', config('app.url')) . $actionUrl,
+                actionUrl: config('app.frontend_url', config('app.url')).$actionUrl,
             ));
         }
 
@@ -269,7 +269,7 @@ class NotificationService
                 userEmail: $user->email,
                 userRole: $user->role->labelAr(),
                 inviterName: $inviterName,
-                actionUrl: config('app.frontend_url', config('app.url')) . $actionUrl,
+                actionUrl: config('app.frontend_url', config('app.url')).$actionUrl,
             ));
         }
 

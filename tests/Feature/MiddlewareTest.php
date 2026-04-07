@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Domain\Shared\Enums\TenantStatus;
 use App\Domain\Tenant\Models\Tenant;
 use App\Models\User;
+use Illuminate\Support\Facades\Route;
 
 describe('IdentifyTenant Middleware', function (): void {
 
@@ -14,7 +14,7 @@ describe('IdentifyTenant Middleware', function (): void {
         actingAsUser($user);
 
         // Register a test route with tenant middleware
-        \Illuminate\Support\Facades\Route::middleware(['auth:sanctum', 'tenant'])
+        Route::middleware(['auth:sanctum', 'tenant'])
             ->get('/api/v1/test-tenant', fn () => response()->json([
                 'tenant_id' => app('tenant.id'),
                 'tenant_name' => app('tenant')->name,
@@ -31,7 +31,7 @@ describe('IdentifyTenant Middleware', function (): void {
         $user = User::factory()->create();
         actingAsUser($user);
 
-        \Illuminate\Support\Facades\Route::middleware(['auth:sanctum', 'tenant'])
+        Route::middleware(['auth:sanctum', 'tenant'])
             ->get('/api/v1/test-tenant-missing', fn () => response()->json(['ok' => true]));
 
         $response = $this->withHeader('X-Tenant', 'non-existent')
@@ -45,7 +45,7 @@ describe('IdentifyTenant Middleware', function (): void {
         $user = User::factory()->create(['tenant_id' => $tenant->id]);
         actingAsUser($user);
 
-        \Illuminate\Support\Facades\Route::middleware(['auth:sanctum', 'tenant'])
+        Route::middleware(['auth:sanctum', 'tenant'])
             ->get('/api/v1/test-tenant-suspended', fn () => response()->json(['ok' => true]));
 
         $response = $this->withHeader('X-Tenant', 'suspended-firm')
@@ -61,7 +61,7 @@ describe('EnsureSuperAdmin Middleware', function (): void {
         $superAdmin = createSuperAdmin();
         actingAsUser($superAdmin);
 
-        \Illuminate\Support\Facades\Route::middleware(['auth:sanctum', 'super_admin'])
+        Route::middleware(['auth:sanctum', 'super_admin'])
             ->get('/api/v1/test-super', fn () => response()->json(['ok' => true]));
 
         $response = $this->getJson('/api/v1/test-super');
@@ -73,7 +73,7 @@ describe('EnsureSuperAdmin Middleware', function (): void {
         $user = User::factory()->admin()->create();
         actingAsUser($user);
 
-        \Illuminate\Support\Facades\Route::middleware(['auth:sanctum', 'super_admin'])
+        Route::middleware(['auth:sanctum', 'super_admin'])
             ->get('/api/v1/test-super-reject', fn () => response()->json(['ok' => true]));
 
         $response = $this->getJson('/api/v1/test-super-reject');
@@ -88,7 +88,7 @@ describe('EnsureActiveUser Middleware', function (): void {
         $user = User::factory()->create(['is_active' => true]);
         actingAsUser($user);
 
-        \Illuminate\Support\Facades\Route::middleware(['auth:sanctum', 'active'])
+        Route::middleware(['auth:sanctum', 'active'])
             ->get('/api/v1/test-active', fn () => response()->json(['ok' => true]));
 
         $response = $this->getJson('/api/v1/test-active');
@@ -100,7 +100,7 @@ describe('EnsureActiveUser Middleware', function (): void {
         $user = User::factory()->inactive()->create();
         actingAsUser($user);
 
-        \Illuminate\Support\Facades\Route::middleware(['auth:sanctum', 'active'])
+        Route::middleware(['auth:sanctum', 'active'])
             ->get('/api/v1/test-inactive', fn () => response()->json(['ok' => true]));
 
         $response = $this->getJson('/api/v1/test-inactive');

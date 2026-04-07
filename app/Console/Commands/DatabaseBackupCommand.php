@@ -22,22 +22,24 @@ class DatabaseBackupCommand extends Command
 
         if (! in_array($connection, ['mysql', 'mariadb', 'pgsql'])) {
             $this->warn("Backup only supports MySQL/MariaDB/PostgreSQL. Current driver: {$connection}");
+
             return self::FAILURE;
         }
 
-        $filename = 'backup_' . Carbon::now()->format('Y-m-d_His') . '.sql.gz';
+        $filename = 'backup_'.Carbon::now()->format('Y-m-d_His').'.sql.gz';
         $backupDir = storage_path('app/backups');
 
         if (! is_dir($backupDir)) {
             mkdir($backupDir, 0755, true);
         }
 
-        $path = $backupDir . '/' . $filename;
+        $path = $backupDir.'/'.$filename;
 
         if ($connection === 'pgsql') {
             $which = PHP_OS_FAMILY === 'Windows' ? 'where pg_dump 2>nul' : 'which pg_dump 2>/dev/null';
             if (empty(trim((string) shell_exec($which)))) {
                 $this->error('pg_dump binary not found.');
+
                 return 1;
             }
 
@@ -60,6 +62,7 @@ class DatabaseBackupCommand extends Command
             $which = PHP_OS_FAMILY === 'Windows' ? 'where mysqldump 2>nul' : 'which mysqldump 2>/dev/null';
             if (empty(trim((string) shell_exec($which)))) {
                 $this->error('mysqldump binary not found.');
+
                 return 1;
             }
 
@@ -69,7 +72,7 @@ class DatabaseBackupCommand extends Command
             $username = $config['username'];
             $password = $config['password'] ?? '';
 
-            $passwordPart = $password ? "--password=" . escapeshellarg($password) : '';
+            $passwordPart = $password ? '--password='.escapeshellarg($password) : '';
 
             $command = sprintf(
                 'mysqldump --host=%s --port=%s --user=%s %s --single-transaction --routines --triggers %s | gzip > %s',
@@ -88,6 +91,7 @@ class DatabaseBackupCommand extends Command
 
         if ($returnCode !== 0) {
             $this->error('Backup failed. Ensure mysqldump is installed and credentials are correct.');
+
             return self::FAILURE;
         }
 
@@ -106,7 +110,7 @@ class DatabaseBackupCommand extends Command
         $cutoff = Carbon::now()->subDays($keepDays)->timestamp;
         $count = 0;
 
-        foreach (glob($dir . '/backup_*.sql.gz') as $file) {
+        foreach (glob($dir.'/backup_*.sql.gz') as $file) {
             if (filemtime($file) < $cutoff) {
                 unlink($file);
                 $count++;

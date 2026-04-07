@@ -6,7 +6,6 @@ use App\Domain\Billing\Enums\InvoiceStatus;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\InvoiceLine;
 use App\Domain\Client\Models\Client;
-use App\Domain\Document\Models\Document;
 use App\Domain\Shared\Enums\UserRole;
 use App\Models\User;
 

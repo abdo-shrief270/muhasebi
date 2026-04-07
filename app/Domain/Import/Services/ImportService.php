@@ -47,7 +47,7 @@ class ImportService
      */
     private function parseCsv(string $path, array $options = []): array
     {
-        $fullPath = storage_path('app/' . $path);
+        $fullPath = storage_path('app/'.$path);
         if (! file_exists($fullPath)) {
             throw new \RuntimeException("Import file not found: {$path}");
         }
@@ -107,6 +107,7 @@ class ImportService
                 foreach ($validator->errors()->all() as $error) {
                     $job->addError($rowNum, '', $error);
                 }
+
                 continue;
             }
 
@@ -151,6 +152,7 @@ class ImportService
                 foreach ($validator->errors()->all() as $error) {
                     $job->addError($rowNum, '', $error);
                 }
+
                 continue;
             }
 
@@ -217,6 +219,7 @@ class ImportService
                     foreach ($validator->errors()->all() as $error) {
                         $job->addError($rowNum, '', $error);
                     }
+
                     continue;
                 }
 
@@ -225,6 +228,7 @@ class ImportService
 
                 if (! $account) {
                     $job->addError($rowNum, 'account_code', "Account not found: {$row['account_code']}");
+
                     continue;
                 }
 
@@ -268,5 +272,6 @@ function str_getcsv_all(string $content, string $delimiter = ','): array
             $rows[] = str_getcsv($line, $delimiter);
         }
     }
+
     return $rows;
 }

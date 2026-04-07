@@ -29,6 +29,7 @@ class SmsService
 
         if (! $phone) {
             Log::warning('SMS: Invalid phone number provided.');
+
             return false;
         }
 
@@ -56,10 +57,11 @@ class SmsService
 
             if ($response->successful()) {
                 Log::info("SMS sent to {$phone} via Vodafone.");
+
                 return true;
             }
 
-            Log::error("SMS failed via Vodafone", [
+            Log::error('SMS failed via Vodafone', [
                 'phone' => $phone,
                 'status' => $response->status(),
                 'body' => $response->body(),
@@ -67,7 +69,8 @@ class SmsService
 
             return false;
         } catch (\Throwable $e) {
-            Log::error("SMS exception via Vodafone", ['error' => $e->getMessage()]);
+            Log::error('SMS exception via Vodafone', ['error' => $e->getMessage()]);
+
             return false;
         }
     }
@@ -88,13 +91,16 @@ class SmsService
 
             if ($response->successful() && str_contains($response->body(), 'success')) {
                 Log::info("SMS sent to {$phone} via SmsEg.");
+
                 return true;
             }
 
-            Log::error("SMS failed via SmsEg", ['phone' => $phone, 'response' => $response->body()]);
+            Log::error('SMS failed via SmsEg', ['phone' => $phone, 'response' => $response->body()]);
+
             return false;
         } catch (\Throwable $e) {
-            Log::error("SMS exception via SmsEg", ['error' => $e->getMessage()]);
+            Log::error('SMS exception via SmsEg', ['error' => $e->getMessage()]);
+
             return false;
         }
     }
@@ -124,11 +130,11 @@ class SmsService
         }
 
         if (str_starts_with($phone, '0') && strlen($phone) === 11) {
-            return '2' . $phone; // 01012345678 → 201012345678
+            return '2'.$phone; // 01012345678 → 201012345678
         }
 
         if (strlen($phone) === 10 && str_starts_with($phone, '1')) {
-            return '20' . $phone; // 1012345678 → 201012345678
+            return '20'.$phone; // 1012345678 → 201012345678
         }
 
         return null; // Invalid

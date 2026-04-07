@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Domain\Accounting\Enums\AccountType;
-use App\Domain\Accounting\Enums\JournalEntryStatus;
-use App\Domain\Accounting\Enums\NormalBalance;
 use App\Domain\Accounting\Models\Account;
 use App\Domain\Accounting\Models\FiscalPeriod;
 use App\Domain\Accounting\Models\FiscalYear;
@@ -59,7 +56,7 @@ describe('GET /api/v1/accounts', function (): void {
         ]);
 
         $response = $this->withHeader('X-Tenant', $this->tenant->slug)
-            ->getJson('/api/v1/accounts?search=' . urlencode('الصندوق'));
+            ->getJson('/api/v1/accounts?search='.urlencode('الصندوق'));
 
         $response->assertOk()
             ->assertJsonCount(1, 'data')

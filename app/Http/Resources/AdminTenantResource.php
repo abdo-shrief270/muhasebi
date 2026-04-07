@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Domain\Tenant\Models\Tenant;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Domain\Tenant\Models\Tenant */
+/** @mixin Tenant */
 class AdminTenantResource extends JsonResource
 {
     /** @return array<string, mixed> */

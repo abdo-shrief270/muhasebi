@@ -107,7 +107,7 @@ class ClientPaymentService
 
         $balanceDue = $invoice->balanceDue();
         $client = $invoice->client;
-        $merchantRef = "INV-FAWRY-{$invoice->id}-" . time();
+        $merchantRef = "INV-FAWRY-{$invoice->id}-".time();
 
         $result = FawryService::createCharge([
             'reference' => $merchantRef,
@@ -124,7 +124,7 @@ class ClientPaymentService
         if (! ($result['success'] ?? false)) {
             throw ValidationException::withMessages([
                 'gateway' => [
-                    'Failed to create Fawry payment. ' . ($result['error'] ?? ''),
+                    'Failed to create Fawry payment. '.($result['error'] ?? ''),
                     'فشل في إنشاء طلب الدفع عبر فوري.',
                 ],
             ]);
@@ -267,7 +267,7 @@ class ClientPaymentService
 
     private function authenticate(): string
     {
-        $response = Http::post(self::BASE_URL . '/auth/tokens', [
+        $response = Http::post(self::BASE_URL.'/auth/tokens', [
             'api_key' => config('services.paymob.api_key'),
         ]);
 
@@ -287,7 +287,7 @@ class ClientPaymentService
 
     private function createOrder(string $authToken, int $amountCents, Invoice $invoice): int
     {
-        $response = Http::post(self::BASE_URL . '/ecommerce/orders', [
+        $response = Http::post(self::BASE_URL.'/ecommerce/orders', [
             'auth_token' => $authToken,
             'delivery_needed' => false,
             'amount_cents' => $amountCents,
@@ -312,7 +312,7 @@ class ClientPaymentService
     {
         $client = $invoice->client;
 
-        $response = Http::post(self::BASE_URL . '/acceptance/payment_keys', [
+        $response = Http::post(self::BASE_URL.'/acceptance/payment_keys', [
             'auth_token' => $authToken,
             'amount_cents' => $amountCents,
             'expiration' => 3600,
@@ -353,7 +353,6 @@ class ClientPaymentService
      * Handle Fawry callback for portal invoice payments.
      *
      * @param  array<string, mixed>  $data
-     *
      * @return array{success: bool, status: string}
      */
     public function handleFawryCallback(array $data): array
@@ -361,12 +360,12 @@ class ClientPaymentService
         $securityKey = IntegrationSetting::credential('fawry', 'security_key');
 
         $expectedSignature = hash('sha256',
-            ($data['fawryRefNumber'] ?? '') .
-            ($data['merchantRefNum'] ?? '') .
-            ($data['paymentAmount'] ?? '') .
-            ($data['orderAmount'] ?? '') .
-            ($data['orderStatus'] ?? '') .
-            ($data['paymentMethod'] ?? '') .
+            ($data['fawryRefNumber'] ?? '').
+            ($data['merchantRefNum'] ?? '').
+            ($data['paymentAmount'] ?? '').
+            ($data['orderAmount'] ?? '').
+            ($data['orderStatus'] ?? '').
+            ($data['paymentMethod'] ?? '').
             $securityKey
         );
 
@@ -404,7 +403,7 @@ class ClientPaymentService
                     'amount' => $amount,
                     'date' => today()->toDateString(),
                     'method' => 'mobile_wallet',
-                    'reference' => 'FAWRY-' . ($data['fawryRefNumber'] ?? $merchantRef),
+                    'reference' => 'FAWRY-'.($data['fawryRefNumber'] ?? $merchantRef),
                     'notes' => 'دفع إلكتروني عبر فوري من بوابة العملاء',
                     'created_by' => null,
                 ]);

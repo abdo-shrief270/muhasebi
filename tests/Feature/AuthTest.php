@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Domain\Shared\Enums\TenantStatus;
-use App\Domain\Shared\Enums\UserRole;
 use App\Domain\Tenant\Models\Tenant;
 use App\Models\User;
 

@@ -8,6 +8,7 @@ use App\Domain\Subscription\Models\Subscription;
 use App\Domain\Subscription\Models\SubscriptionPayment;
 use App\Domain\Subscription\Services\SubscriptionService;
 use App\Domain\Subscription\Services\UsageService;
+use Illuminate\Database\Eloquent\Collection;
 
 beforeEach(function (): void {
     $this->tenant = createTenant();
@@ -237,7 +238,7 @@ describe('GET /api/v1/subscription/usage-history', function (): void {
         $this->mock(UsageService::class, function ($mock) use ($history) {
             $mock->shouldReceive('getUsageHistory')
                 ->once()
-                ->andReturn(new \Illuminate\Database\Eloquent\Collection($history));
+                ->andReturn(new Collection($history));
         });
 
         $response = $this->withHeader('X-Tenant', $this->tenant->slug)

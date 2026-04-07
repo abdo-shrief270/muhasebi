@@ -14,8 +14,8 @@ class BudgetFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->words(3, true) . ' Budget',
-            'name_ar' => 'ميزانية ' . $this->faker->word(),
+            'name' => $this->faker->words(3, true).' Budget',
+            'name_ar' => 'ميزانية '.$this->faker->word(),
             'status' => 'draft',
             'notes' => $this->faker->optional()->sentence(),
         ];

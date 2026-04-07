@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Billing\Services;
 
+use App\Domain\Billing\Enums\InvoiceType;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\InvoiceLine;
 use App\Domain\Billing\Models\InvoiceSettings;
@@ -12,6 +13,7 @@ use App\Domain\Webhook\Services\WebhookService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class RecurringInvoiceService
 {
@@ -61,7 +63,7 @@ class RecurringInvoiceService
                 'tenant_id' => $recurring->tenant_id,
                 'client_id' => $recurring->client_id,
                 'type' => 'invoice',
-                'invoice_number' => $this->invoiceService->generateInvoiceNumber($settings, \App\Domain\Billing\Enums\InvoiceType::Invoice),
+                'invoice_number' => $this->invoiceService->generateInvoiceNumber($settings, InvoiceType::Invoice),
                 'date' => now()->toDateString(),
                 'due_date' => now()->addDays($recurring->due_days)->toDateString(),
                 'status' => 'draft',
@@ -77,7 +79,7 @@ class RecurringInvoiceService
                 $unitPrice = (float) ($item['unit_price'] ?? 0);
 
                 if ($quantity <= 0 || $unitPrice < 0) {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
+                    throw ValidationException::withMessages([
                         "line_items.{$index}" => ['Invalid quantity or unit price.'],
                     ]);
                 }
@@ -156,6 +158,7 @@ class RecurringInvoiceService
     public function update(RecurringInvoice $recurring, array $data): RecurringInvoice
     {
         $recurring->update($data);
+
         return $recurring->fresh();
     }
 }

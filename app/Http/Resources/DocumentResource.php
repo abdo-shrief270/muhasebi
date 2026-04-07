@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Domain\Document\Models\Document;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Domain\Document\Models\Document */
+/** @mixin Document */
 class DocumentResource extends JsonResource
 {
     /** @return array<string, mixed> */

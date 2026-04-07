@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Domain\EInvoice\Services;
 
+use App\Domain\Billing\Models\Invoice;
 use App\Domain\EInvoice\Enums\EtaDocumentStatus;
 use App\Domain\EInvoice\Models\EtaDocument;
 use App\Domain\EInvoice\Models\EtaSettings;
 use App\Domain\EInvoice\Models\EtaSubmission;
-use App\Domain\Billing\Models\Invoice;
 use Illuminate\Support\Facades\DB;
 
 class EtaComplianceDashboardService

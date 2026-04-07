@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Integration\Services;
 
 use App\Domain\Integration\Models\IntegrationSetting;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -35,7 +36,7 @@ class BeonChatService
     /**
      * Get the HTTP client configured for Beon.chat.
      */
-    private static function client(): \Illuminate\Http\Client\PendingRequest
+    private static function client(): PendingRequest
     {
         $baseUrl = IntegrationSetting::configValue('beon_chat', 'base_url', self::DEFAULT_BASE_URL);
         $apiKey = IntegrationSetting::credential('beon_chat', 'api_key');
@@ -135,7 +136,7 @@ class BeonChatService
                 ];
             }
 
-            Log::error("Beon.chat send failed", [
+            Log::error('Beon.chat send failed', [
                 'channel' => $channel,
                 'to' => $recipient,
                 'status' => $response->status(),
@@ -148,7 +149,8 @@ class BeonChatService
                 'status_code' => $response->status(),
             ];
         } catch (\Throwable $e) {
-            Log::error("Beon.chat exception", ['error' => $e->getMessage()]);
+            Log::error('Beon.chat exception', ['error' => $e->getMessage()]);
+
             return ['success' => false, 'error' => $e->getMessage()];
         }
     }
@@ -160,7 +162,9 @@ class BeonChatService
      */
     public static function listTemplates(): array
     {
-        if (! self::isConfigured()) return [];
+        if (! self::isConfigured()) {
+            return [];
+        }
 
         try {
             $response = self::client()->get('/v1/whatsapp/templates');
@@ -171,7 +175,8 @@ class BeonChatService
 
             return [];
         } catch (\Throwable $e) {
-            Log::error("Beon.chat templates error", ['error' => $e->getMessage()]);
+            Log::error('Beon.chat templates error', ['error' => $e->getMessage()]);
+
             return [];
         }
     }
@@ -183,7 +188,9 @@ class BeonChatService
      */
     public static function listConversations(array $params = []): array
     {
-        if (! self::isConfigured()) return [];
+        if (! self::isConfigured()) {
+            return [];
+        }
 
         try {
             $response = self::client()->get('/v1/conversations', array_filter([
@@ -195,7 +202,8 @@ class BeonChatService
 
             return $response->successful() ? $response->json() : [];
         } catch (\Throwable $e) {
-            Log::error("Beon.chat conversations error", ['error' => $e->getMessage()]);
+            Log::error('Beon.chat conversations error', ['error' => $e->getMessage()]);
+
             return [];
         }
     }
@@ -205,7 +213,9 @@ class BeonChatService
      */
     public static function getConversation(string $conversationId): array
     {
-        if (! self::isConfigured()) return [];
+        if (! self::isConfigured()) {
+            return [];
+        }
 
         try {
             $response = self::client()->get("/v1/conversations/{$conversationId}/messages");
@@ -246,10 +256,13 @@ class BeonChatService
      */
     public static function getAccountInfo(): array
     {
-        if (! self::isConfigured()) return ['error' => 'Not configured'];
+        if (! self::isConfigured()) {
+            return ['error' => 'Not configured'];
+        }
 
         try {
             $response = self::client()->get('/v1/me');
+
             return $response->successful() ? $response->json() : ['error' => 'API error'];
         } catch (\Throwable $e) {
             return ['error' => $e->getMessage()];
@@ -272,7 +285,7 @@ class BeonChatService
 
         $type = $payload['type'] ?? 'unknown';
 
-        Log::info("Beon.chat webhook received", ['type' => $type]);
+        Log::info('Beon.chat webhook received', ['type' => $type]);
 
         return match ($type) {
             'message.received' => self::handleIncomingMessage($payload),
@@ -308,7 +321,7 @@ class BeonChatService
     {
         // Log incoming message for now
         // TODO: Route to appropriate handler (auto-reply, create support ticket, etc.)
-        Log::info("Beon.chat incoming message", [
+        Log::info('Beon.chat incoming message', [
             'from' => $payload['from'] ?? 'unknown',
             'channel' => $payload['channel'] ?? 'unknown',
             'message' => mb_substr($payload['message']['text'] ?? '', 0, 100),
@@ -319,7 +332,7 @@ class BeonChatService
 
     private static function handleStatusUpdate(array $payload): array
     {
-        Log::info("Beon.chat status update", [
+        Log::info('Beon.chat status update', [
             'message_id' => $payload['message_id'] ?? 'unknown',
             'status' => $payload['status'] ?? 'unknown',
         ]);
@@ -337,11 +350,11 @@ class BeonChatService
         $phone = preg_replace('/[^\d]/', '', $phone);
 
         if (str_starts_with($phone, '0') && strlen($phone) === 11) {
-            return '2' . $phone;
+            return '2'.$phone;
         }
 
         if (strlen($phone) === 10 && str_starts_with($phone, '1')) {
-            return '20' . $phone;
+            return '20'.$phone;
         }
 
         return $phone;

@@ -27,7 +27,7 @@ class IdentifyTenant
 
         if (! $tenant->isAccessible()) {
             return response()->json([
-                'message' => 'Tenant account is not accessible. Status: ' . $tenant->status->label(),
+                'message' => 'Tenant account is not accessible. Status: '.$tenant->status->label(),
             ], Response::HTTP_FORBIDDEN);
         }
 

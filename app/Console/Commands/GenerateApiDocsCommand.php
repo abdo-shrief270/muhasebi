@@ -35,7 +35,7 @@ class GenerateApiDocsCommand extends Command
                 ],
             ],
             'servers' => [
-                ['url' => config('app.url') . '/api/v1', 'description' => 'Current Environment'],
+                ['url' => config('app.url').'/api/v1', 'description' => 'Current Environment'],
             ],
             'components' => [
                 'securitySchemes' => [
@@ -84,7 +84,7 @@ class GenerateApiDocsCommand extends Command
             $methods = collect($route->methods())->filter(fn ($m) => $m !== 'HEAD')->values();
 
             // Convert Laravel route params to OpenAPI format
-            $path = '/' . preg_replace('/\{(\w+)\}/', '{$1}', Str::after($uri, 'api/v1'));
+            $path = '/'.preg_replace('/\{(\w+)\}/', '{$1}', Str::after($uri, 'api/v1'));
 
             foreach ($methods as $method) {
                 $method = strtolower($method);
@@ -94,7 +94,7 @@ class GenerateApiDocsCommand extends Command
                 $operation = [
                     'tags' => [$tag],
                     'summary' => $this->guessSummary($route, $method),
-                    'operationId' => $route->getName() ?: Str::camel($method . '_' . str_replace(['/', '{', '}'], ['_', '', ''], $path)),
+                    'operationId' => $route->getName() ?: Str::camel($method.'_'.str_replace(['/', '{', '}'], ['_', '', ''], $path)),
                 ];
 
                 // Determine if authenticated
@@ -171,12 +171,12 @@ class GenerateApiDocsCommand extends Command
 
         // Admin routes
         if ($parts[0] === 'admin') {
-            return 'Admin: ' . Str::title($parts[1] ?? 'General');
+            return 'Admin: '.Str::title($parts[1] ?? 'General');
         }
 
         // Portal routes
         if ($parts[0] === 'portal') {
-            return 'Portal: ' . Str::title($parts[1] ?? 'General');
+            return 'Portal: '.Str::title($parts[1] ?? 'General');
         }
 
         return Str::title($parts[0] ?? 'General');
@@ -192,6 +192,6 @@ class GenerateApiDocsCommand extends Command
         $actions = ['get' => 'List/Get', 'post' => 'Create', 'put' => 'Update', 'patch' => 'Update', 'delete' => 'Delete'];
         $uri = $route->uri();
 
-        return ($actions[$method] ?? $method) . ' ' . Str::title(basename($uri));
+        return ($actions[$method] ?? $method).' '.Str::title(basename($uri));
     }
 }

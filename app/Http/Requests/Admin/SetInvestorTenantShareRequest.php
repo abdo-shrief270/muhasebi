@@ -8,7 +8,10 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class SetInvestorTenantShareRequest extends FormRequest
 {
-    public function authorize(): bool { return $this->user()?->isSuperAdmin() === true; }
+    public function authorize(): bool
+    {
+        return $this->user()?->isSuperAdmin() === true;
+    }
 
     /** @return array<string, array<int, mixed>> */
     public function rules(): array

@@ -34,7 +34,7 @@ class WebhookEndpointController extends Controller
         $data = $request->validate([
             'url' => 'required|url|max:500',
             'events' => 'required|array|min:1',
-            'events.*' => 'string|in:' . implode(',', WebhookService::EVENTS) . ',*',
+            'events.*' => 'string|in:'.implode(',', WebhookService::EVENTS).',*',
             'description' => 'nullable|string|max:255',
             'is_active' => 'boolean',
         ]);
@@ -52,7 +52,7 @@ class WebhookEndpointController extends Controller
         $data = $request->validate([
             'url' => 'nullable|url|max:500',
             'events' => 'nullable|array|min:1',
-            'events.*' => 'string|in:' . implode(',', WebhookService::EVENTS) . ',*',
+            'events.*' => 'string|in:'.implode(',', WebhookService::EVENTS).',*',
             'description' => 'nullable|string|max:255',
             'is_active' => 'boolean',
             'regenerate_secret' => 'boolean',

@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Domain\Payroll\Models\PayrollItem;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Domain\Payroll\Models\PayrollItem */
+/** @mixin PayrollItem */
 class PayrollItemResource extends JsonResource
 {
     /** @return array<string, mixed> */

@@ -7,8 +7,8 @@ use App\Domain\Cms\Models\ContactSubmission;
 use App\Domain\Cms\Models\Faq;
 use App\Domain\Cms\Models\LandingSetting;
 use App\Domain\Cms\Models\SlugRedirect;
-use App\Domain\Shared\Services\HtmlSanitizer;
 use App\Domain\Cms\Models\Testimonial;
+use App\Domain\Shared\Services\HtmlSanitizer;
 use App\Mail\ContactAdminAlertMail;
 use App\Mail\ContactAutoReplyMail;
 use App\Models\User;
@@ -87,8 +87,8 @@ class CmsService
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
                 $q->where('title_ar', 'like', "%{$search}%")
-                  ->orWhere('title_en', 'like', "%{$search}%")
-                  ->orWhere('slug', 'like', "%{$search}%");
+                    ->orWhere('title_en', 'like', "%{$search}%")
+                    ->orWhere('slug', 'like', "%{$search}%");
             });
         }
 
@@ -248,8 +248,8 @@ class CmsService
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('subject', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('subject', 'like', "%{$search}%");
             });
         }
 

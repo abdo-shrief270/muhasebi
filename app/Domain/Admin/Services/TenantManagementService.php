@@ -163,7 +163,7 @@ class TenantManagementService
         }
 
         $token = $admin->createToken(
-            'impersonation-' . auth()->id(),
+            'impersonation-'.auth()->id(),
             ['*'],
         );
 

@@ -34,7 +34,7 @@ class AdminApiLogController extends Controller
         }
 
         if ($request->filled('path')) {
-            $query->where('path', 'like', '%' . $request->input('path') . '%');
+            $query->where('path', 'like', '%'.$request->input('path').'%');
         }
 
         if ($request->filled('user_id')) {

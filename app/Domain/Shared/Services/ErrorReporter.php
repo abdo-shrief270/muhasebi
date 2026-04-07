@@ -6,6 +6,7 @@ namespace App\Domain\Shared\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Sentry\State\Scope;
 
 /**
  * Error reporting service with context enrichment.
@@ -26,7 +27,7 @@ class ErrorReporter
         $enriched = array_merge([
             'exception' => get_class($e),
             'message' => $e->getMessage(),
-            'file' => $e->getFile() . ':' . $e->getLine(),
+            'file' => $e->getFile().':'.$e->getLine(),
             'trace' => mb_substr($e->getTraceAsString(), 0, 2000),
             'tenant_id' => app()->bound('tenant.id') ? app('tenant.id') : null,
             'user_id' => auth()->id(),
@@ -69,14 +70,16 @@ class ErrorReporter
     private static function reportToSlack(array $data): void
     {
         $webhookUrl = config('error-reporting.slack_webhook_url');
-        if (! $webhookUrl) return;
+        if (! $webhookUrl) {
+            return;
+        }
 
         try {
             Http::timeout(5)->post($webhookUrl, [
                 'blocks' => [
                     [
                         'type' => 'header',
-                        'text' => ['type' => 'plain_text', 'text' => '🚨 Error: ' . mb_substr($data['message'], 0, 100)],
+                        'text' => ['type' => 'plain_text', 'text' => '🚨 Error: '.mb_substr($data['message'], 0, 100)],
                     ],
                     [
                         'type' => 'section',
@@ -89,7 +92,7 @@ class ErrorReporter
                     ],
                     [
                         'type' => 'section',
-                        'text' => ['type' => 'mrkdwn', 'text' => "```\n" . mb_substr($data['trace'], 0, 500) . "\n```"],
+                        'text' => ['type' => 'mrkdwn', 'text' => "```\n".mb_substr($data['trace'], 0, 500)."\n```"],
                     ],
                 ],
             ]);
@@ -101,7 +104,9 @@ class ErrorReporter
     private static function sendSlackMessage(string $title, string $message, string $level, array $context): void
     {
         $webhookUrl = config('error-reporting.slack_webhook_url');
-        if (! $webhookUrl) return;
+        if (! $webhookUrl) {
+            return;
+        }
 
         $emoji = match ($level) {
             'critical', 'emergency' => '🔴',
@@ -123,9 +128,13 @@ class ErrorReporter
     {
         // If Sentry SDK is installed, use it directly
         if (function_exists('\\Sentry\\captureException')) {
-            \Sentry\configureScope(function (\Sentry\State\Scope $scope) use ($context): void {
-                if ($context['tenant_id']) $scope->setTag('tenant_id', (string) $context['tenant_id']);
-                if ($context['user_id']) $scope->setUser(['id' => (string) $context['user_id']]);
+            \Sentry\configureScope(function (Scope $scope) use ($context): void {
+                if ($context['tenant_id']) {
+                    $scope->setTag('tenant_id', (string) $context['tenant_id']);
+                }
+                if ($context['user_id']) {
+                    $scope->setUser(['id' => (string) $context['user_id']]);
+                }
             });
             \Sentry\captureException($e);
         } else {

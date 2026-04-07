@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules\File;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class AdminMediaController extends Controller
 {
@@ -25,7 +26,7 @@ class AdminMediaController extends Controller
         ]);
 
         $media = $post->addMediaFromRequest('image')
-            ->usingFileName(time() . '_' . $request->file('image')->getClientOriginalName())
+            ->usingFileName(time().'_'.$request->file('image')->getClientOriginalName())
             ->toMediaCollection('cover');
 
         $post->update(['cover_image' => $media->getUrl()]);
@@ -55,7 +56,7 @@ class AdminMediaController extends Controller
 
         return response()->json([
             'data' => [
-                'url' => asset('storage/' . $path),
+                'url' => asset('storage/'.$path),
             ],
         ]);
     }
@@ -67,7 +68,7 @@ class AdminMediaController extends Controller
      */
     public function destroy(int $mediaId): JsonResponse
     {
-        $media = \Spatie\MediaLibrary\MediaCollections\Models\Media::findOrFail($mediaId);
+        $media = Media::findOrFail($mediaId);
 
         $model = $media->model;
         if ($model && method_exists($model, 'getAttribute') && $model->getAttribute('tenant_id')) {

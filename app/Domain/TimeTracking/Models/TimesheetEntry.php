@@ -39,10 +39,10 @@ use Spatie\Activitylog\Support\LogOptions;
 ])]
 class TimesheetEntry extends Model
 {
-    use HasFactory;
-    use SoftDeletes;
     use BelongsToTenant;
+    use HasFactory;
     use LogsActivity;
+    use SoftDeletes;
 
     /** @var array<string, mixed> */
     protected $attributes = [

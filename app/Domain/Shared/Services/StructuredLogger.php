@@ -25,10 +25,25 @@ class StructuredLogger
         Log::log($level, $message, $enriched);
     }
 
-    public static function info(string $message, array $context = []): void { self::log('info', $message, $context); }
-    public static function warning(string $message, array $context = []): void { self::log('warning', $message, $context); }
-    public static function error(string $message, array $context = []): void { self::log('error', $message, $context); }
-    public static function critical(string $message, array $context = []): void { self::log('critical', $message, $context); }
+    public static function info(string $message, array $context = []): void
+    {
+        self::log('info', $message, $context);
+    }
+
+    public static function warning(string $message, array $context = []): void
+    {
+        self::log('warning', $message, $context);
+    }
+
+    public static function error(string $message, array $context = []): void
+    {
+        self::log('error', $message, $context);
+    }
+
+    public static function critical(string $message, array $context = []): void
+    {
+        self::log('critical', $message, $context);
+    }
 
     /**
      * Log with performance timing.

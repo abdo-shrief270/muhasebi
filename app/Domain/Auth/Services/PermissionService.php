@@ -6,6 +6,8 @@ namespace App\Domain\Auth\Services;
 
 use App\Domain\Shared\Enums\UserRole;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -82,7 +84,7 @@ class PermissionService
     /**
      * Get all available roles.
      *
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection
      */
     public static function getAllRoles()
     {
@@ -92,7 +94,7 @@ class PermissionService
     /**
      * Get all available permissions.
      *
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection
      */
     public static function getAllPermissions()
     {
@@ -126,12 +128,12 @@ class PermissionService
     /**
      * Delete a role if no users are assigned to it.
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
     public static function deleteRole(Role $role): void
     {
         if ($role->users()->count() > 0) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
+            throw ValidationException::withMessages([
                 'role' => [
                     'Cannot delete role with assigned users.',
                     'لا يمكن حذف دور به مستخدمين.',

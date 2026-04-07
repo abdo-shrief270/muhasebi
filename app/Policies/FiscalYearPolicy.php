@@ -32,6 +32,6 @@ class FiscalYearPolicy
 
     public function delete(User $user, FiscalYear $fiscalYear): bool
     {
-        return $user->hasPermissionTo('manage_fiscal_years') && !$fiscalYear->is_closed;
+        return $user->hasPermissionTo('manage_fiscal_years') && ! $fiscalYear->is_closed;
     }
 }

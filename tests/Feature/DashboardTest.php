@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Domain\Billing\Enums\InvoiceStatus;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Client\Models\Client;
 

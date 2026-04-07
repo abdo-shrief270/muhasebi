@@ -8,6 +8,7 @@ use App\Domain\Integration\Models\IntegrationSetting;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 /**
  * Manages integration settings (payment gateways, third-party services).
@@ -128,29 +129,36 @@ class AdminIntegrationController extends Controller
     private function verifyPaymob(IntegrationSetting $setting): array
     {
         $apiKey = $setting->credentials['api_key'] ?? null;
-        if (! $apiKey) return ['success' => false, 'message' => 'API key not configured.'];
+        if (! $apiKey) {
+            return ['success' => false, 'message' => 'API key not configured.'];
+        }
 
         try {
-            $response = \Illuminate\Support\Facades\Http::timeout(10)
+            $response = Http::timeout(10)
                 ->post('https://accept.paymob.com/api/auth/tokens', ['api_key' => $apiKey]);
 
             if ($response->successful() && $response->json('token')) {
                 return ['success' => true, 'message' => 'Paymob credentials verified successfully.'];
             }
+
             return ['success' => false, 'message' => 'Invalid Paymob API key.'];
         } catch (\Throwable $e) {
-            return ['success' => false, 'message' => 'Connection error: ' . $e->getMessage()];
+            return ['success' => false, 'message' => 'Connection error: '.$e->getMessage()];
         }
     }
 
     private function verifyFawry(IntegrationSetting $setting): array
     {
         $merchantCode = $setting->credentials['merchant_code'] ?? null;
-        if (! $merchantCode) return ['success' => false, 'message' => 'Merchant code not configured.'];
+        if (! $merchantCode) {
+            return ['success' => false, 'message' => 'Merchant code not configured.'];
+        }
 
         // Fawry doesn't have a simple verify endpoint, check if credentials are present
         $securityKey = $setting->credentials['security_key'] ?? null;
-        if (! $securityKey) return ['success' => false, 'message' => 'Security key not configured.'];
+        if (! $securityKey) {
+            return ['success' => false, 'message' => 'Security key not configured.'];
+        }
 
         return ['success' => true, 'message' => 'Fawry credentials appear valid. Test with a small payment to fully verify.'];
     }
@@ -158,20 +166,23 @@ class AdminIntegrationController extends Controller
     private function verifyBeonChat(IntegrationSetting $setting): array
     {
         $apiKey = $setting->credentials['api_key'] ?? null;
-        if (! $apiKey) return ['success' => false, 'message' => 'API key not configured.'];
+        if (! $apiKey) {
+            return ['success' => false, 'message' => 'API key not configured.'];
+        }
 
         try {
             $baseUrl = $setting->config['base_url'] ?? 'https://api.beon.chat';
-            $response = \Illuminate\Support\Facades\Http::timeout(10)
+            $response = Http::timeout(10)
                 ->withToken($apiKey)
                 ->get("{$baseUrl}/v1/me");
 
             if ($response->successful()) {
                 return ['success' => true, 'message' => 'Beon.chat credentials verified.'];
             }
-            return ['success' => false, 'message' => 'Invalid Beon.chat API key. Status: ' . $response->status()];
+
+            return ['success' => false, 'message' => 'Invalid Beon.chat API key. Status: '.$response->status()];
         } catch (\Throwable $e) {
-            return ['success' => false, 'message' => 'Connection error: ' . $e->getMessage()];
+            return ['success' => false, 'message' => 'Connection error: '.$e->getMessage()];
         }
     }
 

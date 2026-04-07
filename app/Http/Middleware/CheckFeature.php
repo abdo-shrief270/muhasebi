@@ -6,6 +6,7 @@ namespace App\Http\Middleware;
 
 use App\Domain\Shared\Services\FeatureFlagService;
 use App\Domain\Subscription\Models\Subscription;
+use App\Http\ApiResponse;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -36,7 +37,7 @@ class CheckFeature
                 ->first();
 
         if (! $subscription) {
-            return \App\Http\ApiResponse::error(
+            return ApiResponse::error(
                 code: 'subscription_inactive',
                 message: __('messages.error.subscription_inactive', [], 'ar') ?: 'اشتراكك غير نشط. يرجى تجديد اشتراكك.',
                 status: Response::HTTP_FORBIDDEN,
@@ -49,7 +50,7 @@ class CheckFeature
             return $next($request);
         }
 
-        return \App\Http\ApiResponse::error(
+        return ApiResponse::error(
             code: 'feature_not_available',
             message: __('messages.error.feature_not_available', [], 'ar') ?: 'هذه الميزة غير متوفرة في خطتك الحالية.',
             status: Response::HTTP_FORBIDDEN,

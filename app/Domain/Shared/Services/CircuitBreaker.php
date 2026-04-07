@@ -23,7 +23,9 @@ use Illuminate\Support\Facades\Log;
 class CircuitBreaker
 {
     private const STATE_CLOSED = 'closed';
+
     private const STATE_OPEN = 'open';
+
     private const STATE_HALF_OPEN = 'half_open';
 
     /**
@@ -35,9 +37,8 @@ class CircuitBreaker
      * @param  int  $failureThreshold  Failures before opening circuit (default: 5)
      * @param  int  $recoveryTimeout  Seconds before trying half-open (default: 60)
      * @param  int  $successThreshold  Successes in half-open before closing (default: 2)
-     * @return mixed
      *
-     * @throws \Throwable  Re-throws if no fallback provided and circuit is open
+     * @throws \Throwable Re-throws if no fallback provided and circuit is open
      */
     public static function call(
         string $service,

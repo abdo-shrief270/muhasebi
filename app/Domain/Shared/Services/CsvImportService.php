@@ -48,11 +48,13 @@ class CsvImportService
 
                 if ($name === '') {
                     $errors[] = "Row {$rowNumber}: name is required.";
+
                     continue;
                 }
 
                 if ($email !== '' && isset($existingEmails[strtolower($email)])) {
                     $skipped++;
+
                     continue;
                 }
 
@@ -111,16 +113,19 @@ class CsvImportService
 
                 if ($code === '' || $name === '') {
                     $errors[] = "Row {$rowNumber}: code and name are required.";
+
                     continue;
                 }
 
                 if (! in_array($type, $validTypes, true)) {
-                    $errors[] = "Row {$rowNumber}: invalid account type '{$type}'. Must be one of: " . implode(', ', $validTypes) . '.';
+                    $errors[] = "Row {$rowNumber}: invalid account type '{$type}'. Must be one of: ".implode(', ', $validTypes).'.';
+
                     continue;
                 }
 
                 if (isset($existingCodes[$code])) {
                     $skipped++;
+
                     continue;
                 }
 
@@ -129,6 +134,7 @@ class CsvImportService
                     $parentId = $existingCodes[$parentCode] ?? null;
                     if ($parentId === null) {
                         $errors[] = "Row {$rowNumber}: parent_code '{$parentCode}' not found.";
+
                         continue;
                     }
                 }
@@ -183,12 +189,14 @@ class CsvImportService
 
             if ($accountCode === '') {
                 $errors[] = "Row {$rowNumber}: account_code is required.";
+
                 continue;
             }
 
             $accountId = $accountMap[$accountCode] ?? null;
             if ($accountId === null) {
                 $errors[] = "Row {$rowNumber}: account_code '{$accountCode}' not found.";
+
                 continue;
             }
 
@@ -197,11 +205,13 @@ class CsvImportService
 
             if ($debitAmount == 0 && $creditAmount == 0) {
                 $skipped++;
+
                 continue;
             }
 
             if ($debitAmount > 0 && $creditAmount > 0) {
                 $errors[] = "Row {$rowNumber}: a line cannot have both debit and credit.";
+
                 continue;
             }
 
@@ -227,7 +237,7 @@ class CsvImportService
         }
 
         DB::transaction(function () use ($validLines, $tenantId, $totalDebit, $totalCredit, &$imported): void {
-            $entryNumber = 'OB-' . now()->format('YmdHis');
+            $entryNumber = 'OB-'.now()->format('YmdHis');
 
             $journalEntry = JournalEntry::create([
                 'tenant_id' => $tenantId,
