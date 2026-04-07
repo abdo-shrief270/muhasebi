@@ -32,6 +32,8 @@ use App\Http\Controllers\Api\V1\Admin\AdminUserController;
 use App\Http\Controllers\Api\V1\AgingReminderController;
 use App\Http\Controllers\Api\V1\ApiDocsController;
 use App\Http\Controllers\Api\V1\BankReconciliationController;
+use App\Http\Controllers\Api\V1\AssetCategoryController;
+use App\Http\Controllers\Api\V1\AssetDisposalController;
 use App\Http\Controllers\Api\V1\BillController;
 use App\Http\Controllers\Api\V1\BillPaymentController;
 use App\Http\Controllers\Api\V1\BlogController;
@@ -48,6 +50,7 @@ use App\Http\Controllers\Api\V1\EtaItemCodeController;
 use App\Http\Controllers\Api\V1\ExportController;
 use App\Http\Controllers\Api\V1\FiscalPeriodController;
 use App\Http\Controllers\Api\V1\FiscalYearController;
+use App\Http\Controllers\Api\V1\FixedAssetController;
 use App\Http\Controllers\Api\V1\HealthCheckController;
 use App\Http\Controllers\Api\V1\ImportController;
 use App\Http\Controllers\Api\V1\InvoiceController;
@@ -361,6 +364,18 @@ Route::prefix('v1')->group(function (): void {
                 Route::get('bills/{bill}/payments', [BillPaymentController::class, 'index'])->name('bills.payments.index');
                 Route::post('bills/{bill}/payments', [BillPaymentController::class, 'store'])->name('bills.payments.store');
                 Route::delete('bill-payments/{billPayment}/void', [BillPaymentController::class, 'void'])->name('bill-payments.void');
+            });
+
+            // ── Fixed Assets ──
+            Route::middleware('permission:manage_fixed_assets')->group(function (): void {
+                Route::apiResource('asset-categories', AssetCategoryController::class);
+                Route::apiResource('fixed-assets', FixedAssetController::class);
+                Route::get('fixed-assets/{fixedAsset}/depreciation-schedule', [FixedAssetController::class, 'schedule'])->name('fixed-assets.schedule');
+                Route::post('fixed-assets/depreciate', [FixedAssetController::class, 'depreciate'])->name('fixed-assets.depreciate');
+                Route::get('fixed-assets/reports/register', [FixedAssetController::class, 'register'])->name('fixed-assets.register');
+                Route::get('fixed-assets/reports/roll-forward', [FixedAssetController::class, 'rollForward'])->name('fixed-assets.roll-forward');
+                Route::get('fixed-assets/{fixedAsset}/disposals', [AssetDisposalController::class, 'index'])->name('fixed-assets.disposals.index');
+                Route::post('fixed-assets/{fixedAsset}/dispose', [AssetDisposalController::class, 'store'])->name('fixed-assets.dispose');
             });
 
             // ── Invoice & Landing Page Settings (admin only) ──

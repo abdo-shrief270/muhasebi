@@ -16,6 +16,8 @@ use App\Domain\Billing\Observers\InvoiceObserver;
 use App\Domain\Billing\Observers\PaymentObserver;
 use App\Domain\AccountsPayable\Models\Bill;
 use App\Domain\AccountsPayable\Models\Vendor;
+use App\Domain\FixedAsset\Models\AssetCategory;
+use App\Domain\FixedAsset\Models\FixedAsset;
 use App\Domain\Client\Models\Client;
 use App\Domain\Document\Models\Document;
 use App\Domain\Payroll\Models\Employee;
@@ -25,10 +27,12 @@ use App\Domain\Shared\Services\QueryAnalyzer;
 use App\Domain\TimeTracking\Models\TimesheetEntry;
 use App\Models\User;
 use App\Policies\AccountPolicy;
+use App\Policies\AssetCategoryPolicy;
 use App\Policies\BillPolicy;
 use App\Policies\ClientPolicy;
 use App\Policies\DocumentPolicy;
 use App\Policies\EmployeePolicy;
+use App\Policies\FixedAssetPolicy;
 use App\Policies\FiscalYearPolicy;
 use App\Policies\InvoicePolicy;
 use App\Policies\JournalEntryPolicy;
@@ -135,10 +139,12 @@ class AppServiceProvider extends ServiceProvider
     private function registerPolicies(): void
     {
         Gate::policy(Account::class, AccountPolicy::class);
+        Gate::policy(AssetCategory::class, AssetCategoryPolicy::class);
         Gate::policy(Bill::class, BillPolicy::class);
         Gate::policy(Client::class, ClientPolicy::class);
         Gate::policy(Document::class, DocumentPolicy::class);
         Gate::policy(Employee::class, EmployeePolicy::class);
+        Gate::policy(FixedAsset::class, FixedAssetPolicy::class);
         Gate::policy(FiscalYear::class, FiscalYearPolicy::class);
         Gate::policy(Invoice::class, InvoicePolicy::class);
         Gate::policy(JournalEntry::class, JournalEntryPolicy::class);
