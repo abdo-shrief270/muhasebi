@@ -167,7 +167,7 @@ Route::prefix('v1')->group(function (): void {
         Route::prefix('2fa')->name('2fa.')->group(function (): void {
             Route::get('status', [TwoFactorController::class, 'status'])->name('status');
             Route::post('enable', [TwoFactorController::class, 'enable'])->name('enable');
-            Route::post('disable', [TwoFactorController::class, 'disable'])->name('disable');
+            Route::post('disable', [TwoFactorController::class, 'disable'])->middleware('throttle:3,1')->name('disable');
             Route::post('verify', [TwoFactorController::class, 'verify'])->middleware('throttle:5,1')->name('verify');
         });
 
@@ -215,10 +215,10 @@ Route::prefix('v1')->group(function (): void {
             // ── Subscription (admin only) ──
             Route::middleware('permission:manage_subscription')->group(function (): void {
                 Route::get('subscription', [SubscriptionController::class, 'show'])->name('subscription.show');
-                Route::post('subscription/subscribe', [SubscriptionController::class, 'subscribe'])->middleware(['idempotent', 'no-duplicate'])->name('subscription.subscribe');
-                Route::post('subscription/cancel', [SubscriptionController::class, 'cancel'])->middleware('no-duplicate')->name('subscription.cancel');
-                Route::post('subscription/renew', [SubscriptionController::class, 'renew'])->middleware(['idempotent', 'no-duplicate'])->name('subscription.renew');
-                Route::post('subscription/change-plan', [SubscriptionController::class, 'changePlan'])->name('subscription.change-plan');
+                Route::post('subscription/subscribe', [SubscriptionController::class, 'subscribe'])->middleware(['throttle:5,1', 'idempotent', 'no-duplicate'])->name('subscription.subscribe');
+                Route::post('subscription/cancel', [SubscriptionController::class, 'cancel'])->middleware(['throttle:5,1', 'no-duplicate'])->name('subscription.cancel');
+                Route::post('subscription/renew', [SubscriptionController::class, 'renew'])->middleware(['throttle:5,1', 'idempotent', 'no-duplicate'])->name('subscription.renew');
+                Route::post('subscription/change-plan', [SubscriptionController::class, 'changePlan'])->middleware('throttle:5,1')->name('subscription.change-plan');
                 Route::get('subscription/usage', [SubscriptionController::class, 'usage'])->name('subscription.usage');
                 Route::get('subscription/usage-history', [SubscriptionController::class, 'usageHistory'])->name('subscription.usage-history');
                 Route::get('subscription/payments', [SubscriptionController::class, 'payments'])->name('subscription.payments');
@@ -319,8 +319,8 @@ Route::prefix('v1')->group(function (): void {
 
             // ── Messaging (Beon.chat — WhatsApp/SMS) ──
             Route::middleware('permission:manage_clients')->prefix('messaging')->name('messaging.')->group(function (): void {
-                Route::post('whatsapp', [MessagingController::class, 'sendWhatsApp'])->name('whatsapp');
-                Route::post('sms', [MessagingController::class, 'sendSms'])->name('sms');
+                Route::post('whatsapp', [MessagingController::class, 'sendWhatsApp'])->middleware('throttle:10,1')->name('whatsapp');
+                Route::post('sms', [MessagingController::class, 'sendSms'])->middleware('throttle:10,1')->name('sms');
                 Route::get('templates', [MessagingController::class, 'templates'])->name('templates');
                 Route::get('conversations', [MessagingController::class, 'conversations'])->name('conversations');
                 Route::get('conversations/{conversationId}', [MessagingController::class, 'conversationMessages'])->name('conversations.messages');
@@ -337,7 +337,7 @@ Route::prefix('v1')->group(function (): void {
             // ── Payments (admin + accountant) ──
             Route::middleware('permission:manage_payments')->group(function (): void {
                 Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
-                Route::post('payments', [PaymentController::class, 'store'])->name('payments.store');
+                Route::post('payments', [PaymentController::class, 'store'])->middleware('throttle:10,1')->name('payments.store');
                 Route::delete('payments/{payment}', [PaymentController::class, 'destroy'])->name('payments.destroy');
             });
 
@@ -457,7 +457,7 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── Reports (all tenant roles) ──
-            Route::middleware('permission:view_reports')->prefix('reports')->name('reports.')->group(function (): void {
+            Route::middleware(['permission:view_reports', 'throttle:reports'])->prefix('reports')->name('reports.')->group(function (): void {
                 Route::get('trial-balance', [ReportController::class, 'trialBalance'])
                     ->name('trial-balance');
                 Route::get('accounts/{account}/ledger', [ReportController::class, 'accountLedger'])
@@ -526,7 +526,7 @@ Route::prefix('v1')->group(function (): void {
                 Route::get('{savedReport}/run', [CustomReportController::class, 'run'])->name('run');
             });
 
-            Route::middleware('permission:view_reports')->prefix('export')->name('export.')->group(function (): void {
+            Route::middleware(['permission:view_reports', 'throttle:exports'])->prefix('export')->name('export.')->group(function (): void {
                 Route::get('clients', [ExportController::class, 'clients'])->name('clients');
                 Route::get('invoices', [ExportController::class, 'invoices'])->name('invoices');
                 Route::get('journal-entries', [ExportController::class, 'journalEntries'])->name('journal-entries');
