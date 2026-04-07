@@ -32,6 +32,9 @@ Schedule::command('usage:record')->dailyAt('00:05');
 // Daily database backup at 2am (keep 30 days)
 Schedule::command('backup:database --keep=30')->dailyAt('02:00');
 
+// Clean up old API request logs (runs daily at 2:30am)
+Schedule::command('api-logs:clean --days=30')->dailyAt('02:30');
+
 // Clean up old auth tokens (runs daily at 3am)
 Schedule::command('tokens:cleanup --days=30')->dailyAt('03:00');
 
