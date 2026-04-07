@@ -45,11 +45,8 @@ class IdempotencyKey
         // Check for existing response
         $cached = Cache::get($cacheKey);
         if ($cached) {
-            $response = response()->json(
-                json_decode($cached['body'], true),
-                $cached['status'],
-            );
-            $response->headers->set('X-Idempotency-Replay', 'true');
+            $response = response(decrypt($cached['body']), $cached['status'])
+                ->withHeaders(['X-Idempotency-Replay' => 'true']);
 
             return $response;
         }
@@ -74,7 +71,7 @@ class IdempotencyKey
             // Only cache successful responses
             if ($response->isSuccessful() || $response->isClientError()) {
                 Cache::put($cacheKey, [
-                    'body' => $response->getContent(),
+                    'body' => encrypt($response->getContent()),
                     'status' => $response->getStatusCode(),
                 ], self::TTL);
             }

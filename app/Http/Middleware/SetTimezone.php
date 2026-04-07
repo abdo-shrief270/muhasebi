@@ -35,7 +35,9 @@ class SetTimezone
 
         $tenant = app()->bound('tenant') ? app('tenant') : null;
 
-        if ($tenant && ($tz = $tenant->settings['timezone'] ?? null) && in_array($tz, \DateTimeZone::listIdentifiers(), true)) {
+        $tz = is_array($tenant?->settings) ? ($tenant->settings['timezone'] ?? null) : null;
+
+        if ($tz && in_array($tz, \DateTimeZone::listIdentifiers(), true)) {
             return $tz;
         }
 
