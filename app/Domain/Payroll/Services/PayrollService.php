@@ -90,11 +90,11 @@ class PayrollService
                 ->whereHas('user', fn ($q) => $q->where('is_active', true))
                 ->get();
 
-            $totalGross = '0';
-            $totalDeductions = '0';
-            $totalNet = '0';
-            $totalSI = '0';
-            $totalTax = '0';
+            $totalGross = '0.00';
+            $totalDeductions = '0.00';
+            $totalNet = '0.00';
+            $totalSI = '0.00';
+            $totalTax = '0.00';
 
             foreach ($employees as $employee) {
                 $item = $this->calculateEmployeePayroll($run, $employee);
