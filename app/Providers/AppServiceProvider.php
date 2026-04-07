@@ -49,6 +49,7 @@ class AppServiceProvider extends ServiceProvider
         $this->registerPolicies();
         $this->registerPermissionGates();
         $this->configureRateLimiting();
+        $this->registerModelObservers();
 
         // Register N+1 query analyzer (works in all environments)
         \App\Domain\Shared\Services\QueryAnalyzer::register(threshold: 5);
@@ -99,6 +100,12 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('admin', function (Request $request) {
             return Limit::perMinute(200)->by($request->user()?->id ?: $request->ip());
         });
+    }
+
+    private function registerModelObservers(): void
+    {
+        Invoice::observe(\App\Domain\Billing\Observers\InvoiceObserver::class);
+        Payment::observe(\App\Domain\Billing\Observers\PaymentObserver::class);
     }
 
     private function registerPolicies(): void
