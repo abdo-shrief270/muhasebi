@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Accounting\Models;
 
+use App\Domain\Shared\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Model;
@@ -19,6 +20,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class BudgetLine extends Model
 {
+    use BelongsToTenant;
+
     protected function casts(): array
     {
         return [

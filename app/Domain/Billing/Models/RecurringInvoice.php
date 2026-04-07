@@ -9,12 +9,14 @@ use App\Domain\Shared\Traits\BelongsToTenant;
 use App\Domain\Tenant\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
+#[Table('recurring_invoices')]
 #[Fillable(['tenant_id', 'client_id', 'created_by', 'frequency', 'day_of_month', 'day_of_week', 'start_date', 'end_date', 'next_run_date', 'last_run_date', 'line_items', 'currency', 'notes', 'terms', 'due_days', 'is_active', 'auto_send', 'invoices_generated', 'max_occurrences'])]
 class RecurringInvoice extends Model
 {

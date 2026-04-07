@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Accounting\Models;
 
+use App\Domain\Shared\Traits\BelongsToTenant;
 use Database\Factories\JournalEntryLineFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
@@ -23,7 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class JournalEntryLine extends Model
 {
-    use HasFactory;
+    use BelongsToTenant, HasFactory;
 
     /** @return array<string, string> */
     protected function casts(): array
