@@ -24,4 +24,14 @@ class FiscalYearPolicy
     {
         return $user->hasPermissionTo('post_journal_entries');
     }
+
+    public function update(User $user, FiscalYear $fiscalYear): bool
+    {
+        return $user->hasPermissionTo('manage_fiscal_years');
+    }
+
+    public function delete(User $user, FiscalYear $fiscalYear): bool
+    {
+        return $user->hasPermissionTo('manage_fiscal_years') && !$fiscalYear->is_closed;
+    }
 }

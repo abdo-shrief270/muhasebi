@@ -7,6 +7,7 @@ namespace App\Domain\Notification\Models;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -32,12 +33,12 @@ class DeviceToken extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function scopeForUser($query, int $userId)
+    public function scopeForUser(Builder $query, int $userId): Builder
     {
         return $query->where('user_id', $userId);
     }
 
-    public function scopeForPlatform($query, string $platform)
+    public function scopeForPlatform(Builder $query, string $platform): Builder
     {
         return $query->where('platform', $platform);
     }

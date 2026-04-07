@@ -3,6 +3,7 @@
 namespace App\Domain\Cms\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
@@ -29,12 +30,12 @@ class ContactSubmission extends Model
             ->setDescriptionForEvent(fn (string $eventName) => "Contact submission {$eventName}");
     }
 
-    public function scopeUnread($query)
+    public function scopeUnread(Builder $query): Builder
     {
         return $query->where('is_read', false);
     }
 
-    public function scopeByStatus($query, string $status)
+    public function scopeByStatus(Builder $query, string $status): Builder
     {
         return $query->where('status', $status);
     }

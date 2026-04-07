@@ -14,6 +14,11 @@ class PaymentPolicy
         return $user->hasPermissionTo('manage_payments');
     }
 
+    public function view(User $user, Payment $payment): bool
+    {
+        return $user->hasPermissionTo('manage_payments');
+    }
+
     public function create(User $user): bool
     {
         return $user->hasPermissionTo('manage_payments');
