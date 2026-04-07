@@ -32,6 +32,8 @@ return [
         'manage_landing_page',
         'manage_onboarding',
         'invite_client_portal',
+        'manage_vendors',
+        'manage_bills',
     ],
 
     'accountant' => [
@@ -46,6 +48,8 @@ return [
         'view_reports',
         'manage_eta',
         'manage_timesheets',
+        'manage_vendors',
+        'manage_bills',
     ],
 
     'auditor' => [

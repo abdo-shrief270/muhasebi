@@ -32,6 +32,8 @@ use App\Http\Controllers\Api\V1\Admin\AdminUserController;
 use App\Http\Controllers\Api\V1\AgingReminderController;
 use App\Http\Controllers\Api\V1\ApiDocsController;
 use App\Http\Controllers\Api\V1\BankReconciliationController;
+use App\Http\Controllers\Api\V1\BillController;
+use App\Http\Controllers\Api\V1\BillPaymentController;
 use App\Http\Controllers\Api\V1\BlogController;
 use App\Http\Controllers\Api\V1\BudgetController;
 use App\Http\Controllers\Api\V1\ClientController;
@@ -76,6 +78,7 @@ use App\Http\Controllers\Api\V1\TimerController;
 use App\Http\Controllers\Api\V1\TimesheetController;
 use App\Http\Controllers\Api\V1\TwoFactorController;
 use App\Http\Controllers\Api\V1\UserPreferenceController;
+use App\Http\Controllers\Api\V1\VendorController;
 use App\Http\Controllers\Api\V1\WebhookController;
 use App\Http\Controllers\Api\V1\WebhookEndpointController;
 use Illuminate\Http\Request;
@@ -342,6 +345,22 @@ Route::prefix('v1')->group(function (): void {
                 Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
                 Route::post('payments', [PaymentController::class, 'store'])->middleware('throttle:10,1')->name('payments.store');
                 Route::delete('payments/{payment}', [PaymentController::class, 'destroy'])->name('payments.destroy');
+            });
+
+            // ── Accounts Payable ──
+            Route::middleware('permission:manage_vendors')->group(function (): void {
+                Route::apiResource('vendors', VendorController::class);
+                Route::get('vendors/{vendor}/statement', [VendorController::class, 'statement'])->name('vendors.statement');
+                Route::get('vendors/reports/aging', [VendorController::class, 'aging'])->name('vendors.aging');
+            });
+
+            Route::middleware('permission:manage_bills')->group(function (): void {
+                Route::apiResource('bills', BillController::class);
+                Route::post('bills/{bill}/approve', [BillController::class, 'approve'])->name('bills.approve');
+                Route::post('bills/{bill}/cancel', [BillController::class, 'cancel'])->name('bills.cancel');
+                Route::get('bills/{bill}/payments', [BillPaymentController::class, 'index'])->name('bills.payments.index');
+                Route::post('bills/{bill}/payments', [BillPaymentController::class, 'store'])->name('bills.payments.store');
+                Route::delete('bill-payments/{billPayment}/void', [BillPaymentController::class, 'void'])->name('bill-payments.void');
             });
 
             // ── Invoice & Landing Page Settings (admin only) ──
