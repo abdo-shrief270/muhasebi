@@ -87,7 +87,6 @@ use App\Http\Controllers\Api\V1\SalaryComponentController;
 use App\Http\Controllers\Api\V1\PlanController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalDocumentController;
-use App\Http\Controllers\Api\V1\Portal\ClientPortalEnhancedController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalInvoiceController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalMessageController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalNotificationController;
@@ -95,7 +94,6 @@ use App\Http\Controllers\Api\V1\RecurringInvoiceController;
 use App\Http\Controllers\Api\V1\RecurringJournalEntryController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\ScheduledReportController;
-use App\Http\Controllers\Api\V1\StatementBuilderController;
 use App\Http\Controllers\Api\V1\RssFeedController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\TeamController;
@@ -114,7 +112,7 @@ use App\Http\Controllers\Api\V1\WebhookEndpointController;
 use App\Http\Controllers\Api\V1\WhtCertificateController;
 use App\Http\Controllers\Api\V1\WorkingPaperController;
 use App\Http\Controllers\Api\V1\AlertRuleController;
-use App\Http\Controllers\Api\V1\PaymentWorkflowController;
+use App\Http\Controllers\Api\V1\BankConnectionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
@@ -334,6 +332,20 @@ Route::prefix('v1')->group(function (): void {
                 Route::post('bank-statement-lines/{bankStatementLine}/apply-suggestion', [BankCategorizationController::class, 'applySuggestion'])->name('bank-statement-lines.apply-suggestion');
                 Route::post('bank-statement-lines/{bankStatementLine}/learn', [BankCategorizationController::class, 'learn'])->name('bank-statement-lines.learn');
 
+                // Bank Connections (Egyptian Bank API Integration)
+                Route::prefix('bank-connections')->name('bank-connections.')->group(function (): void {
+                    Route::get('dashboard', [BankConnectionController::class, 'dashboard'])->name('dashboard');
+                    Route::get('supported-formats', [BankConnectionController::class, 'supportedFormats'])->name('supported-formats');
+                    Route::post('generate-instruction', [BankConnectionController::class, 'generateInstruction'])->name('generate-instruction');
+                    Route::get('/', [BankConnectionController::class, 'index'])->name('index');
+                    Route::post('/', [BankConnectionController::class, 'store'])->name('store');
+                    Route::get('{bankConnection}', [BankConnectionController::class, 'show'])->name('show');
+                    Route::put('{bankConnection}', [BankConnectionController::class, 'update'])->name('update');
+                    Route::delete('{bankConnection}', [BankConnectionController::class, 'destroy'])->name('destroy');
+                    Route::post('{bankConnection}/sync-balance', [BankConnectionController::class, 'syncBalance'])->name('sync-balance');
+                    Route::post('{bankConnection}/import-statement', [BankConnectionController::class, 'importStatement'])->name('import-statement');
+                });
+
                 // FX Revaluations
                 Route::prefix('fx-revaluations')->name('fx-revaluations.')->group(function (): void {
                     Route::get('/', [FxRevaluationController::class, 'index'])->name('index');
@@ -452,22 +464,6 @@ Route::prefix('v1')->group(function (): void {
                 Route::get('bills/{bill}/payments', [BillPaymentController::class, 'index'])->name('bills.payments.index');
                 Route::post('bills/{bill}/payments', [BillPaymentController::class, 'store'])->name('bills.payments.store');
                 Route::delete('bill-payments/{billPayment}/void', [BillPaymentController::class, 'void'])->name('bill-payments.void');
-            });
-
-            // ── Payment Workflow (scheduling, auto-approval) ──
-            Route::middleware('permission:manage_payments')->group(function (): void {
-                Route::get('payment-schedules', [PaymentWorkflowController::class, 'listScheduled'])->name('payment-schedules.index');
-                Route::post('payment-schedules', [PaymentWorkflowController::class, 'schedule'])->name('payment-schedules.store');
-                Route::post('payment-schedules/bulk', [PaymentWorkflowController::class, 'scheduleBulk'])->name('payment-schedules.bulk');
-                Route::post('payment-schedules/{paymentSchedule}/approve', [PaymentWorkflowController::class, 'approve'])->name('payment-schedules.approve');
-                Route::get('payment-schedules/discount-opportunities', [PaymentWorkflowController::class, 'discountOpportunities'])->name('payment-schedules.discount-opportunities');
-            });
-
-            Route::middleware('permission:manage_bills')->group(function (): void {
-                Route::get('auto-approval-rules', [PaymentWorkflowController::class, 'autoRulesIndex'])->name('auto-approval-rules.index');
-                Route::post('auto-approval-rules', [PaymentWorkflowController::class, 'autoRulesStore'])->name('auto-approval-rules.store');
-                Route::put('auto-approval-rules/{autoApprovalRule}', [PaymentWorkflowController::class, 'autoRulesUpdate'])->name('auto-approval-rules.update');
-                Route::delete('auto-approval-rules/{autoApprovalRule}', [PaymentWorkflowController::class, 'autoRulesDestroy'])->name('auto-approval-rules.destroy');
             });
 
             // ── Fixed Assets ──
@@ -840,19 +836,6 @@ Route::prefix('v1')->group(function (): void {
                 Route::post('{scheduledReport}/send-now', [ScheduledReportController::class, 'sendNow'])->name('send-now');
             });
 
-            // ── Financial Statement Builder ──
-            Route::middleware('permission:manage_reports')->prefix('statement-templates')->name('statement-templates.')->group(function (): void {
-                Route::get('/', [StatementBuilderController::class, 'index'])->name('index');
-                Route::post('/', [StatementBuilderController::class, 'store'])->name('store');
-                Route::get('ratios', [StatementBuilderController::class, 'ratios'])->name('ratios');
-                Route::get('vertical-analysis', [StatementBuilderController::class, 'verticalAnalysis'])->name('vertical-analysis');
-                Route::get('horizontal-analysis', [StatementBuilderController::class, 'horizontalAnalysis'])->name('horizontal-analysis');
-                Route::get('{statementTemplate}', [StatementBuilderController::class, 'show'])->name('show');
-                Route::put('{statementTemplate}', [StatementBuilderController::class, 'update'])->name('update');
-                Route::delete('{statementTemplate}', [StatementBuilderController::class, 'destroy'])->name('destroy');
-                Route::get('{statementTemplate}/generate', [StatementBuilderController::class, 'generate'])->name('generate');
-            });
-
             Route::middleware(['permission:view_reports', 'throttle:exports'])->prefix('export')->name('export.')->group(function (): void {
                 Route::get('clients', [ExportController::class, 'clients'])->name('clients');
                 Route::get('invoices', [ExportController::class, 'invoices'])->name('invoices');
@@ -1113,17 +1096,6 @@ Route::prefix('v1')->group(function (): void {
                 Route::get('notifications', [ClientPortalNotificationController::class, 'index'])->name('notifications.index');
                 Route::post('notifications/{notification}/read', [ClientPortalNotificationController::class, 'markAsRead'])->name('notifications.read');
                 Route::post('notifications/read-all', [ClientPortalNotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
-
-                // Enhanced portal features
-                Route::get('disputes', [ClientPortalEnhancedController::class, 'disputes'])->name('disputes.index');
-                Route::post('disputes', [ClientPortalEnhancedController::class, 'createDispute'])->name('disputes.store');
-                Route::get('disputes/{dispute}', [ClientPortalEnhancedController::class, 'disputeShow'])->name('disputes.show');
-
-                Route::get('payment-plans', [ClientPortalEnhancedController::class, 'paymentPlans'])->name('payment-plans.index');
-                Route::post('invoices/{invoice}/payment-plan', [ClientPortalEnhancedController::class, 'createPaymentPlan'])->name('payment-plans.store');
-                Route::post('installments/{installment}/pay', [ClientPortalEnhancedController::class, 'payInstallment'])->name('installments.pay');
-
-                Route::get('reports', [ClientPortalEnhancedController::class, 'clientReport'])->name('reports');
             });
     });
 });
