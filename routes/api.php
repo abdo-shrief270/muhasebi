@@ -671,6 +671,16 @@ Route::prefix('v1')->group(function (): void {
                 Route::post('bulk-retry', [EtaController::class, 'bulkRetry'])->name('bulk-retry');
                 Route::post('bulk-status-check', [EtaController::class, 'bulkStatusCheck'])->name('bulk-status-check');
 
+                Route::post('item-codes/bulk-assign', [EtaItemCodeController::class, 'bulkAssign'])->name('eta.item-codes.bulk-assign');
+                Route::post('item-codes/bulk-import', [EtaItemCodeController::class, 'bulkImport'])->name('eta.item-codes.bulk-import');
+                Route::post('item-codes/auto-assign', [EtaItemCodeController::class, 'autoAssign'])->name('eta.item-codes.auto-assign');
+                Route::get('item-codes/usage-report', [EtaItemCodeController::class, 'usageReport'])->name('eta.item-codes.usage-report');
+                Route::get('item-codes/unmapped-lines', [EtaItemCodeController::class, 'unmappedLines'])->name('eta.item-codes.unmapped-lines');
+                Route::get('item-codes/suggest', [EtaItemCodeController::class, 'suggestCode'])->name('eta.item-codes.suggest');
+                Route::get('item-codes/mappings', [EtaItemCodeController::class, 'mappings'])->name('eta.item-codes.mappings');
+                Route::post('item-codes/mappings', [EtaItemCodeController::class, 'createMapping'])->name('eta.item-codes.mappings.store');
+                Route::delete('item-codes/mappings/{mapping}', [EtaItemCodeController::class, 'deleteMapping'])->name('eta.item-codes.mappings.destroy');
+
                 Route::apiResource('item-codes', EtaItemCodeController::class);
             });
 
