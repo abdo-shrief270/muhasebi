@@ -9,6 +9,7 @@ use App\Domain\Accounting\Enums\JournalEntryStatus;
 use App\Domain\Accounting\Enums\NormalBalance;
 use App\Domain\Accounting\Models\Account;
 use App\Domain\Accounting\Models\SavedReport;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -120,7 +121,7 @@ class CustomReportService
      *
      * @param  array<string, mixed>  $filters
      */
-    private function resolveAccounts(array $filters): \Illuminate\Database\Eloquent\Collection
+    private function resolveAccounts(array $filters): EloquentCollection
     {
         $query = Account::query()->active()->leafAccounts()->orderBy('code');
 
@@ -153,7 +154,7 @@ class CustomReportService
      * @return array<string, mixed>
      */
     private function buildReportData(
-        \Illuminate\Database\Eloquent\Collection $accounts,
+        EloquentCollection $accounts,
         ?string $fromDate,
         ?string $toDate,
         array $columns,
@@ -287,7 +288,7 @@ class CustomReportService
      *
      * @return array<int, array<string, mixed>>
      */
-    private function groupByParent(array $rows, \Illuminate\Database\Eloquent\Collection $accounts): array
+    private function groupByParent(array $rows, EloquentCollection $accounts): array
     {
         // Bulk-load all parent accounts to avoid N+1
         $parentIds = array_filter(array_unique(array_column($rows, 'parent_id')));
