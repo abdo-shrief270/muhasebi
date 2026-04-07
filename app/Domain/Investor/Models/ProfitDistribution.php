@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Investor\Models;
 
 use App\Domain\Investor\Enums\DistributionStatus;
+use App\Domain\Shared\Traits\BelongsToTenant;
 use App\Domain\Tenant\Models\Tenant;
 use Database\Factories\ProfitDistributionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -34,6 +35,7 @@ use Spatie\Activitylog\Support\LogOptions;
 class ProfitDistribution extends Model
 {
     use HasFactory;
+    use BelongsToTenant;
     use LogsActivity;
 
     /** @var array<string, mixed> */
@@ -68,11 +70,6 @@ class ProfitDistribution extends Model
     public function investor(): BelongsTo
     {
         return $this->belongsTo(Investor::class);
-    }
-
-    public function tenant(): BelongsTo
-    {
-        return $this->belongsTo(Tenant::class);
     }
 
     // ──────────────────────────────────────
