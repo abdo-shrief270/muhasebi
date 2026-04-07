@@ -78,7 +78,8 @@ class ImportController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $jobs = ImportJob::latest()
+        $jobs = ImportJob::where('tenant_id', app('tenant.id'))
+            ->latest()
             ->paginate(min((int) ($request->input('per_page', 15)), 100));
 
         return response()->json($jobs);

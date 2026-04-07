@@ -48,7 +48,9 @@ class ActivityLogController extends Controller
 
     public function show(int $activityId): JsonResponse
     {
-        $activity = Activity::with('causer:id,name,email')->findOrFail($activityId);
+        $activity = Activity::with('causer:id,name,email')
+            ->where('properties->tenant_id', (string) app('tenant.id'))
+            ->findOrFail($activityId);
 
         return response()->json([
             'data' => $this->activityLogService->detail($activity),

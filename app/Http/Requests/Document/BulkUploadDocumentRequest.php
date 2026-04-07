@@ -20,7 +20,7 @@ class BulkUploadDocumentRequest extends FormRequest
     {
         return [
             'files' => ['required', 'array', 'min:1', 'max:10'],
-            'files.*' => ['file', 'max:20480', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,gif,webp,txt,csv,zip,rar'],
+            'files.*' => ['file', 'max:20480', 'mimetypes:application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/jpeg,image/png,image/gif,image/webp,text/plain,text/csv'],
             'client_id' => ['nullable', 'integer', Rule::exists('clients', 'id')->where('tenant_id', app('tenant.id'))],
             'category' => ['nullable', 'string', Rule::in(array_column(DocumentCategory::cases(), 'value'))],
         ];

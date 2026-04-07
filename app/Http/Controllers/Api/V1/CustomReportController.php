@@ -30,7 +30,7 @@ class CustomReportController extends Controller
             'accounts.codes_from' => ['nullable', 'string', 'max:20'],
             'accounts.codes_to' => ['nullable', 'string', 'max:20'],
             'accounts.ids' => ['nullable', 'array', 'max:50'],
-            'accounts.ids.*' => ['integer', 'exists:accounts,id'],
+            'accounts.ids.*' => ['integer', Rule::exists('accounts', 'id')->where('tenant_id', app('tenant.id'))],
             'date_range' => ['nullable', 'array'],
             'date_range.from' => ['nullable', 'date'],
             'date_range.to' => ['nullable', 'date'],

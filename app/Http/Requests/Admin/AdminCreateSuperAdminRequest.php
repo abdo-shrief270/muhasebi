@@ -20,7 +20,7 @@ class AdminCreateSuperAdminRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
-            'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers(), 'confirmed'],
+            'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()->uncompromised(), 'confirmed'],
         ];
     }
 }
