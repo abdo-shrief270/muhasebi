@@ -200,7 +200,12 @@ class PaymobService
             ]);
         }
 
-        return $response->json('token');
+        $token = $response->json('token');
+        if (! $token) {
+            throw new \RuntimeException('Paymob API returned no authentication token');
+        }
+
+        return $token;
     }
 
     /**
@@ -236,7 +241,12 @@ class PaymobService
             ]);
         }
 
-        return $response->json('id');
+        $id = $response->json('id');
+        if (! $id) {
+            throw new \RuntimeException('Paymob API returned no order ID');
+        }
+
+        return $id;
     }
 
     /**
@@ -295,6 +305,11 @@ class PaymobService
             ]);
         }
 
-        return $response->json('token');
+        $token = $response->json('token');
+        if (! $token) {
+            throw new \RuntimeException('Paymob API returned no payment key token');
+        }
+
+        return $token;
     }
 }
