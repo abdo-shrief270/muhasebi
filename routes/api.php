@@ -60,6 +60,7 @@ use App\Http\Controllers\Api\V1\FixedAssetController;
 use App\Http\Controllers\Api\V1\FxRevaluationController;
 use App\Http\Controllers\Api\V1\HealthCheckController;
 use App\Http\Controllers\Api\V1\ImportController;
+use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\InvoiceController;
 use App\Http\Controllers\Api\V1\InvoiceSettingsController;
 use App\Http\Controllers\Api\V1\JournalEntryController;
@@ -453,6 +454,26 @@ Route::prefix('v1')->group(function (): void {
                 Route::get('cost-centers/{costCenter}/pnl', [CostCenterController::class, 'profitAndLoss'])->name('cost-centers.pnl');
                 Route::get('cost-centers/reports/cost-analysis', [CostCenterController::class, 'costAnalysis'])->name('cost-centers.cost-analysis');
                 Route::get('cost-centers/reports/allocation', [CostCenterController::class, 'allocationReport'])->name('cost-centers.allocation');
+            });
+
+            // ── Inventory Management ──
+            Route::middleware('permission:manage_inventory')->group(function (): void {
+                // Product Categories
+                Route::get('product-categories', [InventoryController::class, 'categoryIndex'])->name('product-categories.index');
+                Route::post('product-categories', [InventoryController::class, 'categoryStore'])->name('product-categories.store');
+                Route::put('product-categories/{productCategory}', [InventoryController::class, 'categoryUpdate'])->name('product-categories.update');
+                Route::delete('product-categories/{productCategory}', [InventoryController::class, 'categoryDestroy'])->name('product-categories.destroy');
+
+                // Products
+                Route::apiResource('products', InventoryController::class);
+
+                // Inventory Operations
+                Route::post('inventory/movements', [InventoryController::class, 'recordMovement'])->name('inventory.movements.store');
+                Route::get('inventory/stock-report', [InventoryController::class, 'stockReport'])->name('inventory.stock-report');
+                Route::get('inventory/low-stock', [InventoryController::class, 'lowStockAlert'])->name('inventory.low-stock');
+                Route::get('inventory/valuation', [InventoryController::class, 'valuation'])->name('inventory.valuation');
+                Route::get('inventory/turnover', [InventoryController::class, 'turnover'])->name('inventory.turnover');
+                Route::get('products/{product}/movements', [InventoryController::class, 'movements'])->name('products.movements');
             });
 
             // ── Tax Management ──
