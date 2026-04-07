@@ -99,6 +99,19 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('admin', function (Request $request) {
             return Limit::perMinute(200)->by($request->user()?->id ?: $request->ip());
         });
+
+        // Expensive operations — apply via throttle:reports, throttle:exports, throttle:imports middleware
+        RateLimiter::for('reports', function (Request $request) {
+            return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
+        });
+
+        RateLimiter::for('exports', function (Request $request) {
+            return Limit::perMinute(5)->by($request->user()?->id ?: $request->ip());
+        });
+
+        RateLimiter::for('imports', function (Request $request) {
+            return Limit::perMinute(3)->by($request->user()?->id ?: $request->ip());
+        });
     }
 
     private function registerPolicies(): void
