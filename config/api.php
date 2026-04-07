@@ -28,7 +28,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'logging' => [
-        'enabled' => env('API_REQUEST_LOGGING', true),
+        'enabled' => env('API_REQUEST_LOGGING', false),
         'slow_threshold_ms' => env('API_SLOW_THRESHOLD', 1000),
         'exclude_paths' => [
             'api/v1/health',
