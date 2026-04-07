@@ -37,6 +37,7 @@ return [
         'manage_fixed_assets',
         'manage_expenses',
         'manage_collections',
+        'manage_cost_centers',
     ],
 
     'accountant' => [
@@ -56,6 +57,7 @@ return [
         'manage_fixed_assets',
         'manage_expenses',
         'manage_collections',
+        'manage_cost_centers',
     ],
 
     'auditor' => [

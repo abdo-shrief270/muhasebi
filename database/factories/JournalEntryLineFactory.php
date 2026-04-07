@@ -24,6 +24,7 @@ class JournalEntryLineFactory extends Factory
             'credit' => 0,
             'description' => fake()->optional(0.5)->sentence(),
             'cost_center' => null,
+            'cost_center_id' => null,
         ];
     }
 
