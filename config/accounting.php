@@ -13,5 +13,9 @@ return [
         'revenue' => env('ACCOUNT_CODE_REVENUE', '4110'),
         'accounts_payable' => env('ACCOUNT_CODE_AP', '2111'),
         'vat_input' => env('ACCOUNT_CODE_VAT_INPUT', '2135'),
+        'fixed_assets' => env('ACCOUNT_CODE_FIXED_ASSETS', '1510'),
+        'accumulated_depreciation' => env('ACCOUNT_CODE_ACCUM_DEPR', '1519'),
+        'depreciation_expense' => env('ACCOUNT_CODE_DEPR_EXPENSE', '6310'),
+        'asset_disposal' => env('ACCOUNT_CODE_ASSET_DISPOSAL', '7110'),
     ],
 ];
