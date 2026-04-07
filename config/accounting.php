@@ -11,5 +11,7 @@ return [
         'wht_equipment' => env('ACCOUNT_CODE_WHT_EQUIPMENT', '2134'),
         'accounts_payable' => env('ACCOUNT_CODE_AP', '2111'),
         'revenue' => env('ACCOUNT_CODE_REVENUE', '4110'),
+        'accounts_payable' => env('ACCOUNT_CODE_AP', '2111'),
+        'vat_input' => env('ACCOUNT_CODE_VAT_INPUT', '2135'),
     ],
 ];

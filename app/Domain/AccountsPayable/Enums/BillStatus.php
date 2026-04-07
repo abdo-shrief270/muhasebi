@@ -10,7 +10,6 @@ enum BillStatus: string
     case Approved = 'approved';
     case Paid = 'paid';
     case PartiallyPaid = 'partially_paid';
-    case Overdue = 'overdue';
     case Cancelled = 'cancelled';
 
     public function label(): string
@@ -20,7 +19,6 @@ enum BillStatus: string
             self::Approved => 'Approved',
             self::Paid => 'Paid',
             self::PartiallyPaid => 'Partially Paid',
-            self::Overdue => 'Overdue',
             self::Cancelled => 'Cancelled',
         };
     }
@@ -32,7 +30,6 @@ enum BillStatus: string
             self::Approved => 'معتمدة',
             self::Paid => 'مدفوعة',
             self::PartiallyPaid => 'مدفوعة جزئياً',
-            self::Overdue => 'متأخرة',
             self::Cancelled => 'ملغاة',
         };
     }
@@ -47,14 +44,9 @@ enum BillStatus: string
         return $this === self::Draft;
     }
 
-    public function canPay(): bool
-    {
-        return in_array($this, [self::Approved, self::PartiallyPaid, self::Overdue], true);
-    }
-
     public function canCancel(): bool
     {
-        return in_array($this, [self::Draft, self::Approved, self::Overdue], true);
+        return in_array($this, [self::Draft, self::Approved], true);
     }
 
     public function color(): string
@@ -64,7 +56,6 @@ enum BillStatus: string
             self::Approved => 'blue',
             self::Paid => 'green',
             self::PartiallyPaid => 'yellow',
-            self::Overdue => 'red',
             self::Cancelled => 'red',
         };
     }
