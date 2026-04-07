@@ -27,10 +27,10 @@ class JournalEntryService
             ->when(
                 isset($filters['search']),
                 fn ($q) => $q->where(function ($q) use ($filters): void {
-                    $term = $filters['search'];
-                    $q->where('description', 'ilike', "%{$term}%")
-                        ->orWhere('entry_number', 'ilike', "%{$term}%")
-                        ->orWhere('reference', 'ilike', "%{$term}%");
+                    $term = mb_strtolower($filters['search']);
+                    $q->whereRaw('LOWER(description) like ?', ["%{$term}%"])
+                        ->orWhereRaw('LOWER(entry_number) like ?', ["%{$term}%"])
+                        ->orWhereRaw('LOWER(reference) like ?', ["%{$term}%"]);
                 })
             )
             ->when(isset($filters['status']), fn ($q) => $q->where('status', $filters['status']))
@@ -325,14 +325,18 @@ class JournalEntryService
      */
     public function generateEntryNumber(int $tenantId): string
     {
+        $prefix = 'JE-';
+
         $maxNumber = JournalEntry::query()
             ->forTenant($tenantId)
-            ->selectRaw("MAX(CAST(SUBSTRING(entry_number FROM 4) AS INTEGER)) as max_num")
-            ->value('max_num');
+            ->where('entry_number', 'like', $prefix . '%')
+            ->pluck('entry_number')
+            ->map(fn (string $num): int => (int) str_replace($prefix, '', $num))
+            ->max() ?? 0;
 
-        $nextNumber = ($maxNumber ?? 0) + 1;
+        $nextNumber = $maxNumber + 1;
 
-        return 'JE-' . str_pad((string) $nextNumber, 6, '0', STR_PAD_LEFT);
+        return $prefix . str_pad((string) $nextNumber, 6, '0', STR_PAD_LEFT);
     }
 
     /**
