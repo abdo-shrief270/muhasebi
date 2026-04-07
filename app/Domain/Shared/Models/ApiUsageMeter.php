@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Domain\Shared\Models;
 
+use App\Domain\Shared\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable(['tenant_id', 'date', 'api_calls', 'invoices_created', 'journal_entries_created', 'documents_uploaded', 'eta_submissions', 'emails_sent', 'storage_bytes'])]
 class ApiUsageMeter extends Model
 {
+    use BelongsToTenant;
 
     protected function casts(): array
     {
@@ -24,11 +25,6 @@ class ApiUsageMeter extends Model
             'emails_sent' => 'integer',
             'storage_bytes' => 'integer',
         ];
-    }
-
-    public function tenant(): BelongsTo
-    {
-        return $this->belongsTo(\App\Domain\Tenant\Models\Tenant::class);
     }
 
     /**
