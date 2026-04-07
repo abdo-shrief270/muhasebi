@@ -103,76 +103,77 @@ class BankReconciliationService
             ]);
         }
 
-        $unmatchedLines = $reconciliation->statementLines()->unmatched()->get();
         $tenantId = (int) app('tenant.id');
         $matched = 0;
 
-        foreach ($unmatchedLines as $stmtLine) {
-            // Find GL entries for this bank account matching amount and approximate date
-            $glAmount = abs((float) $stmtLine->amount);
-            $isDebit = (float) $stmtLine->amount >= 0; // deposit = debit to bank
+        $reconciliation->statementLines()->unmatched()->chunk(200, function ($unmatchedLines) use ($reconciliation, $tenantId, &$matched) {
+            foreach ($unmatchedLines as $stmtLine) {
+                // Find GL entries for this bank account matching amount and approximate date
+                $glAmount = abs((float) $stmtLine->amount);
+                $isDebit = (float) $stmtLine->amount >= 0; // deposit = debit to bank
 
-            $query = DB::table('journal_entry_lines')
-                ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
-                ->where('journal_entries.tenant_id', $tenantId)
-                ->where('journal_entries.status', JournalEntryStatus::Posted->value)
-                ->whereNull('journal_entries.deleted_at')
-                ->where('journal_entry_lines.account_id', $reconciliation->account_id);
+                $query = DB::table('journal_entry_lines')
+                    ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
+                    ->where('journal_entries.tenant_id', $tenantId)
+                    ->where('journal_entries.status', JournalEntryStatus::Posted->value)
+                    ->whereNull('journal_entries.deleted_at')
+                    ->where('journal_entry_lines.account_id', $reconciliation->account_id);
 
-            if ($isDebit) {
-                $query->where('journal_entry_lines.debit', $glAmount)
-                    ->where('journal_entry_lines.credit', 0);
-            } else {
-                $query->where('journal_entry_lines.credit', $glAmount)
-                    ->where('journal_entry_lines.debit', 0);
-            }
+                if ($isDebit) {
+                    $query->where('journal_entry_lines.debit', $glAmount)
+                        ->where('journal_entry_lines.credit', 0);
+                } else {
+                    $query->where('journal_entry_lines.credit', $glAmount)
+                        ->where('journal_entry_lines.debit', 0);
+                }
 
-            // Date tolerance: within 3 days
-            $query->whereBetween('journal_entries.date', [
-                $stmtLine->date->subDays(3)->toDateString(),
-                $stmtLine->date->addDays(3)->toDateString(),
-            ]);
+                // Date tolerance: within 3 days
+                $query->whereBetween('journal_entries.date', [
+                    $stmtLine->date->subDays(3)->toDateString(),
+                    $stmtLine->date->addDays(3)->toDateString(),
+                ]);
 
-            // Exclude already matched lines
-            $alreadyMatched = BankStatementLine::where('reconciliation_id', $reconciliation->id)
-                ->where('status', 'matched')
-                ->whereNotNull('journal_entry_line_id')
-                ->pluck('journal_entry_line_id')
-                ->toArray();
+                // Exclude already matched lines
+                $alreadyMatched = BankStatementLine::where('reconciliation_id', $reconciliation->id)
+                    ->where('status', 'matched')
+                    ->whereNotNull('journal_entry_line_id')
+                    ->pluck('journal_entry_line_id')
+                    ->toArray();
 
-            if (! empty($alreadyMatched)) {
-                $query->whereNotIn('journal_entry_lines.id', $alreadyMatched);
-            }
+                if (! empty($alreadyMatched)) {
+                    $query->whereNotIn('journal_entry_lines.id', $alreadyMatched);
+                }
 
-            // Reference matching (bonus priority)
-            if ($stmtLine->reference) {
-                $exactMatch = (clone $query)
-                    ->where('journal_entry_lines.description', 'ilike', "%{$stmtLine->reference}%")
-                    ->select('journal_entry_lines.id')
-                    ->first();
+                // Reference matching (bonus priority)
+                if ($stmtLine->reference) {
+                    $exactMatch = (clone $query)
+                        ->where('journal_entry_lines.description', 'ilike', "%{$stmtLine->reference}%")
+                        ->select('journal_entry_lines.id')
+                        ->first();
 
-                if ($exactMatch) {
+                    if ($exactMatch) {
+                        $stmtLine->update([
+                            'journal_entry_line_id' => $exactMatch->id,
+                            'status' => 'matched',
+                        ]);
+                        $matched++;
+
+                        continue;
+                    }
+                }
+
+                // Amount + date match (take first available)
+                $glMatch = $query->select('journal_entry_lines.id')->first();
+
+                if ($glMatch) {
                     $stmtLine->update([
-                        'journal_entry_line_id' => $exactMatch->id,
+                        'journal_entry_line_id' => $glMatch->id,
                         'status' => 'matched',
                     ]);
                     $matched++;
-
-                    continue;
                 }
             }
-
-            // Amount + date match (take first available)
-            $glMatch = $query->select('journal_entry_lines.id')->first();
-
-            if ($glMatch) {
-                $stmtLine->update([
-                    'journal_entry_line_id' => $glMatch->id,
-                    'status' => 'matched',
-                ]);
-                $matched++;
-            }
-        }
+        });
 
         $this->recalculateAdjustedBalance($reconciliation);
 
@@ -296,12 +297,12 @@ class BankReconciliationService
                 'excluded' => $lines->where('status', 'excluded')->count(),
             ],
             'matched_totals' => [
-                'deposits' => number_format((float) $matchedDeposits, 2, '.', ''),
-                'withdrawals' => number_format(abs((float) $matchedWithdrawals), 2, '.', ''),
+                'deposits' => bcadd('0', (string) $matchedDeposits, 2),
+                'withdrawals' => bcadd('0', (string) abs((float) $matchedWithdrawals), 2),
             ],
             'unmatched_totals' => [
-                'deposits' => number_format((float) $unmatchedDeposits, 2, '.', ''),
-                'withdrawals' => number_format(abs((float) $unmatchedWithdrawals), 2, '.', ''),
+                'deposits' => bcadd('0', (string) $unmatchedDeposits, 2),
+                'withdrawals' => bcadd('0', (string) abs((float) $unmatchedWithdrawals), 2),
             ],
             'outstanding_gl_entries' => $outstandingGL,
         ];
@@ -348,9 +349,9 @@ class BankReconciliationService
             'date' => $row->date,
             'entry_number' => $row->entry_number,
             'description' => $row->description,
-            'debit' => number_format((float) $row->debit, 2, '.', ''),
-            'credit' => number_format((float) $row->credit, 2, '.', ''),
-            'amount' => number_format((float) $row->debit - (float) $row->credit, 2, '.', ''),
+            'debit' => bcadd('0', (string) $row->debit, 2),
+            'credit' => bcadd('0', (string) $row->credit, 2),
+            'amount' => bcsub((string) $row->debit, (string) $row->credit, 2),
         ])->toArray();
     }
 
@@ -371,7 +372,7 @@ class BankReconciliationService
             ->selectRaw('COALESCE(SUM(journal_entry_lines.debit), 0) - COALESCE(SUM(journal_entry_lines.credit), 0) as balance')
             ->first();
 
-        return number_format((float) ($result->balance ?? 0), 2, '.', '');
+        return bcadd('0', (string) ($result->balance ?? 0), 2);
     }
 
     /**
@@ -394,8 +395,8 @@ class BankReconciliationService
         $adjusted = bcadd(
             (string) $reconciliation->book_balance,
             bcsub(
-                number_format($unmatchedDeposits, 2, '.', ''),
-                number_format($unmatchedWithdrawals, 2, '.', ''),
+                bcadd('0', (string) $unmatchedDeposits, 2),
+                bcadd('0', (string) $unmatchedWithdrawals, 2),
                 2,
             ),
             2,
