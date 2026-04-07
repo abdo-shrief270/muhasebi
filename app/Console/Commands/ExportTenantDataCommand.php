@@ -88,6 +88,9 @@ class ExportTenantDataCommand extends Command
             ])->toArray(),
         ];
 
+        // Large tables that should use chunked processing to avoid memory exhaustion
+        $chunkedTables = ['invoices', 'journal_entries', 'journal_entry_lines', 'payments'];
+
         // Export each tenant table
         foreach (self::TENANT_TABLES as $table) {
             if (! \Schema::hasTable($table)) {
@@ -100,11 +103,24 @@ class ExportTenantDataCommand extends Command
 
             $this->info("  Exporting {$table}...");
 
-            $data = DB::table($table)
-                ->where('tenant_id', $tenant->id)
-                ->get()
-                ->map(fn ($row) => (array) $row)
-                ->toArray();
+            if (in_array($table, $chunkedTables, true)) {
+                $records = [];
+                DB::table($table)
+                    ->where('tenant_id', $tenant->id)
+                    ->orderBy('id')
+                    ->chunk(500, function ($chunk) use (&$records) {
+                        foreach ($chunk as $row) {
+                            $records[] = (array) $row;
+                        }
+                    });
+                $data = $records;
+            } else {
+                $data = DB::table($table)
+                    ->where('tenant_id', $tenant->id)
+                    ->get()
+                    ->map(fn ($row) => (array) $row)
+                    ->toArray();
+            }
 
             $export[$table] = [
                 'count' => count($data),
