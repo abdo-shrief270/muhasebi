@@ -40,7 +40,7 @@ use Spatie\Permission\Traits\HasRoles;
     'two_factor_enabled',
     'password_changed_at',
 ])]
-#[Hidden(['password', 'remember_token'])]
+#[Hidden(['password', 'remember_token', 'two_factor_recovery_codes'])]
 class User extends Authenticatable
 {
     use HasApiTokens;

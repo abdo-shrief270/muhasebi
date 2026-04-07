@@ -15,6 +15,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 #[Table('fiscal_periods')]
 #[Fillable([
@@ -32,6 +35,8 @@ class FiscalPeriod extends Model
 {
     use HasFactory;
     use BelongsToTenant;
+    use SoftDeletes;
+    use LogsActivity;
 
     /** @return array<string, string> */
     protected function casts(): array
@@ -81,6 +86,18 @@ class FiscalPeriod extends Model
     public function closedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'closed_by');
+    }
+
+    // ──────────────────────────────────────
+    // Activity Log
+    // ──────────────────────────────────────
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['name', 'period_number', 'start_date', 'end_date', 'is_closed'])
+            ->logOnlyDirty()
+            ->setDescriptionForEvent(fn (string $eventName) => "Fiscal period {$eventName}");
     }
 
     // ──────────────────────────────────────
