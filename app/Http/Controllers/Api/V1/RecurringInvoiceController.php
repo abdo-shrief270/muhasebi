@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\Response;
 
 class RecurringInvoiceController extends Controller
@@ -30,7 +31,7 @@ class RecurringInvoiceController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'client_id' => 'required|exists:clients,id',
+            'client_id' => ['required', Rule::exists('clients', 'id')->where('tenant_id', app('tenant.id'))],
             'frequency' => 'required|in:weekly,monthly,quarterly,yearly',
             'day_of_month' => 'nullable|integer|min:1|max:28',
             'day_of_week' => 'nullable|integer|min:0|max:6',
@@ -70,7 +71,7 @@ class RecurringInvoiceController extends Controller
     public function update(Request $request, RecurringInvoice $recurringInvoice): RecurringInvoiceResource
     {
         $data = $request->validate([
-            'client_id' => 'nullable|exists:clients,id',
+            'client_id' => ['nullable', Rule::exists('clients', 'id')->where('tenant_id', app('tenant.id'))],
             'frequency' => 'nullable|in:weekly,monthly,quarterly,yearly',
             'day_of_month' => 'nullable|integer|min:1|max:28',
             'day_of_week' => 'nullable|integer|min:0|max:6',

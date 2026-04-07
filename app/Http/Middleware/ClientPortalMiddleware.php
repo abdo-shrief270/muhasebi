@@ -28,7 +28,7 @@ class ClientPortalMiddleware
             ], Response::HTTP_FORBIDDEN);
         }
 
-        $client = Client::withoutGlobalScopes()->find($user->client_id);
+        $client = Client::find($user->client_id);
 
         if (! $client || ! $client->is_active) {
             return response()->json([
