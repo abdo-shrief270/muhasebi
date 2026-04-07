@@ -16,6 +16,8 @@ class PrepareEtaDocumentRequest extends FormRequest
     /** @return array<string, array<int, mixed>> */
     public function rules(): array
     {
-        return [];
+        return [
+            'invoice_id' => ['required', 'integer', 'exists:invoices,id'],
+        ];
     }
 }

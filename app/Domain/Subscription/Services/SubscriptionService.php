@@ -36,19 +36,16 @@ class SubscriptionService
                 SubscriptionStatus::Trial,
                 SubscriptionStatus::Active,
                 SubscriptionStatus::PastDue,
-                SubscriptionStatus::Cancelled,
             ])
             ->orderByRaw("CASE
                 WHEN status = ? THEN 1
                 WHEN status = ? THEN 2
                 WHEN status = ? THEN 3
-                WHEN status = ? THEN 4
-                ELSE 5
+                ELSE 4
             END", [
                 SubscriptionStatus::Active->value,
                 SubscriptionStatus::Trial->value,
                 SubscriptionStatus::PastDue->value,
-                SubscriptionStatus::Cancelled->value,
             ])
             ->first();
     }

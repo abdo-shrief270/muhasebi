@@ -14,6 +14,7 @@ use App\Mail\ContactAutoReplyMail;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
 class CmsService
@@ -217,20 +218,22 @@ class CmsService
 
     public function submitContact(array $data): ContactSubmission
     {
-        $submission = ContactSubmission::create($data);
+        return DB::transaction(function () use ($data) {
+            $submission = ContactSubmission::create($data);
 
-        // Auto-reply to the user
-        Mail::to($submission->email)->send(new ContactAutoReplyMail($submission));
+            // Auto-reply to the user
+            Mail::to($submission->email)->send(new ContactAutoReplyMail($submission));
 
-        // Alert all super admins
-        $admins = User::where('role', 'super_admin')->where('is_active', true)->pluck('email');
-        if ($admins->isNotEmpty()) {
-            Mail::to($admins->first())
-                ->cc($admins->skip(1)->values()->all())
-                ->send(new ContactAdminAlertMail($submission));
-        }
+            // Alert all super admins
+            $admins = User::where('role', 'super_admin')->where('is_active', true)->pluck('email');
+            if ($admins->isNotEmpty()) {
+                Mail::to($admins->first())
+                    ->cc($admins->skip(1)->values()->all())
+                    ->send(new ContactAdminAlertMail($submission));
+            }
 
-        return $submission;
+            return $submission;
+        });
     }
 
     public function listContacts(array $filters = []): LengthAwarePaginator
