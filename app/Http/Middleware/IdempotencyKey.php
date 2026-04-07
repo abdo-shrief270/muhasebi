@@ -69,7 +69,7 @@ class IdempotencyKey
             }
 
             // Only cache successful responses
-            if ($response->isSuccessful() || $response->isClientError()) {
+            if ($response->isSuccessful()) {
                 Cache::put($cacheKey, [
                     'body' => encrypt($response->getContent()),
                     'status' => $response->getStatusCode(),
