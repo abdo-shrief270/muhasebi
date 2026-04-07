@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\V1\Admin\AdminUserController;
 use App\Http\Controllers\Api\V1\AgingReminderController;
 use App\Http\Controllers\Api\V1\AnomalyDetectionController;
 use App\Http\Controllers\Api\V1\ApiDocsController;
+use App\Http\Controllers\Api\V1\BankAutoReconciliationController;
 use App\Http\Controllers\Api\V1\BankCategorizationController;
 use App\Http\Controllers\Api\V1\BankReconciliationController;
 use App\Http\Controllers\Api\V1\AssetCategoryController;
@@ -308,7 +309,16 @@ Route::prefix('v1')->group(function (): void {
                     Route::post('lines/{bankStatementLine}/unmatch', [BankReconciliationController::class, 'unmatch'])->name('lines.unmatch');
                     Route::post('lines/{bankStatementLine}/exclude', [BankReconciliationController::class, 'exclude'])->name('lines.exclude');
                     Route::post('{bankReconciliation}/categorize', [BankCategorizationController::class, 'categorize'])->name('categorize');
+
+                    // Auto-reconciliation (smart matching)
+                    Route::post('{bankReconciliation}/smart-match', [BankAutoReconciliationController::class, 'smartMatch'])->name('smart-match');
+                    Route::post('{bankReconciliation}/auto-post', [BankAutoReconciliationController::class, 'autoPost'])->name('auto-post');
                 });
+
+                // Bank Statement Line auto-reconciliation actions
+                Route::post('bank-statement-lines/{bankStatementLine}/match-invoice', [BankAutoReconciliationController::class, 'matchToInvoice'])->name('bank-statement-lines.match-invoice');
+                Route::post('bank-statement-lines/{bankStatementLine}/match-bill', [BankAutoReconciliationController::class, 'matchToBill'])->name('bank-statement-lines.match-bill');
+                Route::get('bank-statement-lines/{bankStatementLine}/suggestions', [BankAutoReconciliationController::class, 'suggestions'])->name('bank-statement-lines.suggestions');
 
                 // Bank Categorization Rules
                 Route::prefix('bank-categorization-rules')->name('bank-categorization-rules.')->group(function (): void {
