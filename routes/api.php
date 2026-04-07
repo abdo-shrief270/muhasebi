@@ -39,6 +39,7 @@ use App\Http\Controllers\Api\V1\BillPaymentController;
 use App\Http\Controllers\Api\V1\BlogController;
 use App\Http\Controllers\Api\V1\BudgetController;
 use App\Http\Controllers\Api\V1\ClientController;
+use App\Http\Controllers\Api\V1\CollectionController;
 use App\Http\Controllers\Api\V1\CsvImportController;
 use App\Http\Controllers\Api\V1\CurrencyController;
 use App\Http\Controllers\Api\V1\CustomReportController;
@@ -320,6 +321,17 @@ Route::prefix('v1')->group(function (): void {
             Route::middleware('permission:manage_invoices')->group(function (): void {
                 Route::apiResource('recurring-invoices', RecurringInvoiceController::class);
             });
+
+            // ── AR Collection ──
+            Route::middleware('permission:manage_collections')->prefix('collections')->name('collections.')->group(function (): void {
+                Route::get('overview', [CollectionController::class, 'overview'])->name('overview');
+                Route::get('actions', [CollectionController::class, 'listActions'])->name('actions.index');
+                Route::post('actions', [CollectionController::class, 'logAction'])->name('actions.store');
+                Route::get('clients/{client}', [CollectionController::class, 'clientSummary'])->name('clients.summary');
+                Route::get('reports/effectiveness', [CollectionController::class, 'effectiveness'])->name('reports.effectiveness');
+            });
+            Route::post('invoices/{invoice}/write-off', [CollectionController::class, 'writeOff'])->name('invoices.write-off')->middleware('permission:manage_collections');
+            Route::post('invoices/{invoice}/escalate', [CollectionController::class, 'escalate'])->name('invoices.escalate')->middleware('permission:manage_collections');
 
             // ── Data Import ──
             Route::middleware('permission:manage_clients')->prefix('import')->name('import.')->group(function (): void {
