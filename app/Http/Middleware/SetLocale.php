@@ -42,7 +42,7 @@ class SetLocale
         $tenant = app()->bound('tenant') ? app('tenant') : null;
 
         if ($tenant) {
-            $tenantLocale = $tenant->settings['locale'] ?? null;
+            $tenantLocale = is_array($tenant->settings) ? ($tenant->settings['locale'] ?? null) : null;
 
             if ($tenantLocale && in_array($tenantLocale, self::SUPPORTED_LOCALES, true)) {
                 return $tenantLocale;
