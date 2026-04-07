@@ -10,35 +10,30 @@ use Illuminate\Console\Command;
 
 class RetryStuckWebhooksCommand extends Command
 {
-    protected $signature = 'webhooks:retry-stuck {--hours=4 : Hours threshold for stuck deliveries}';
-
-    protected $description = 'Retry webhook deliveries stuck in pending/retrying status';
+    protected $signature = 'webhooks:retry-stuck {--hours=2 : Re-queue deliveries stuck longer than N hours}';
+    protected $description = 'Retry webhook deliveries stuck in "retrying" status past their next_retry_at';
 
     public function handle(): int
     {
-        $threshold = now()->subHours((int) $this->option('hours'));
+        $hours = (int) $this->option('hours');
 
-        $stuck = WebhookDelivery::whereIn('status', ['pending', 'retrying'])
-            ->where('updated_at', '<', $threshold)
+        $stuck = WebhookDelivery::where('status', 'retrying')
+            ->where('next_retry_at', '<=', now()->subHours($hours))
             ->get();
 
         if ($stuck->isEmpty()) {
             $this->info('No stuck webhook deliveries found.');
-
             return 0;
         }
 
-        $this->warn("Found {$stuck->count()} stuck deliveries.");
+        $this->info("Found {$stuck->count()} stuck webhook delivery(ies). Re-queuing...");
 
         foreach ($stuck as $delivery) {
-            try {
-                DispatchWebhookJob::dispatch($delivery);
-                $this->line("  Re-queued delivery #{$delivery->id}");
-            } catch (\Throwable $e) {
-                $this->error("  Failed #{$delivery->id}: {$e->getMessage()}");
-            }
+            DispatchWebhookJob::dispatch($delivery->id);
+            $this->line("  Re-queued delivery #{$delivery->id} (event: {$delivery->event}, attempt: {$delivery->attempt})");
         }
 
+        $this->info('Done.');
         return 0;
     }
 }
