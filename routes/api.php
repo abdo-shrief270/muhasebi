@@ -98,8 +98,10 @@ use App\Http\Controllers\Api\V1\VendorController;
 use App\Http\Controllers\Api\V1\WebhookController;
 use App\Http\Controllers\Api\V1\ApprovalController;
 use App\Http\Controllers\Api\V1\ApprovalWorkflowController;
+use App\Http\Controllers\Api\V1\EngagementController;
 use App\Http\Controllers\Api\V1\WebhookEndpointController;
 use App\Http\Controllers\Api\V1\WhtCertificateController;
+use App\Http\Controllers\Api\V1\WorkingPaperController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
@@ -549,6 +551,20 @@ Route::prefix('v1')->group(function (): void {
             Route::middleware('permission:approve_timesheets')->group(function (): void {
                 Route::post('timesheets/bulk-approve', [TimesheetController::class, 'bulkApprove'])->name('timesheets.bulk-approve');
                 Route::post('timesheets/{timesheet}/approve', [TimesheetController::class, 'approve'])->name('timesheets.approve');
+            });
+
+            // ── Engagements & Working Papers ──
+            Route::middleware('permission:manage_engagements')->group(function (): void {
+                Route::get('engagements/dashboard', [EngagementController::class, 'dashboard'])->name('engagements.dashboard');
+                Route::apiResource('engagements', EngagementController::class);
+                Route::get('engagements/{engagement}/time-allocation', [EngagementController::class, 'timeAllocation'])->name('engagements.time-allocation');
+                Route::post('engagements/{engagement}/deliverables', [EngagementController::class, 'addDeliverable'])->name('engagements.deliverables.store');
+                Route::post('engagements/{engagement}/deliverables/{deliverable}/complete', [EngagementController::class, 'completeDeliverable'])->name('engagements.deliverables.complete');
+
+                Route::get('engagements/{engagement}/working-papers', [WorkingPaperController::class, 'index'])->name('engagements.working-papers.index');
+                Route::post('engagements/{engagement}/working-papers', [WorkingPaperController::class, 'store'])->name('engagements.working-papers.store');
+                Route::put('working-papers/{workingPaper}', [WorkingPaperController::class, 'update'])->name('working-papers.update');
+                Route::post('working-papers/{workingPaper}/review', [WorkingPaperController::class, 'review'])->name('working-papers.review');
             });
 
             // ── Employees (admin only) ──
