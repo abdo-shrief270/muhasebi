@@ -157,21 +157,23 @@ class ReportCurrencyConverter
     /**
      * Get exchange rate from base currency to target.
      */
-    private function getRate(string $targetCurrency, string $date): ?float
+    private function getRate(string $targetCurrency, string $date): ?string
     {
         if ($targetCurrency === self::BASE_CURRENCY) {
-            return 1.0;
+            return '1';
         }
 
-        return ExchangeRate::getRate(self::BASE_CURRENCY, $targetCurrency, $date);
+        $rate = ExchangeRate::getRate(self::BASE_CURRENCY, $targetCurrency, $date);
+
+        return $rate !== null ? (string) $rate : null;
     }
 
     /**
      * Convert a single amount string using the given rate.
      */
-    private function convertAmount(string $amount, float $rate): string
+    private function convertAmount(string $amount, string $rate): string
     {
-        return number_format(round((float) $amount * $rate, 2), 2, '.', '');
+        return bcmul((string) $amount, (string) $rate, 2);
     }
 
     /**
@@ -180,7 +182,7 @@ class ReportCurrencyConverter
      * @param  array<int, array<string, mixed>>  $groups
      * @return array<int, array<string, mixed>>
      */
-    private function convertGroups(array $groups, float $rate): array
+    private function convertGroups(array $groups, string $rate): array
     {
         return array_map(function ($group) use ($rate) {
             $group['accounts'] = array_map(

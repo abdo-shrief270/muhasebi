@@ -11,6 +11,7 @@ use App\Domain\Integration\Models\IntegrationSetting;
 use App\Domain\Notification\Services\NotificationService;
 use App\Domain\Subscription\Services\FawryService;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -73,7 +74,7 @@ class ClientPaymentService
 
         $balanceDue = $invoice->balanceDue();
         $authToken = $this->authenticate();
-        $amountCents = (int) round($balanceDue * 100);
+        $amountCents = (int) bcmul((string) $balanceDue, '100', 0);
 
         $orderId = $this->createOrder($authToken, $amountCents, $invoice);
         $paymentKey = $this->generatePaymentKey($authToken, $orderId, $amountCents, $invoice);
@@ -203,43 +204,45 @@ class ClientPaymentService
         $invoice = Invoice::withoutGlobalScopes()->findOrFail($invoiceId);
 
         if ($success) {
-            $amount = round($amountCents / 100, 2);
+            $amount = bcdiv((string) $amountCents, '100', 2);
 
-            $payment = Payment::withoutGlobalScopes()->create([
-                'tenant_id' => $invoice->tenant_id,
-                'invoice_id' => $invoice->id,
-                'amount' => $amount,
-                'date' => today()->toDateString(),
-                'method' => 'credit_card',
-                'reference' => "PAYMOB-{$orderId}",
-                'notes' => 'دفع إلكتروني عبر بوابة العملاء',
-                'created_by' => null,
-            ]);
+            return DB::transaction(function () use ($invoice, $amount, $orderId) {
+                $payment = Payment::withoutGlobalScopes()->create([
+                    'tenant_id' => $invoice->tenant_id,
+                    'invoice_id' => $invoice->id,
+                    'amount' => $amount,
+                    'date' => today()->toDateString(),
+                    'method' => 'credit_card',
+                    'reference' => "PAYMOB-{$orderId}",
+                    'notes' => 'دفع إلكتروني عبر بوابة العملاء',
+                    'created_by' => null,
+                ]);
 
-            // Update invoice amount_paid and status
-            $newAmountPaid = bcadd((string) $invoice->amount_paid, (string) $amount, 2);
-            $invoice->update([
-                'amount_paid' => $newAmountPaid,
-                'status' => bccomp($newAmountPaid, (string) $invoice->total, 2) >= 0
-                    ? InvoiceStatus::Paid
-                    : InvoiceStatus::PartiallyPaid,
-            ]);
+                // Update invoice amount_paid and status
+                $newAmountPaid = bcadd((string) $invoice->amount_paid, (string) $amount, 2);
+                $invoice->update([
+                    'amount_paid' => $newAmountPaid,
+                    'status' => bccomp($newAmountPaid, (string) $invoice->total, 2) >= 0
+                        ? InvoiceStatus::Paid
+                        : InvoiceStatus::PartiallyPaid,
+                ]);
 
-            // Notify firm admin
-            $admin = User::withoutGlobalScopes()
-                ->where('tenant_id', $invoice->tenant_id)
-                ->where('role', 'admin')
-                ->first();
+                // Notify firm admin
+                $admin = User::withoutGlobalScopes()
+                    ->where('tenant_id', $invoice->tenant_id)
+                    ->where('role', 'admin')
+                    ->first();
 
-            if ($admin) {
-                $this->notificationService->sendPaymentReceived(
-                    $admin->id,
-                    (string) $amount,
-                    $invoice->invoice_number,
-                );
-            }
+                if ($admin) {
+                    $this->notificationService->sendPaymentReceived(
+                        $admin->id,
+                        (string) $amount,
+                        $invoice->invoice_number,
+                    );
+                }
 
-            return $payment;
+                return $payment;
+            });
         }
 
         Log::warning('Portal payment failed.', [
@@ -392,40 +395,42 @@ class ClientPaymentService
         }
 
         if ($status === 'PAID' || $status === 'DELIVERED') {
-            $amount = (float) ($data['paymentAmount'] ?? $data['orderAmount'] ?? 0);
+            $amount = (string) ($data['paymentAmount'] ?? $data['orderAmount'] ?? '0');
 
-            $payment = Payment::withoutGlobalScopes()->create([
-                'tenant_id' => $invoice->tenant_id,
-                'invoice_id' => $invoice->id,
-                'amount' => $amount,
-                'date' => today()->toDateString(),
-                'method' => 'mobile_wallet',
-                'reference' => 'FAWRY-' . ($data['fawryRefNumber'] ?? $merchantRef),
-                'notes' => 'دفع إلكتروني عبر فوري من بوابة العملاء',
-                'created_by' => null,
-            ]);
+            DB::transaction(function () use ($invoice, $amount, $data, $merchantRef) {
+                Payment::withoutGlobalScopes()->create([
+                    'tenant_id' => $invoice->tenant_id,
+                    'invoice_id' => $invoice->id,
+                    'amount' => $amount,
+                    'date' => today()->toDateString(),
+                    'method' => 'mobile_wallet',
+                    'reference' => 'FAWRY-' . ($data['fawryRefNumber'] ?? $merchantRef),
+                    'notes' => 'دفع إلكتروني عبر فوري من بوابة العملاء',
+                    'created_by' => null,
+                ]);
 
-            $newAmountPaid = bcadd((string) $invoice->amount_paid, (string) $amount, 2);
-            $invoice->update([
-                'amount_paid' => $newAmountPaid,
-                'status' => bccomp($newAmountPaid, (string) $invoice->total, 2) >= 0
-                    ? InvoiceStatus::Paid
-                    : InvoiceStatus::PartiallyPaid,
-            ]);
+                $newAmountPaid = bcadd((string) $invoice->amount_paid, (string) $amount, 2);
+                $invoice->update([
+                    'amount_paid' => $newAmountPaid,
+                    'status' => bccomp($newAmountPaid, (string) $invoice->total, 2) >= 0
+                        ? InvoiceStatus::Paid
+                        : InvoiceStatus::PartiallyPaid,
+                ]);
 
-            // Notify firm admin
-            $admin = User::withoutGlobalScopes()
-                ->where('tenant_id', $invoice->tenant_id)
-                ->where('role', 'admin')
-                ->first();
+                // Notify firm admin
+                $admin = User::withoutGlobalScopes()
+                    ->where('tenant_id', $invoice->tenant_id)
+                    ->where('role', 'admin')
+                    ->first();
 
-            if ($admin) {
-                $this->notificationService->sendPaymentReceived(
-                    $admin->id,
-                    (string) $amount,
-                    $invoice->invoice_number,
-                );
-            }
+                if ($admin) {
+                    $this->notificationService->sendPaymentReceived(
+                        $admin->id,
+                        (string) $amount,
+                        $invoice->invoice_number,
+                    );
+                }
+            });
 
             Log::info('Fawry invoice payment completed', [
                 'invoice_id' => $invoiceId,
