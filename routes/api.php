@@ -75,6 +75,7 @@ use App\Http\Controllers\Api\V1\MessagingController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\NotificationPreferenceController;
 use App\Http\Controllers\Api\V1\OnboardingController;
+use App\Http\Controllers\Api\V1\OnboardingWizardController;
 use App\Http\Controllers\Api\V1\PaymentController;
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\LeaveController;
@@ -556,6 +557,16 @@ Route::prefix('v1')->group(function (): void {
                 Route::post('setup-fiscal-year', [OnboardingController::class, 'setupFiscalYear'])->name('setup-fiscal-year');
                 Route::post('load-sample-data', [OnboardingController::class, 'loadSampleData'])->name('load-sample-data');
                 Route::post('invite-team-member', [OnboardingController::class, 'inviteTeamMember'])->name('invite-team-member');
+            });
+
+            // ── Onboarding Wizard (all authenticated tenants — no special permission) ──
+            Route::prefix('onboarding-wizard')->name('onboarding-wizard.')->group(function (): void {
+                Route::get('progress', [OnboardingWizardController::class, 'progress'])->name('progress');
+                Route::get('templates', [OnboardingWizardController::class, 'templates'])->name('templates');
+                Route::post('select-template', [OnboardingWizardController::class, 'selectTemplate'])->name('select-template');
+                Route::post('import-balances', [OnboardingWizardController::class, 'importBalances'])->name('import-balances');
+                Route::post('complete-step', [OnboardingWizardController::class, 'completeStep'])->name('complete-step');
+                Route::post('skip-step', [OnboardingWizardController::class, 'skipStep'])->name('skip-step');
             });
 
             // ── Team (admin only) ──
