@@ -39,7 +39,7 @@ return [
         'manage_collections',
         'manage_cost_centers',
         'manage_tax',
-        'manage_approvals',
+        'view_audit',
     ],
 
     'accountant' => [
@@ -62,7 +62,6 @@ return [
         'manage_collections',
         'manage_cost_centers',
         'manage_tax',
-        'manage_approvals',
     ],
 
     'auditor' => [
