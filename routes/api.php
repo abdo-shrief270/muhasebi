@@ -94,6 +94,7 @@ use App\Http\Controllers\Api\V1\RecurringInvoiceController;
 use App\Http\Controllers\Api\V1\RecurringJournalEntryController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\ScheduledReportController;
+use App\Http\Controllers\Api\V1\StatementBuilderController;
 use App\Http\Controllers\Api\V1\RssFeedController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\TeamController;
@@ -819,6 +820,19 @@ Route::prefix('v1')->group(function (): void {
                 Route::delete('{scheduledReport}', [ScheduledReportController::class, 'destroy'])->name('destroy');
                 Route::post('{scheduledReport}/toggle', [ScheduledReportController::class, 'toggle'])->name('toggle');
                 Route::post('{scheduledReport}/send-now', [ScheduledReportController::class, 'sendNow'])->name('send-now');
+            });
+
+            // ── Financial Statement Builder ──
+            Route::middleware('permission:manage_reports')->prefix('statement-templates')->name('statement-templates.')->group(function (): void {
+                Route::get('/', [StatementBuilderController::class, 'index'])->name('index');
+                Route::post('/', [StatementBuilderController::class, 'store'])->name('store');
+                Route::get('ratios', [StatementBuilderController::class, 'ratios'])->name('ratios');
+                Route::get('vertical-analysis', [StatementBuilderController::class, 'verticalAnalysis'])->name('vertical-analysis');
+                Route::get('horizontal-analysis', [StatementBuilderController::class, 'horizontalAnalysis'])->name('horizontal-analysis');
+                Route::get('{statementTemplate}', [StatementBuilderController::class, 'show'])->name('show');
+                Route::put('{statementTemplate}', [StatementBuilderController::class, 'update'])->name('update');
+                Route::delete('{statementTemplate}', [StatementBuilderController::class, 'destroy'])->name('destroy');
+                Route::get('{statementTemplate}/generate', [StatementBuilderController::class, 'generate'])->name('generate');
             });
 
             Route::middleware(['permission:view_reports', 'throttle:exports'])->prefix('export')->name('export.')->group(function (): void {
