@@ -82,3 +82,6 @@ Schedule::command('eta:check-status --hours=48')->everyThirtyMinutes();
 
 // ETA: Daily reconciliation with ETA API (3am)
 Schedule::command('eta:reconcile')->dailyAt('03:00');
+
+// Retry webhook deliveries stuck in "retrying" state (hourly)
+Schedule::command('webhooks:retry-stuck')->hourly();
