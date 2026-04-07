@@ -44,6 +44,7 @@ return [
     'accountant' => [
         'view_dashboard',
         'manage_clients',
+        'manage_payroll',
         'manage_accounts',
         'manage_journal_entries',
         'manage_invoices',
