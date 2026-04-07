@@ -26,6 +26,8 @@ use App\Domain\Collection\Models\CollectionAction;
 use App\Domain\Document\Models\Document;
 use App\Domain\Payroll\Models\Employee;
 use App\Domain\Payroll\Models\PayrollRun;
+use App\Domain\Tax\Models\TaxReturn;
+use App\Domain\Tax\Models\WhtCertificate;
 use App\Domain\Shared\Enums\UserRole;
 use App\Domain\Shared\Services\QueryAnalyzer;
 use App\Domain\TimeTracking\Models\TimesheetEntry;
@@ -45,9 +47,11 @@ use App\Policies\InvoicePolicy;
 use App\Policies\JournalEntryPolicy;
 use App\Policies\PaymentPolicy;
 use App\Policies\PayrollRunPolicy;
+use App\Policies\TaxReturnPolicy;
 use App\Policies\TimesheetEntryPolicy;
 use App\Policies\CostCenterPolicy;
 use App\Policies\VendorPolicy;
+use App\Policies\WhtCertificatePolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -162,8 +166,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(JournalEntry::class, JournalEntryPolicy::class);
         Gate::policy(Payment::class, PaymentPolicy::class);
         Gate::policy(PayrollRun::class, PayrollRunPolicy::class);
+        Gate::policy(TaxReturn::class, TaxReturnPolicy::class);
         Gate::policy(TimesheetEntry::class, TimesheetEntryPolicy::class);
         Gate::policy(Vendor::class, VendorPolicy::class);
+        Gate::policy(WhtCertificate::class, WhtCertificatePolicy::class);
     }
 
     private function registerPermissionGates(): void
