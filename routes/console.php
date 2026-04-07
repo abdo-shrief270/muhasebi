@@ -52,13 +52,13 @@ Schedule::job(new GenerateSitemapJob)->dailyAt('04:00');
 Schedule::command('blog:publish-scheduled')->everyFiveMinutes();
 
 // Process subscription lifecycle (expiry, grace period, suspension)
-Schedule::command('subscriptions:lifecycle')->hourly();
+Schedule::command('subscriptions:lifecycle')->hourly()->withoutOverlapping(300);
 
 // Generate recurring invoices (runs daily at 6am)
-Schedule::command('invoices:process-recurring')->dailyAt('06:00');
+Schedule::command('invoices:process-recurring')->dailyAt('06:00')->withoutOverlapping(300);
 
 // Send invoice payment reminders (runs daily at 9am)
-Schedule::command('invoices:send-reminders')->dailyAt('09:00');
+Schedule::command('invoices:send-reminders')->dailyAt('09:00')->withoutOverlapping(300);
 
 // Send aging reminders for overdue invoices (30/60/90 days - runs daily at 10am)
 Schedule::command('invoices:aging-reminders')->dailyAt('10:00');
@@ -81,7 +81,7 @@ if (config('currency.auto_fetch', false)) {
 Schedule::command('eta:check-status --hours=48')->everyThirtyMinutes();
 
 // ETA: Daily reconciliation with ETA API (3am)
-Schedule::command('eta:reconcile')->dailyAt('03:00');
+Schedule::command('eta:reconcile')->dailyAt('03:00')->withoutOverlapping(600);
 
 // Retry webhook deliveries stuck in "retrying" state (hourly)
 Schedule::command('webhooks:retry-stuck')->hourly();
