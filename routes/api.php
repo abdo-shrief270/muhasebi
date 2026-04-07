@@ -491,6 +491,10 @@ Route::prefix('v1')->group(function (): void {
                 Route::get('trial-balance/pdf', [ReportController::class, 'trialBalancePdf'])
                     ->name('trial-balance-pdf');
 
+                // Async PDF Generation
+                Route::post('pdf/async', [ReportController::class, 'generatePdfAsync'])
+                    ->name('pdf-async');
+
                 // Tax Reports
                 Route::get('vat-return', [ReportController::class, 'vatReturn'])
                     ->name('vat-return');

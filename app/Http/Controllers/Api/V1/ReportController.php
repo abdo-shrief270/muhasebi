@@ -12,6 +12,7 @@ use App\Domain\Accounting\Services\TaxReportService;
 use App\Domain\Billing\Services\PaymentService;
 use App\Domain\Client\Models\Client;
 use App\Http\Controllers\Controller;
+use App\Jobs\GenerateReportJob;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -199,6 +200,29 @@ class ReportController extends Controller
             $request->query('to'),
             $request->query('currency'),
         );
+    }
+
+    // ── Async PDF Generation ────────────────────────────────
+
+    public function generatePdfAsync(Request $request): JsonResponse
+    {
+        $request->validate([
+            'type' => 'required|string|in:trial_balance,income_statement,balance_sheet,cash_flow,vat_return,wht_report',
+            'from' => 'nullable|date',
+            'to' => 'nullable|date|after_or_equal:from',
+            'date' => 'nullable|date',
+        ]);
+
+        GenerateReportJob::dispatch(
+            tenantId: (int) app('tenant.id'),
+            userId: $request->user()->id,
+            reportType: $request->input('type'),
+            filters: $request->only(['from', 'to', 'date']),
+        );
+
+        return response()->json([
+            'message' => 'Report generation queued. You will be notified when ready.',
+        ], 202);
     }
 
     // ── Tax Reports ─────────────────────────────────────────
