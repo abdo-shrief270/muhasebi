@@ -81,6 +81,18 @@ class FiscalYear extends Model
     }
 
     // ──────────────────────────────────────
+    // Activity Log
+    // ──────────────────────────────────────
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['name', 'start_date', 'end_date', 'is_closed'])
+            ->logOnlyDirty()
+            ->setDescriptionForEvent(fn (string $eventName) => "Fiscal year {$eventName}");
+    }
+
+    // ──────────────────────────────────────
     // Scopes
     // ──────────────────────────────────────
 
