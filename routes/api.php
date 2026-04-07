@@ -93,6 +93,8 @@ use App\Http\Controllers\Api\V1\TwoFactorController;
 use App\Http\Controllers\Api\V1\UserPreferenceController;
 use App\Http\Controllers\Api\V1\VendorController;
 use App\Http\Controllers\Api\V1\WebhookController;
+use App\Http\Controllers\Api\V1\ApprovalController;
+use App\Http\Controllers\Api\V1\ApprovalWorkflowController;
 use App\Http\Controllers\Api\V1\WebhookEndpointController;
 use App\Http\Controllers\Api\V1\WhtCertificateController;
 use Illuminate\Http\Request;
@@ -670,6 +672,19 @@ Route::prefix('v1')->group(function (): void {
                 Route::get('clients', [ExportController::class, 'clients'])->name('clients');
                 Route::get('invoices', [ExportController::class, 'invoices'])->name('invoices');
                 Route::get('journal-entries', [ExportController::class, 'journalEntries'])->name('journal-entries');
+            });
+
+            // ── Approval Workflows ──
+            Route::middleware('permission:manage_approvals')->group(function (): void {
+                Route::apiResource('approval-workflows', ApprovalWorkflowController::class);
+
+                Route::prefix('approvals')->name('approvals.')->group(function (): void {
+                    Route::post('submit', [ApprovalController::class, 'submit'])->name('submit');
+                    Route::post('{approvalRequest}/approve', [ApprovalController::class, 'approve'])->name('approve');
+                    Route::post('{approvalRequest}/reject', [ApprovalController::class, 'reject'])->name('reject');
+                    Route::get('pending', [ApprovalController::class, 'pending'])->name('pending');
+                    Route::get('history', [ApprovalController::class, 'history'])->name('history');
+                });
             });
         });
 
