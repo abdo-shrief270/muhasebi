@@ -34,6 +34,7 @@ return [
         'invite_client_portal',
         'manage_vendors',
         'manage_bills',
+        'manage_fixed_assets',
     ],
 
     'accountant' => [
@@ -50,6 +51,7 @@ return [
         'manage_timesheets',
         'manage_vendors',
         'manage_bills',
+        'manage_fixed_assets',
     ],
 
     'auditor' => [
