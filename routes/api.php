@@ -68,6 +68,7 @@ use App\Http\Controllers\Api\V1\InvoiceController;
 use App\Http\Controllers\Api\V1\InvoiceSettingsController;
 use App\Http\Controllers\Api\V1\JournalEntryController;
 use App\Http\Controllers\Api\V1\LaborLawController;
+use App\Http\Controllers\Api\V1\SocialInsuranceController;
 use App\Http\Controllers\Api\V1\LandingController;
 use App\Http\Controllers\Api\V1\LandingPageSettingsController;
 use App\Http\Controllers\Api\V1\MessagingController;
@@ -662,6 +663,14 @@ Route::prefix('v1')->group(function (): void {
                 Route::get('leave-entitlement/{employee}', [LaborLawController::class, 'leaveEntitlement']);
                 Route::post('validate-wage', [LaborLawController::class, 'validateWage']);
                 Route::post('social-insurance', [LaborLawController::class, 'socialInsurance']);
+            });
+
+            // ── Social Insurance (SISA) ──
+            Route::middleware('permission:manage_payroll')->prefix('social-insurance')->name('social-insurance.')->group(function (): void {
+                Route::post('calculate', [SocialInsuranceController::class, 'calculate'])->name('calculate');
+                Route::get('monthly-report', [SocialInsuranceController::class, 'monthlyReport'])->name('monthly-report');
+                Route::post('register', [SocialInsuranceController::class, 'register'])->name('register');
+                Route::get('rates', [SocialInsuranceController::class, 'rates'])->name('rates');
             });
 
             // ── ETA E-Invoicing (admin + accountant) ──

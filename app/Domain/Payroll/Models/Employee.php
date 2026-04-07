@@ -67,6 +67,11 @@ class Employee extends Model
         return $this->hasMany(PayrollItem::class);
     }
 
+    public function insuranceRecord(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(EmployeeInsuranceRecord::class);
+    }
+
     // ──────────────────────────────────────
     // Scopes
     // ──────────────────────────────────────
