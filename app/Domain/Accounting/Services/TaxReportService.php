@@ -85,7 +85,7 @@ class TaxReportService
             ->whereNull('journal_entries.deleted_at')
             ->whereBetween('journal_entries.date', [$fromDate, $toDate])
             ->where('accounts.code', 'like', '213%')
-            ->where('accounts.code', '!=', '2131') // Exclude main VAT account
+            ->where('accounts.code', '!=', config('accounting.default_accounts.vat_output')) // Exclude main VAT account
             ->select(
                 'accounts.code as account_code',
                 'accounts.name_ar as account_name_ar',
@@ -198,7 +198,7 @@ class TaxReportService
             ->where('journal_entries.status', JournalEntryStatus::Posted->value)
             ->whereNull('journal_entries.deleted_at')
             ->whereBetween('journal_entries.date', [$fromDate, $toDate])
-            ->where('accounts.code', '2131') // Main VAT liability account
+            ->where('accounts.code', config('accounting.default_accounts.vat_output')) // Main VAT liability account
             ->selectRaw('COALESCE(SUM(journal_entry_lines.debit), 0) as total_debit')
             ->selectRaw('COUNT(DISTINCT journal_entries.id) as entry_count')
             ->first();

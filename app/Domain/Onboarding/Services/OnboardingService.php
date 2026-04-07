@@ -414,12 +414,12 @@ class OnboardingService
         // Look up required accounts
         $cashAccount = Account::withoutGlobalScopes()
             ->where('tenant_id', $tenantId)
-            ->where('code', '1111')
+            ->where('code', config('accounting.default_accounts.cash'))
             ->first();
 
         $revenueAccount = Account::withoutGlobalScopes()
             ->where('tenant_id', $tenantId)
-            ->where('code', '4110')
+            ->where('code', config('accounting.default_accounts.revenue'))
             ->first();
 
         // If accounts don't exist yet, skip journal entry creation

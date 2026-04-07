@@ -501,7 +501,7 @@ class ReportService
         $workingCapitalChanges = [];
 
         // Accounts receivable (1121): increase in AR is negative for cash flow
-        $arChange = $getBalanceChange(['1121'], true);
+        $arChange = $getBalanceChange([config('accounting.default_accounts.accounts_receivable')], true);
         if (bccomp($arChange, '0.00', 2) !== 0) {
             $workingCapitalChanges[] = [
                 'description_ar' => 'التغير في حسابات المدينين',
@@ -551,7 +551,12 @@ class ReportService
         }
 
         // Taxes payable (2131-2134)
-        $taxesChange = $getBalanceChange(['2131', '2132', '2133', '2134'], false);
+        $taxesChange = $getBalanceChange([
+                config('accounting.default_accounts.vat_output'),
+                config('accounting.default_accounts.wht_services'),
+                config('accounting.default_accounts.wht_supplies'),
+                config('accounting.default_accounts.wht_equipment'),
+            ], false);
         if (bccomp($taxesChange, '0.00', 2) !== 0) {
             $workingCapitalChanges[] = [
                 'description_ar' => 'التغير في الضرائب المستحقة',
@@ -824,7 +829,7 @@ class ReportService
         $cashAccounts = Account::query()
             ->active()
             ->leafAccounts()
-            ->whereIn('code', ['1111', '1112'])
+            ->whereIn('code', [config('accounting.default_accounts.cash'), config('accounting.default_accounts.bank')])
             ->pluck('id')
             ->toArray();
 
