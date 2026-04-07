@@ -19,8 +19,8 @@ class UpdateEtaSettingsRequest extends FormRequest
         return [
             'is_enabled' => ['sometimes', 'boolean'],
             'environment' => ['sometimes', 'string', 'in:production,preprod'],
-            'client_id' => ['nullable', 'string', 'max:255'],
-            'client_secret' => ['nullable', 'string', 'max:1000'],
+            'client_id' => ['nullable', 'string', 'max:255', 'required_with:client_secret'],
+            'client_secret' => ['nullable', 'string', 'min:16', 'max:255', 'required_with:client_id'],
             'branch_id' => ['nullable', 'string', 'max:20'],
             'branch_address_country' => ['nullable', 'string', 'max:5'],
             'branch_address_governate' => ['nullable', 'string', 'max:100'],
@@ -38,7 +38,10 @@ class UpdateEtaSettingsRequest extends FormRequest
         return [
             'environment.in' => 'البيئة يجب أن تكون production أو preprod.',
             'client_id.max' => 'معرف العميل يجب ألا يتجاوز 255 حرفاً.',
-            'client_secret.max' => 'كلمة سر العميل يجب ألا تتجاوز 1000 حرف.',
+            'client_secret.min' => 'كلمة سر العميل يجب أن تكون 16 حرفاً على الأقل.',
+            'client_secret.max' => 'كلمة سر العميل يجب ألا تتجاوز 255 حرفاً.',
+            'client_id.required_with' => 'معرف العميل مطلوب عند إدخال كلمة سر العميل.',
+            'client_secret.required_with' => 'كلمة سر العميل مطلوبة عند إدخال معرف العميل.',
             'activity_code.max' => 'كود النشاط يجب ألا يتجاوز 10 أحرف.',
         ];
     }
