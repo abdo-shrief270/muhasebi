@@ -55,6 +55,9 @@ Schedule::command('blog:publish-scheduled')->everyFiveMinutes();
 // Process subscription lifecycle (expiry, grace period, suspension)
 Schedule::command('subscriptions:lifecycle')->hourly()->withoutOverlapping(300);
 
+// Process recurring journal entries (runs daily at 5am)
+Schedule::command('recurring-je:process')->dailyAt('05:00')->withoutOverlapping(300);
+
 // Generate recurring invoices (runs daily at 6am)
 Schedule::command('invoices:process-recurring')->dailyAt('06:00')->withoutOverlapping(300);
 
