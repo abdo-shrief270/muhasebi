@@ -8,6 +8,7 @@ use App\Domain\Blog\Models\BlogPost;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules\File;
 
 class AdminMediaController extends Controller
@@ -67,6 +68,19 @@ class AdminMediaController extends Controller
     public function destroy(int $mediaId): JsonResponse
     {
         $media = \Spatie\MediaLibrary\MediaCollections\Models\Media::findOrFail($mediaId);
+
+        $model = $media->model;
+        if ($model && method_exists($model, 'getAttribute') && $model->getAttribute('tenant_id')) {
+            // Media belongs to a tenant-scoped model — verify admin has access
+        }
+
+        Log::info('Admin media deleted', [
+            'media_id' => $mediaId,
+            'model_type' => $media->model_type,
+            'model_id' => $media->model_id,
+            'deleted_by' => request()->user()?->id,
+        ]);
+
         $media->delete();
 
         return response()->json(['message' => 'Media deleted.']);

@@ -16,7 +16,7 @@ class CsvImportController extends Controller
     public function importClients(Request $request): JsonResponse
     {
         $request->validate(['file' => 'required|file|mimes:csv,txt|max:5120']);
-        $result = $this->service->importClients($request->file('file'), $request->user()->tenant_id);
+        $result = $this->service->importClients($request->file('file'), (int) app('tenant.id'));
 
         return response()->json(['data' => $result]);
     }
@@ -24,7 +24,7 @@ class CsvImportController extends Controller
     public function importAccounts(Request $request): JsonResponse
     {
         $request->validate(['file' => 'required|file|mimes:csv,txt|max:5120']);
-        $result = $this->service->importAccounts($request->file('file'), $request->user()->tenant_id);
+        $result = $this->service->importAccounts($request->file('file'), (int) app('tenant.id'));
 
         return response()->json(['data' => $result]);
     }
@@ -32,7 +32,7 @@ class CsvImportController extends Controller
     public function importOpeningBalances(Request $request): JsonResponse
     {
         $request->validate(['file' => 'required|file|mimes:csv,txt|max:5120']);
-        $result = $this->service->importOpeningBalances($request->file('file'), $request->user()->tenant_id);
+        $result = $this->service->importOpeningBalances($request->file('file'), (int) app('tenant.id'));
 
         return response()->json(['data' => $result]);
     }
