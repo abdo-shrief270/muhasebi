@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\V1\Admin\AdminUsageController;
 use App\Http\Controllers\Api\V1\Admin\AdminUserController;
 use App\Http\Controllers\Api\V1\AgingReminderController;
 use App\Http\Controllers\Api\V1\ApiDocsController;
+use App\Http\Controllers\Api\V1\BankCategorizationController;
 use App\Http\Controllers\Api\V1\BankReconciliationController;
 use App\Http\Controllers\Api\V1\AssetCategoryController;
 use App\Http\Controllers\Api\V1\AssetDisposalController;
@@ -296,7 +297,19 @@ Route::prefix('v1')->group(function (): void {
                     Route::post('lines/{bankStatementLine}/match', [BankReconciliationController::class, 'manualMatch'])->name('lines.match');
                     Route::post('lines/{bankStatementLine}/unmatch', [BankReconciliationController::class, 'unmatch'])->name('lines.unmatch');
                     Route::post('lines/{bankStatementLine}/exclude', [BankReconciliationController::class, 'exclude'])->name('lines.exclude');
+                    Route::post('{bankReconciliation}/categorize', [BankCategorizationController::class, 'categorize'])->name('categorize');
                 });
+
+                // Bank Categorization Rules
+                Route::prefix('bank-categorization-rules')->name('bank-categorization-rules.')->group(function (): void {
+                    Route::get('/', [BankCategorizationController::class, 'rules'])->name('index');
+                    Route::post('/', [BankCategorizationController::class, 'createRule'])->name('store');
+                    Route::delete('{bankCategorizationRule}', [BankCategorizationController::class, 'deleteRule'])->name('destroy');
+                });
+
+                // Bank Statement Line actions
+                Route::post('bank-statement-lines/{bankStatementLine}/apply-suggestion', [BankCategorizationController::class, 'applySuggestion'])->name('bank-statement-lines.apply-suggestion');
+                Route::post('bank-statement-lines/{bankStatementLine}/learn', [BankCategorizationController::class, 'learn'])->name('bank-statement-lines.learn');
 
                 // FX Revaluations
                 Route::prefix('fx-revaluations')->name('fx-revaluations.')->group(function (): void {

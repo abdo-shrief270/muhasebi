@@ -20,6 +20,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'type',
     'journal_entry_line_id',
     'status',
+    'suggested_account_id',
+    'suggested_vendor_id',
+    'confidence_score',
+    'category_rule_id',
+    'is_auto_categorized',
 ])]
 class BankStatementLine extends Model
 {
@@ -30,6 +35,8 @@ class BankStatementLine extends Model
         return [
             'date' => 'date',
             'amount' => 'decimal:2',
+            'confidence_score' => 'decimal:2',
+            'is_auto_categorized' => 'boolean',
         ];
     }
 
@@ -43,6 +50,21 @@ class BankStatementLine extends Model
     public function journalEntryLine(): BelongsTo
     {
         return $this->belongsTo(JournalEntryLine::class);
+    }
+
+    public function suggestedAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'suggested_account_id');
+    }
+
+    public function suggestedVendor(): BelongsTo
+    {
+        return $this->belongsTo(\App\Domain\AccountsPayable\Models\Vendor::class, 'suggested_vendor_id');
+    }
+
+    public function categoryRule(): BelongsTo
+    {
+        return $this->belongsTo(BankCategorizationRule::class, 'category_rule_id');
     }
 
     // ── Scopes ──
