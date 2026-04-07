@@ -9,6 +9,7 @@ use App\Domain\Accounting\Enums\JournalEntryStatus;
 use App\Domain\Accounting\Enums\NormalBalance;
 use App\Domain\Accounting\Models\Account;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class ReportService
@@ -20,6 +21,10 @@ class ReportService
      */
     public function trialBalance(?string $fromDate = null, ?string $toDate = null): array
     {
+        $tenantId = app('tenant.id') ?? 'global';
+        $cacheKey = "trial_balance:{$tenantId}:{$fromDate}:{$toDate}";
+
+        return Cache::remember($cacheKey, now()->addHour(), function () use ($fromDate, $toDate) {
         // Get all active leaf accounts
         $accounts = Account::query()
             ->active()
@@ -186,6 +191,7 @@ class ReportService
             'rows' => $rows,
             'totals' => $totals,
         ];
+        }); // end Cache::remember
     }
 
     /**
@@ -288,6 +294,10 @@ class ReportService
      */
     public function incomeStatement(?string $fromDate = null, ?string $toDate = null): array
     {
+        $tenantId = app('tenant.id') ?? 'global';
+        $cacheKey = "income_statement:{$tenantId}:{$fromDate}:{$toDate}";
+
+        return Cache::remember($cacheKey, now()->addHour(), function () use ($fromDate, $toDate) {
         $revenueAccounts = Account::query()
             ->active()
             ->leafAccounts()
@@ -337,6 +347,7 @@ class ReportService
             'net_income' => $netIncome,
             'period' => ['from' => $fromDate, 'to' => $toDate],
         ];
+        }); // end Cache::remember
     }
 
     // ──────────────────────────────────────

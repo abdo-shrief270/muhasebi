@@ -119,6 +119,8 @@ class AppServiceProvider extends ServiceProvider
     {
         Invoice::observe(\App\Domain\Billing\Observers\InvoiceObserver::class);
         Payment::observe(\App\Domain\Billing\Observers\PaymentObserver::class);
+        JournalEntry::observe(\App\Domain\Accounting\Observers\JournalEntryObserver::class);
+        Account::observe(\App\Domain\Accounting\Observers\AccountObserver::class);
     }
 
     private function registerPolicies(): void
