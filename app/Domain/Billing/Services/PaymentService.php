@@ -66,9 +66,9 @@ class PaymentService
             ]);
         }
 
-        $amount = (float) $data['amount'];
+        $amount = (string) $data['amount'];
 
-        if ($amount <= 0) {
+        if (bccomp($amount, '0', 2) <= 0) {
             throw ValidationException::withMessages([
                 'amount' => ['Payment amount must be greater than zero.'],
             ]);
