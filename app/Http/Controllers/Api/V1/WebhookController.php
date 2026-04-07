@@ -10,6 +10,7 @@ use App\Domain\Subscription\Services\PaymobService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class WebhookController extends Controller
@@ -24,9 +25,15 @@ class WebhookController extends Controller
      */
     public function paymob(Request $request): JsonResponse
     {
-        $this->paymobService->handleCallback($request->all());
+        try {
+            $result = $this->paymobService->handleCallback($request->all());
 
-        return response()->json(['message' => 'OK'], Response::HTTP_OK);
+            return response()->json($result);
+        } catch (\Throwable $e) {
+            Log::error('Paymob webhook failed', ['error' => $e->getMessage()]);
+
+            return response()->json(['error' => 'Processing failed'], 500);
+        }
     }
 
     /**
@@ -35,19 +42,25 @@ class WebhookController extends Controller
      */
     public function fawry(Request $request): JsonResponse
     {
-        $data = $request->all();
-        $merchantRef = $data['merchantRefNum'] ?? '';
+        try {
+            $data = $request->all();
+            $merchantRef = $data['merchantRefNum'] ?? '';
 
-        // Invoice payments use "INV-FAWRY-{id}-{ts}" format
-        if (str_starts_with($merchantRef, 'INV-FAWRY-')) {
-            $result = $this->clientPaymentService->handleFawryCallback($data);
+            // Invoice payments use "INV-FAWRY-{id}-{ts}" format
+            if (str_starts_with($merchantRef, 'INV-FAWRY-')) {
+                $result = $this->clientPaymentService->handleFawryCallback($data);
 
-            return response()->json($result, Response::HTTP_OK);
+                return response()->json($result);
+            }
+
+            // Default: subscription payment
+            $result = FawryService::handleCallback($data);
+
+            return response()->json($result);
+        } catch (\Throwable $e) {
+            Log::error('Fawry webhook failed', ['error' => $e->getMessage()]);
+
+            return response()->json(['error' => 'Processing failed'], 500);
         }
-
-        // Default: subscription payment
-        $result = FawryService::handleCallback($data);
-
-        return response()->json($result, Response::HTTP_OK);
     }
 }

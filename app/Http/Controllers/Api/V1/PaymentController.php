@@ -40,7 +40,7 @@ class PaymentController extends Controller
     public function store(StorePaymentRequest $request): JsonResponse
     {
         $validated = $request->validated();
-        $invoice = Invoice::query()->findOrFail($validated['invoice_id']);
+        $invoice = Invoice::where('tenant_id', app('tenant.id'))->findOrFail($validated['invoice_id']);
 
         $payment = $this->paymentService->record($invoice, $validated);
 
