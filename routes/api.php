@@ -67,6 +67,7 @@ use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\InvoiceController;
 use App\Http\Controllers\Api\V1\InvoiceSettingsController;
 use App\Http\Controllers\Api\V1\JournalEntryController;
+use App\Http\Controllers\Api\V1\LaborLawController;
 use App\Http\Controllers\Api\V1\LandingController;
 use App\Http\Controllers\Api\V1\LandingPageSettingsController;
 use App\Http\Controllers\Api\V1\MessagingController;
@@ -652,6 +653,15 @@ Route::prefix('v1')->group(function (): void {
                 Route::post('attendance', [AttendanceController::class, 'store'])->name('attendance.store');
                 Route::post('attendance/bulk', [AttendanceController::class, 'bulkStore'])->name('attendance.bulk');
                 Route::get('employees/{employee}/attendance-summary', [AttendanceController::class, 'summary'])->name('employees.attendance-summary');
+            });
+
+            // ── Labor Law Calculations ──
+            Route::middleware('permission:manage_payroll')->prefix('labor-law')->name('labor-law.')->group(function (): void {
+                Route::post('overtime', [LaborLawController::class, 'calculateOvertime']);
+                Route::post('end-of-service', [LaborLawController::class, 'calculateEndOfService']);
+                Route::get('leave-entitlement/{employee}', [LaborLawController::class, 'leaveEntitlement']);
+                Route::post('validate-wage', [LaborLawController::class, 'validateWage']);
+                Route::post('social-insurance', [LaborLawController::class, 'socialInsurance']);
             });
 
             // ── ETA E-Invoicing (admin + accountant) ──
