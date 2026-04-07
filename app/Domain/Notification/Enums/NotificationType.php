@@ -17,6 +17,7 @@ enum NotificationType: string
     case DocumentShared = 'document_shared';
     case NewMessage = 'new_message';
     case ClientInvite = 'client_invite';
+    case InvoiceDispute = 'invoice_dispute';
 
     public function label(): string
     {
@@ -32,6 +33,7 @@ enum NotificationType: string
             self::DocumentShared => 'Document Shared',
             self::NewMessage => 'New Message',
             self::ClientInvite => 'Client Invite',
+            self::InvoiceDispute => 'Invoice Dispute',
         };
     }
 
@@ -49,6 +51,7 @@ enum NotificationType: string
             self::DocumentShared => 'تمت مشاركة مستند',
             self::NewMessage => 'رسالة جديدة',
             self::ClientInvite => 'دعوة عميل',
+            self::InvoiceDispute => 'نزاع على فاتورة',
         };
     }
 
@@ -66,6 +69,7 @@ enum NotificationType: string
             self::DocumentShared => 'share-2',
             self::NewMessage => 'mail',
             self::ClientInvite => 'user-check',
+            self::InvoiceDispute => 'alert-circle',
         };
     }
 }
