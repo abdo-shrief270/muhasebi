@@ -1,29 +1,6 @@
 {
   "permissions": {
     "allow": [
-      "Bash(php -l app/Domain/Document/Services/DocumentService.php)",
-      "Read(//c/Users/20155/Projects/**)",
-      "Bash(npx nuxi@latest init muhasebi-frontend --template minimal --packageManager npm --no-install)",
-      "Bash(npm install:*)",
-      "Bash(npx nuxt:*)",
-      "Bash(find app/Http/Requests -name \"*.php\" -exec grep -l \"authorize\" {} \\\\;)",
-      "Bash(php artisan:*)",
-      "Bash(ls:*)",
-      "Bash(xargs grep:*)",
-      "Bash(grep -E \"\\\\.php$\")",
-      "Bash(npx vue-tsc:*)",
-      "Bash(node -e ':*)",
-      "Bash(npx vitest:*)",
-      "Bash(node -e \"console.log\\(typeof import.meta\\)\")",
-      "Bash(find:*)",
-      "Bash(grep -r 'protected.*\\\\$middlewareAliases\\\\|\"tenant\"' /c/Users/20155/Projects/muhasebi/config '--include=*.php')",
-      "Bash(grep -r \"@{1,2}\\(if|foreach|include|php\\)\" /c/Users/20155/Projects/muhasebi/resources/views --include=\"*.blade.php\")",
-      "Bash(awk NR>=145 && NR<=200:*)",
-      "Bash(grep -v \"//\")",
-      "Bash(grep:*)",
-      "Bash(wc:*)",
-      "Bash(git init:*)",
-      "Bash(git add:*)",
       "Bash(*)"
     ]
   }
