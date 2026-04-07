@@ -18,10 +18,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'tenant_id',
     'eta_item_code_id',
     'product_id',
-    'match_type',
-    'pattern',
+    'description_pattern',
     'priority',
-    'is_active',
+    'assignment_source',
 ])]
 class EtaItemCodeMapping extends Model
 {
@@ -29,16 +28,14 @@ class EtaItemCodeMapping extends Model
 
     /** @var array<string, mixed> */
     protected $attributes = [
-        'match_type' => 'contains',
         'priority' => 0,
-        'is_active' => true,
+        'assignment_source' => 'manual',
     ];
 
     /** @return array<string, string> */
     protected function casts(): array
     {
         return [
-            'is_active' => 'boolean',
             'priority' => 'integer',
         ];
     }
@@ -66,38 +63,18 @@ class EtaItemCodeMapping extends Model
     // Scopes
     // ──────────────────────────────────────
 
-    public function scopeActive(Builder $query): Builder
+    public function scopeByProduct(Builder $query, int $productId): Builder
     {
-        return $query->where('is_active', true);
+        return $query->where('product_id', $productId);
     }
 
-    public function scopeByPriority(Builder $query): Builder
+    public function scopeByPattern(Builder $query): Builder
+    {
+        return $query->whereNotNull('description_pattern');
+    }
+
+    public function scopeOrdered(Builder $query): Builder
     {
         return $query->orderByDesc('priority');
-    }
-
-    // ──────────────────────────────────────
-    // Methods
-    // ──────────────────────────────────────
-
-    /**
-     * Check if a description matches this mapping's pattern.
-     *
-     * Supports match types: contains, starts_with, regex.
-     */
-    public function matches(string $description): bool
-    {
-        return match ($this->match_type) {
-            'contains' => str_contains(
-                mb_strtolower($description),
-                mb_strtolower($this->pattern),
-            ),
-            'starts_with' => str_starts_with(
-                mb_strtolower($description),
-                mb_strtolower($this->pattern),
-            ),
-            'regex' => (bool) preg_match($this->pattern, $description),
-            default => false,
-        };
     }
 }
