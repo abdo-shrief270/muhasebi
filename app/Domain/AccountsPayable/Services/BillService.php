@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\AccountsPayable\Services;
 
-use App\Domain\Accounting\Models\Account;
+use App\Domain\Accounting\Services\GLPostingService;
 use App\Domain\Accounting\Services\JournalEntryService;
 use App\Domain\AccountsPayable\Enums\BillStatus;
 use App\Domain\AccountsPayable\Models\Bill;
@@ -18,6 +18,7 @@ class BillService
 {
     public function __construct(
         private readonly JournalEntryService $journalEntryService,
+        private readonly GLPostingService $glPostingService,
     ) {}
 
     /**
@@ -134,12 +135,12 @@ class BillService
             $currency = $bill->currency ?? 'EGP';
 
             // Resolve GL account IDs
-            $apAccountId = $this->resolveAccountByCode(
+            $apAccountId = $this->glPostingService->resolveAccount(
                 config('accounting.default_accounts.accounts_payable'),
                 $tenantId
             );
 
-            $vatInputAccountId = $this->resolveAccountByCode(
+            $vatInputAccountId = $this->glPostingService->resolveAccount(
                 config('accounting.default_accounts.vat_input'),
                 $tenantId
             );
@@ -198,7 +199,7 @@ class BillService
             // CREDIT: WHT Payable for total WHT
             if (bccomp((string) $bill->wht_amount, '0.00', 2) > 0) {
                 // Determine the WHT account — use the services WHT account as default
-                $whtAccountId = $this->resolveAccountByCode(
+                $whtAccountId = $this->glPostingService->resolveAccount(
                     config('accounting.default_accounts.wht_services'),
                     $tenantId
                 );
@@ -213,14 +214,12 @@ class BillService
             }
 
             // Create and post the journal entry
-            $journalEntry = $this->journalEntryService->create([
+            $journalEntry = $this->glPostingService->post([
                 'date' => $bill->date->toDateString(),
                 'description' => "فاتورة مشتريات رقم {$bill->bill_number}",
                 'reference' => $bill->bill_number,
                 'lines' => $jeLines,
             ]);
-
-            $this->journalEntryService->post($journalEntry);
 
             $bill->update([
                 'status' => BillStatus::Approved,
@@ -324,7 +323,7 @@ class BillService
                 'quantity' => $lineData['quantity'] ?? 1,
                 'unit_price' => $lineData['unit_price'] ?? 0,
                 'discount_percent' => $lineData['discount_percent'] ?? 0,
-                'vat_rate' => $lineData['vat_rate'] ?? 14.00,
+                'vat_rate' => $lineData['vat_rate'] ?? (float) config('tax.vat_rate', '14.00'),
                 'wht_rate' => $lineData['wht_rate'] ?? 0,
                 'sort_order' => $lineData['sort_order'] ?? $index,
                 'account_id' => $lineData['account_id'] ?? null,
@@ -336,24 +335,4 @@ class BillService
         }
     }
 
-    /**
-     * Resolve an account ID by its code for the current tenant.
-     *
-     * @throws ValidationException
-     */
-    private function resolveAccountByCode(string $code, int $tenantId): int
-    {
-        $account = Account::query()
-            ->forTenant($tenantId)
-            ->where('code', $code)
-            ->first();
-
-        if (! $account) {
-            throw ValidationException::withMessages([
-                'account' => ["Required account with code '{$code}' not found. Please set up your chart of accounts."],
-            ]);
-        }
-
-        return $account->id;
-    }
 }

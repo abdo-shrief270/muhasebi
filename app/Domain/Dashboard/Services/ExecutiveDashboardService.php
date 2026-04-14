@@ -10,6 +10,7 @@ use App\Domain\Accounting\Models\Account;
 use App\Domain\AccountsPayable\Enums\BillStatus;
 use App\Domain\Billing\Enums\InvoiceStatus;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class ExecutiveDashboardService
@@ -32,6 +33,10 @@ class ExecutiveDashboardService
      */
     public function financialOverview(array $filters): array
     {
+        $tenantId = app('tenant.id');
+        $cacheKey = "dashboard:{$tenantId}:financial_overview:" . md5(json_encode($filters));
+
+        return Cache::remember($cacheKey, 3600, function () use ($filters) {
         $toDate = $filters['to'] ?? date('Y-m-d');
         $year = substr($toDate, 0, 4);
         $fromDate = $filters['from'] ?? "{$year}-01-01";
@@ -87,6 +92,7 @@ class ExecutiveDashboardService
                 'variance_percent' => $budgetVariancePercent,
             ],
         ];
+        });
     }
 
     // ──────────────────────────────────────
@@ -103,6 +109,10 @@ class ExecutiveDashboardService
      */
     public function revenueAnalysis(array $filters): array
     {
+        $tenantId = app('tenant.id');
+        $cacheKey = "dashboard:{$tenantId}:revenue_analysis:" . md5(json_encode($filters));
+
+        return Cache::remember($cacheKey, 3600, function () use ($filters) {
         $toDate = $filters['to'] ?? date('Y-m-d');
         $fromDate = $filters['from'] ?? date('Y-m-d', strtotime('-12 months', strtotime($toDate)));
 
@@ -112,6 +122,7 @@ class ExecutiveDashboardService
             'by_account' => $this->revenueByAccount($fromDate, $toDate),
             'growth_rates' => $this->revenueGrowthRates($fromDate, $toDate),
         ];
+        });
     }
 
     // ──────────────────────────────────────
@@ -130,6 +141,10 @@ class ExecutiveDashboardService
      */
     public function cashFlowForecast(array $filters): array
     {
+        $tenantId = app('tenant.id');
+        $cacheKey = "dashboard:{$tenantId}:cash_flow_forecast:" . md5(json_encode($filters));
+
+        return Cache::remember($cacheKey, 3600, function () use ($filters) {
         $asOfDate = $filters['to'] ?? date('Y-m-d');
 
         $currentCash = $this->getCashBalance($asOfDate);
@@ -154,6 +169,7 @@ class ExecutiveDashboardService
             'projected_60_days' => $projected60,
             'projected_90_days' => $projected90,
         ];
+        });
     }
 
     // ──────────────────────────────────────
@@ -171,6 +187,10 @@ class ExecutiveDashboardService
      */
     public function profitabilityMetrics(array $filters): array
     {
+        $tenantId = app('tenant.id');
+        $cacheKey = "dashboard:{$tenantId}:profitability_metrics:" . md5(json_encode($filters));
+
+        return Cache::remember($cacheKey, 3600, function () use ($filters) {
         $toDate = $filters['to'] ?? date('Y-m-d');
         $year = substr($toDate, 0, 4);
         $fromDate = $filters['from'] ?? "{$year}-01-01";
@@ -210,6 +230,7 @@ class ExecutiveDashboardService
             'revenue_per_client' => $revenuePerClient,
             'top_profitable_clients' => $topClients,
         ];
+        });
     }
 
     // ──────────────────────────────────────
@@ -227,6 +248,10 @@ class ExecutiveDashboardService
      */
     public function kpiDashboard(array $filters): array
     {
+        $tenantId = app('tenant.id');
+        $cacheKey = "dashboard:{$tenantId}:kpi_dashboard:" . md5(json_encode($filters));
+
+        return Cache::remember($cacheKey, 3600, function () use ($filters) {
         $toDate = $filters['to'] ?? date('Y-m-d');
         $year = substr($toDate, 0, 4);
         $fromDate = $filters['from'] ?? "{$year}-01-01";
@@ -275,6 +300,7 @@ class ExecutiveDashboardService
             'quick_ratio' => $quickRatio,
             'collection_rate' => $collectionRate,
         ];
+        });
     }
 
     // ──────────────────────────────────────

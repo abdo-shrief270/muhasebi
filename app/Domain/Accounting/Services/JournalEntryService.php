@@ -331,9 +331,8 @@ class JournalEntryService
         $maxNumber = JournalEntry::query()
             ->forTenant($tenantId)
             ->where('entry_number', 'like', $prefix.'%')
-            ->pluck('entry_number')
-            ->map(fn (string $num): int => (int) str_replace($prefix, '', $num))
-            ->max() ?? 0;
+            ->selectRaw("MAX(CAST(SUBSTRING(entry_number FROM ?) AS INTEGER)) as max_num", [mb_strlen($prefix) + 1])
+            ->value('max_num') ?? 0;
 
         $nextNumber = $maxNumber + 1;
 

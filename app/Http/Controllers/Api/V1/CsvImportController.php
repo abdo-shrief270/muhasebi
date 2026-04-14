@@ -4,36 +4,43 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Domain\Shared\Services\CsvImportService;
 use App\Http\Controllers\Controller;
+use App\Jobs\ImportCsvJob;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CsvImportController extends Controller
 {
-    public function __construct(private readonly CsvImportService $service) {}
-
     public function importClients(Request $request): JsonResponse
     {
-        $request->validate(['file' => 'required|file|mimes:csv,txt|max:5120']);
-        $result = $this->service->importClients($request->file('file'), (int) app('tenant.id'));
-
-        return response()->json(['data' => $result]);
+        return $this->dispatchImport($request, 'clients');
     }
 
     public function importAccounts(Request $request): JsonResponse
     {
-        $request->validate(['file' => 'required|file|mimes:csv,txt|max:5120']);
-        $result = $this->service->importAccounts($request->file('file'), (int) app('tenant.id'));
-
-        return response()->json(['data' => $result]);
+        return $this->dispatchImport($request, 'accounts');
     }
 
     public function importOpeningBalances(Request $request): JsonResponse
     {
-        $request->validate(['file' => 'required|file|mimes:csv,txt|max:5120']);
-        $result = $this->service->importOpeningBalances($request->file('file'), (int) app('tenant.id'));
+        return $this->dispatchImport($request, 'opening_balances');
+    }
 
-        return response()->json(['data' => $result]);
+    private function dispatchImport(Request $request, string $importType): JsonResponse
+    {
+        $request->validate(['file' => 'required|file|mimes:csv,txt|max:5120']);
+
+        $path = $request->file('file')->store('csv-imports');
+
+        ImportCsvJob::dispatch(
+            storage_path('app/'.$path),
+            $importType,
+            (int) app('tenant.id'),
+        );
+
+        return response()->json([
+            'message' => 'Import queued for processing.',
+            'import_type' => $importType,
+        ], 202);
     }
 }

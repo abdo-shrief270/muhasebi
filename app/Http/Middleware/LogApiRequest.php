@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-use App\Domain\Shared\Models\ApiRequestLog;
+use App\Jobs\LogApiRequestJob;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -47,7 +47,7 @@ class LogApiRequest
         $durationMs = (int) round((microtime(true) - $startTime) * 1000);
 
         try {
-            ApiRequestLog::create([
+            LogApiRequestJob::dispatch([
                 'request_id' => $response->headers->get('X-Request-Id', bin2hex(random_bytes(12))),
                 'method' => $request->method(),
                 'path' => '/'.ltrim($path, '/'),
@@ -65,7 +65,7 @@ class LogApiRequest
                     ? mb_substr($this->extractErrorMessage($response), 0, 1000)
                     : null,
                 'created_at' => now(),
-            ]);
+            ])->onQueue('logging');
         } catch (\Throwable $e) {
             // Never let logging break the request
             logger()->warning('API request logging failed', ['error' => $e->getMessage()]);

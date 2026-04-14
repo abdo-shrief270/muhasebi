@@ -72,98 +72,102 @@ class DepreciationService
      */
     public function runMonthly(int $tenantId, string $periodEnd): array
     {
-        return DB::transaction(function () use ($tenantId, $periodEnd): array {
-            $assets = FixedAsset::query()
-                ->forTenant($tenantId)
-                ->active()
-                ->with('category')
-                ->get()
-                ->reject(fn (FixedAsset $asset) => $asset->isFullyDepreciated());
+        $count = 0;
+        $totalAmount = '0.00';
 
-            $count = 0;
-            $totalAmount = '0.00';
+        FixedAsset::query()
+            ->forTenant($tenantId)
+            ->active()
+            ->whereRaw('book_value > salvage_value')
+            ->with('category')
+            ->chunk(100, function ($assets) use ($tenantId, $periodEnd, &$count, &$totalAmount): void {
+                DB::transaction(function () use ($assets, $tenantId, $periodEnd, &$count, &$totalAmount): void {
+                    foreach ($assets as $asset) {
+                        if ($asset->isFullyDepreciated()) {
+                            continue;
+                        }
 
-            foreach ($assets as $asset) {
-                $monthlyAmount = $this->calculateMonthly($asset);
+                        $monthlyAmount = $this->calculateMonthly($asset);
 
-                if (bccomp($monthlyAmount, '0.00', 2) <= 0) {
-                    continue;
-                }
+                        if (bccomp($monthlyAmount, '0.00', 2) <= 0) {
+                            continue;
+                        }
 
-                // Don't exceed remaining depreciable amount
-                $remaining = bcsub(
-                    bcsub((string) $asset->acquisition_cost, (string) $asset->salvage_value, 2),
-                    (string) $asset->accumulated_depreciation,
-                    2
-                );
+                        // Don't exceed remaining depreciable amount
+                        $remaining = bcsub(
+                            bcsub((string) $asset->acquisition_cost, (string) $asset->salvage_value, 2),
+                            (string) $asset->accumulated_depreciation,
+                            2
+                        );
 
-                if (bccomp($remaining, '0.00', 2) <= 0) {
-                    continue;
-                }
+                        if (bccomp($remaining, '0.00', 2) <= 0) {
+                            continue;
+                        }
 
-                if (bccomp($monthlyAmount, $remaining, 2) > 0) {
-                    $monthlyAmount = $remaining;
-                }
+                        if (bccomp($monthlyAmount, $remaining, 2) > 0) {
+                            $monthlyAmount = $remaining;
+                        }
 
-                $newAccumulated = bcadd((string) $asset->accumulated_depreciation, $monthlyAmount, 2);
-                $newBookValue = bcsub((string) $asset->acquisition_cost, $newAccumulated, 2);
+                        $newAccumulated = bcadd((string) $asset->accumulated_depreciation, $monthlyAmount, 2);
+                        $newBookValue = bcsub((string) $asset->acquisition_cost, $newAccumulated, 2);
 
-                // Post GL journal entry
-                $journalEntry = $this->journalEntryService->create([
-                    'date' => $periodEnd,
-                    'description' => "Depreciation - {$asset->name_en} ({$asset->code})",
-                    'reference' => "DEP-{$asset->code}-{$periodEnd}",
-                    'lines' => [
-                        [
-                            'account_id' => $asset->category->depreciation_expense_account_id,
-                            'debit' => $monthlyAmount,
-                            'credit' => '0',
-                            'description' => "Depreciation expense - {$asset->name_en}",
-                        ],
-                        [
-                            'account_id' => $asset->category->accumulated_depreciation_account_id,
-                            'debit' => '0',
-                            'credit' => $monthlyAmount,
-                            'description' => "Accumulated depreciation - {$asset->name_en}",
-                        ],
-                    ],
-                ]);
+                        // Post GL journal entry
+                        $journalEntry = $this->journalEntryService->create([
+                            'date' => $periodEnd,
+                            'description' => "Depreciation - {$asset->name_en} ({$asset->code})",
+                            'reference' => "DEP-{$asset->code}-{$periodEnd}",
+                            'lines' => [
+                                [
+                                    'account_id' => $asset->category->depreciation_expense_account_id,
+                                    'debit' => $monthlyAmount,
+                                    'credit' => '0',
+                                    'description' => "Depreciation expense - {$asset->name_en}",
+                                ],
+                                [
+                                    'account_id' => $asset->category->accumulated_depreciation_account_id,
+                                    'debit' => '0',
+                                    'credit' => $monthlyAmount,
+                                    'description' => "Accumulated depreciation - {$asset->name_en}",
+                                ],
+                            ],
+                        ]);
 
-                // Auto-post the journal entry
-                $this->journalEntryService->post($journalEntry);
+                        // Auto-post the journal entry
+                        $this->journalEntryService->post($journalEntry);
 
-                // Create depreciation entry record
-                DepreciationEntry::query()->create([
-                    'tenant_id' => $tenantId,
-                    'fixed_asset_id' => $asset->id,
-                    'journal_entry_id' => $journalEntry->id,
-                    'period_end' => $periodEnd,
-                    'amount' => $monthlyAmount,
-                    'accumulated_after' => $newAccumulated,
-                    'book_value_after' => $newBookValue,
-                ]);
+                        // Create depreciation entry record
+                        DepreciationEntry::query()->create([
+                            'tenant_id' => $tenantId,
+                            'fixed_asset_id' => $asset->id,
+                            'journal_entry_id' => $journalEntry->id,
+                            'period_end' => $periodEnd,
+                            'amount' => $monthlyAmount,
+                            'accumulated_after' => $newAccumulated,
+                            'book_value_after' => $newBookValue,
+                        ]);
 
-                // Update asset balances
-                $asset->update([
-                    'accumulated_depreciation' => $newAccumulated,
-                    'book_value' => $newBookValue,
-                    'last_depreciation_date' => $periodEnd,
-                ]);
+                        // Update asset balances
+                        $asset->update([
+                            'accumulated_depreciation' => $newAccumulated,
+                            'book_value' => $newBookValue,
+                            'last_depreciation_date' => $periodEnd,
+                        ]);
 
-                // Mark fully depreciated if applicable
-                if (bccomp($newBookValue, (string) $asset->salvage_value, 2) <= 0) {
-                    $asset->update(['status' => AssetStatus::FullyDepreciated]);
-                }
+                        // Mark fully depreciated if applicable
+                        if (bccomp($newBookValue, (string) $asset->salvage_value, 2) <= 0) {
+                            $asset->update(['status' => AssetStatus::FullyDepreciated]);
+                        }
 
-                $count++;
-                $totalAmount = bcadd($totalAmount, $monthlyAmount, 2);
-            }
+                        $count++;
+                        $totalAmount = bcadd($totalAmount, $monthlyAmount, 2);
+                    }
+                });
+            });
 
-            return [
-                'count' => $count,
-                'total_amount' => $totalAmount,
-            ];
-        });
+        return [
+            'count' => $count,
+            'total_amount' => $totalAmount,
+        ];
     }
 
     // ──────────────────────────────────────

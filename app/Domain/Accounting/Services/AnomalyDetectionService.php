@@ -46,56 +46,47 @@ class AnomalyDetectionService
      */
     public function duplicateInvoices(array $filters = []): array
     {
-        $query = Invoice::query()
-            ->select('id', 'client_id', 'invoice_number', 'total', 'date')
-            ->orderBy('client_id')
-            ->orderBy('date');
+        // Use a self-join in SQL to find duplicate pairs (same client, same total, within 3 days)
+        $query = DB::table('invoices as a')
+            ->join('invoices as b', function ($join) {
+                $join->on('a.client_id', '=', 'b.client_id')
+                    ->on('a.total', '=', 'b.total')
+                    ->whereColumn('a.id', '<', 'b.id');
+            })
+            ->whereRaw('ABS(DATEDIFF(a.date, b.date)) <= 3')
+            ->select(
+                'a.id as a_id', 'a.invoice_number as a_number', 'a.client_id', 'a.total', 'a.date as a_date',
+                'b.id as b_id', 'b.invoice_number as b_number', 'b.date as b_date',
+            );
 
         if (! empty($filters['from'])) {
-            $query->where('date', '>=', $filters['from']);
+            $query->where('a.date', '>=', $filters['from']);
         }
         if (! empty($filters['to'])) {
-            $query->where('date', '<=', $filters['to']);
+            $query->where('a.date', '<=', $filters['to']);
         }
 
-        $invoices = $query->get();
+        $pairs = $query->get();
 
         $anomalies = [];
-        $grouped = $invoices->groupBy(fn (Invoice $inv) => $inv->client_id.'|'.$inv->total);
-
-        foreach ($grouped as $group) {
-            if ($group->count() < 2) {
-                continue;
-            }
-
-            $items = $group->values();
-            for ($i = 0; $i < $items->count(); $i++) {
-                for ($j = $i + 1; $j < $items->count(); $j++) {
-                    $a = $items[$i];
-                    $b = $items[$j];
-
-                    $daysDiff = abs(Carbon::parse($a->date)->diffInDays(Carbon::parse($b->date)));
-
-                    if ($daysDiff <= 3) {
-                        $anomalies[] = [
-                            'type' => 'duplicate_invoice',
-                            'severity' => 'high',
-                            'description' => "Possible duplicate invoices: {$a->invoice_number} and {$b->invoice_number} (same client, amount {$a->total}, {$daysDiff} days apart)",
-                            'description_ar' => "فواتير مكررة محتملة: {$a->invoice_number} و {$b->invoice_number} (نفس العميل، المبلغ {$a->total}، فارق {$daysDiff} أيام)",
-                            'details' => [
-                                'invoice_a_id' => $a->id,
-                                'invoice_b_id' => $b->id,
-                                'invoice_a_number' => $a->invoice_number,
-                                'invoice_b_number' => $b->invoice_number,
-                                'client_id' => $a->client_id,
-                                'amount' => $a->total,
-                                'days_apart' => $daysDiff,
-                            ],
-                            'detected_at' => now()->toIso8601String(),
-                        ];
-                    }
-                }
-            }
+        foreach ($pairs as $pair) {
+            $daysDiff = abs(Carbon::parse($pair->a_date)->diffInDays(Carbon::parse($pair->b_date)));
+            $anomalies[] = [
+                'type' => 'duplicate_invoice',
+                'severity' => 'high',
+                'description' => "Possible duplicate invoices: {$pair->a_number} and {$pair->b_number} (same client, amount {$pair->total}, {$daysDiff} days apart)",
+                'description_ar' => "فواتير مكررة محتملة: {$pair->a_number} و {$pair->b_number} (نفس العميل، المبلغ {$pair->total}، فارق {$daysDiff} أيام)",
+                'details' => [
+                    'invoice_a_id' => $pair->a_id,
+                    'invoice_b_id' => $pair->b_id,
+                    'invoice_a_number' => $pair->a_number,
+                    'invoice_b_number' => $pair->b_number,
+                    'client_id' => $pair->client_id,
+                    'amount' => $pair->total,
+                    'days_apart' => $daysDiff,
+                ],
+                'detected_at' => now()->toIso8601String(),
+            ];
         }
 
         return $anomalies;
@@ -111,11 +102,53 @@ class AnomalyDetectionService
     {
         $twelveMonthsAgo = now()->subMonths(12)->startOfMonth();
 
-        $query = JournalEntryLine::query()
+        // Step 1: Compute per-account statistics (mean, stddev) in SQL
+        $statsQuery = DB::table('journal_entry_lines')
+            ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
+            ->where('journal_entries.status', 'posted')
+            ->whereNull('journal_entries.deleted_at')
+            ->where('journal_entries.date', '>=', $twelveMonthsAgo);
+
+        if (! empty($filters['from'])) {
+            $statsQuery->where('journal_entries.date', '>=', $filters['from']);
+        }
+        if (! empty($filters['to'])) {
+            $statsQuery->where('journal_entries.date', '<=', $filters['to']);
+        }
+
+        $stats = (clone $statsQuery)
+            ->select(
+                'journal_entry_lines.account_id',
+                DB::raw('COUNT(*) as line_count'),
+                DB::raw('AVG(journal_entry_lines.debit + journal_entry_lines.credit) as mean_amount'),
+                DB::raw('STDDEV_POP(journal_entry_lines.debit + journal_entry_lines.credit) as stddev_amount'),
+            )
+            ->groupBy('journal_entry_lines.account_id')
+            ->having('line_count', '>=', 5)
+            ->havingRaw('STDDEV_POP(journal_entry_lines.debit + journal_entry_lines.credit) > 0')
+            ->get()
+            ->keyBy('account_id');
+
+        if ($stats->isEmpty()) {
+            return [];
+        }
+
+        // Step 2: Build per-account thresholds and fetch only outlier lines
+        // Use a single query with a subquery join for thresholds
+        $accountThresholds = $stats->map(fn ($s) => [
+            'account_id' => $s->account_id,
+            'mean' => number_format((float) $s->mean_amount, 2, '.', ''),
+            'stddev' => number_format((float) $s->stddev_amount, 2, '.', ''),
+            'threshold' => (float) $s->mean_amount + 3 * (float) $s->stddev_amount,
+        ]);
+
+        // Fetch only the lines that exceed their account's threshold
+        $outlierQuery = DB::table('journal_entry_lines')
             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
             ->where('journal_entries.status', 'posted')
             ->whereNull('journal_entries.deleted_at')
             ->where('journal_entries.date', '>=', $twelveMonthsAgo)
+            ->whereIn('journal_entry_lines.account_id', $accountThresholds->pluck('account_id')->toArray())
             ->select(
                 'journal_entry_lines.id',
                 'journal_entry_lines.account_id',
@@ -126,71 +159,49 @@ class AnomalyDetectionService
             );
 
         if (! empty($filters['from'])) {
-            $query->where('journal_entries.date', '>=', $filters['from']);
+            $outlierQuery->where('journal_entries.date', '>=', $filters['from']);
         }
         if (! empty($filters['to'])) {
-            $query->where('journal_entries.date', '<=', $filters['to']);
+            $outlierQuery->where('journal_entries.date', '<=', $filters['to']);
         }
 
-        $lines = $query->get();
+        // Build WHERE conditions to only fetch outlier rows
+        $outlierQuery->where(function ($q) use ($accountThresholds) {
+            foreach ($accountThresholds as $t) {
+                $q->orWhere(function ($sq) use ($t) {
+                    $sq->where('journal_entry_lines.account_id', $t['account_id'])
+                        ->whereRaw('(journal_entry_lines.debit + journal_entry_lines.credit) > ?', [$t['threshold']]);
+                });
+            }
+        });
+
+        $outlierLines = $outlierQuery->get();
 
         $anomalies = [];
-        $grouped = $lines->groupBy('account_id');
+        foreach ($outlierLines as $line) {
+            $t = $accountThresholds[$line->account_id];
+            $lineAmount = bcadd((string) $line->debit, (string) $line->credit, 2);
+            $mean = $t['mean'];
+            $stddev = $t['stddev'];
+            $threshold = number_format($t['threshold'], 2, '.', '');
 
-        foreach ($grouped as $accountId => $accountLines) {
-            if ($accountLines->count() < 5) {
-                continue; // Need enough data for meaningful statistics
-            }
-
-            $amounts = $accountLines->map(fn ($line) => bcadd((string) $line->debit, (string) $line->credit, 2));
-
-            // Calculate mean using bcmath
-            $sum = '0.00';
-            foreach ($amounts as $amount) {
-                $sum = bcadd($sum, $amount, 2);
-            }
-            $count = $amounts->count();
-            $mean = bcdiv($sum, (string) $count, 2);
-
-            // Calculate variance: sum((x - mean)^2) / count
-            $varianceSum = '0.00';
-            foreach ($amounts as $amount) {
-                $diff = bcsub($amount, $mean, 10);
-                $squared = bcmul($diff, $diff, 10);
-                $varianceSum = bcadd($varianceSum, $squared, 10);
-            }
-            $variance = bcdiv($varianceSum, (string) $count, 10);
-
-            // StdDev = sqrt(variance) — use php sqrt() on float, convert back
-            $stddev = number_format(sqrt((float) $variance), 2, '.', '');
-
-            // Threshold = mean + (3 * stddev)
-            $threshold = bcadd($mean, bcmul('3', $stddev, 2), 2);
-
-            // Flag transactions above threshold
-            foreach ($accountLines as $line) {
-                $lineAmount = bcadd((string) $line->debit, (string) $line->credit, 2);
-
-                if (bccomp($lineAmount, $threshold, 2) > 0 && bccomp($stddev, '0.00', 2) > 0) {
-                    $anomalies[] = [
-                        'type' => 'unusual_amount',
-                        'severity' => 'high',
-                        'description' => "Unusual amount {$lineAmount} on entry {$line->entry_number} for account {$accountId} (mean: {$mean}, stddev: {$stddev}, threshold: {$threshold})",
-                        'description_ar' => "مبلغ غير عادي {$lineAmount} في القيد {$line->entry_number} للحساب {$accountId} (المتوسط: {$mean}، الانحراف المعياري: {$stddev}، الحد: {$threshold})",
-                        'details' => [
-                            'journal_entry_line_id' => $line->id,
-                            'entry_number' => $line->entry_number,
-                            'account_id' => $accountId,
-                            'amount' => $lineAmount,
-                            'mean' => $mean,
-                            'stddev' => $stddev,
-                            'threshold' => $threshold,
-                            'date' => $line->date,
-                        ],
-                        'detected_at' => now()->toIso8601String(),
-                    ];
-                }
-            }
+            $anomalies[] = [
+                'type' => 'unusual_amount',
+                'severity' => 'high',
+                'description' => "Unusual amount {$lineAmount} on entry {$line->entry_number} for account {$line->account_id} (mean: {$mean}, stddev: {$stddev}, threshold: {$threshold})",
+                'description_ar' => "مبلغ غير عادي {$lineAmount} في القيد {$line->entry_number} للحساب {$line->account_id} (المتوسط: {$mean}، الانحراف المعياري: {$stddev}، الحد: {$threshold})",
+                'details' => [
+                    'journal_entry_line_id' => $line->id,
+                    'entry_number' => $line->entry_number,
+                    'account_id' => $line->account_id,
+                    'amount' => $lineAmount,
+                    'mean' => $mean,
+                    'stddev' => $stddev,
+                    'threshold' => $threshold,
+                    'date' => $line->date,
+                ],
+                'detected_at' => now()->toIso8601String(),
+            ];
         }
 
         return $anomalies;
@@ -326,15 +337,11 @@ class AnomalyDetectionService
      */
     public function roundNumberBias(array $filters = []): array
     {
-        $query = JournalEntryLine::query()
+        // Push round-number counting to SQL using CASE WHEN and GROUP BY
+        $query = DB::table('journal_entry_lines')
             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
             ->where('journal_entries.status', 'posted')
-            ->whereNull('journal_entries.deleted_at')
-            ->select(
-                'journal_entry_lines.account_id',
-                'journal_entry_lines.debit',
-                'journal_entry_lines.credit',
-            );
+            ->whereNull('journal_entries.deleted_at');
 
         if (! empty($filters['from'])) {
             $query->where('journal_entries.date', '>=', $filters['from']);
@@ -343,36 +350,29 @@ class AnomalyDetectionService
             $query->where('journal_entries.date', '<=', $filters['to']);
         }
 
-        $lines = $query->get();
-        $grouped = $lines->groupBy('account_id');
+        $results = $query->select(
+            'journal_entry_lines.account_id',
+            DB::raw('COUNT(*) as total_transactions'),
+            DB::raw('SUM(CASE WHEN CAST(journal_entry_lines.debit + journal_entry_lines.credit AS UNSIGNED) > 0 AND CAST(journal_entry_lines.debit + journal_entry_lines.credit AS UNSIGNED) % 100 = 0 THEN 1 ELSE 0 END) as round_transactions'),
+        )
+            ->groupBy('journal_entry_lines.account_id')
+            ->having('total_transactions', '>=', 5)
+            ->get();
 
         $anomalies = [];
-        foreach ($grouped as $accountId => $accountLines) {
-            $total = $accountLines->count();
-            if ($total < 5) {
-                continue; // Need enough transactions to be meaningful
-            }
-
-            $roundCount = 0;
-            foreach ($accountLines as $line) {
-                $amount = bcadd((string) $line->debit, (string) $line->credit, 2);
-                // Check if amount ends in 00 (is divisible by 100)
-                $intAmount = (int) bcmul($amount, '1', 0); // Truncate to integer
-                if ($intAmount > 0 && $intAmount % 100 === 0) {
-                    $roundCount++;
-                }
-            }
-
+        foreach ($results as $row) {
+            $total = (int) $row->total_transactions;
+            $roundCount = (int) $row->round_transactions;
             $percentage = ($roundCount / $total) * 100;
 
             if ($percentage > 80) {
                 $anomalies[] = [
                     'type' => 'round_number_bias',
                     'severity' => 'medium',
-                    'description' => "Account {$accountId} has ".number_format($percentage, 1)."% round number transactions ({$roundCount}/{$total}), may indicate estimated figures",
-                    'description_ar' => "الحساب {$accountId} يحتوي على ".number_format($percentage, 1)."% معاملات بأرقام مقربة ({$roundCount}/{$total})، قد تشير إلى أرقام تقديرية",
+                    'description' => "Account {$row->account_id} has ".number_format($percentage, 1)."% round number transactions ({$roundCount}/{$total}), may indicate estimated figures",
+                    'description_ar' => "الحساب {$row->account_id} يحتوي على ".number_format($percentage, 1)."% معاملات بأرقام مقربة ({$roundCount}/{$total})، قد تشير إلى أرقام تقديرية",
                     'details' => [
-                        'account_id' => $accountId,
+                        'account_id' => $row->account_id,
                         'total_transactions' => $total,
                         'round_transactions' => $roundCount,
                         'percentage' => round($percentage, 1),

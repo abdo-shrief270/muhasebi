@@ -90,7 +90,7 @@ class RecurringInvoiceService
                     'quantity' => $quantity,
                     'unit_price' => $unitPrice,
                     'discount_percent' => $item['discount_percent'] ?? 0,
-                    'vat_rate' => $item['vat_rate'] ?? 14.00,
+                    'vat_rate' => $item['vat_rate'] ?? (float) config('tax.vat_rate', '14.00'),
                     'account_id' => $item['account_id'] ?? null,
                     'sort_order' => $index,
                 ]);

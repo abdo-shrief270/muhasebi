@@ -10,6 +10,17 @@ use Symfony\Component\HttpFoundation\Response;
 
 class SetTimezone
 {
+    private static ?array $validTimezones = null;
+
+    private function isValidTimezone(string $tz): bool
+    {
+        if (self::$validTimezones === null) {
+            self::$validTimezones = array_flip(\DateTimeZone::listIdentifiers());
+        }
+
+        return isset(self::$validTimezones[$tz]);
+    }
+
     public function handle(Request $request, Closure $next): Response
     {
         $timezone = $this->resolveTimezone($request);
@@ -29,15 +40,19 @@ class SetTimezone
     {
         $user = $request->user();
 
-        if ($user?->timezone && in_array($user->timezone, \DateTimeZone::listIdentifiers(), true)) {
+        if ($user?->timezone && $this->isValidTimezone($user->timezone)) {
             return $user->timezone;
         }
 
-        $tenant = app()->bound('tenant') ? app('tenant') : null;
+        $settings = $request->attributes->get('tenant_settings');
+        if ($settings === null) {
+            $tenant = app()->bound('tenant') ? app('tenant') : null;
+            $settings = $tenant?->settings ?? [];
+        }
 
-        $tz = is_array($tenant?->settings) ? ($tenant->settings['timezone'] ?? null) : null;
+        $tz = is_array($settings) ? ($settings['timezone'] ?? null) : null;
 
-        if ($tz && in_array($tz, \DateTimeZone::listIdentifiers(), true)) {
+        if ($tz && $this->isValidTimezone($tz)) {
             return $tz;
         }
 

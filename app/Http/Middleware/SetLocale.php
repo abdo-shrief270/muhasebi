@@ -40,9 +40,11 @@ class SetLocale
 
         // 3. Tenant settings
         $tenant = app()->bound('tenant') ? app('tenant') : null;
+        $settings = $tenant?->settings ?? [];
+        $request->attributes->set('tenant_settings', $settings);
 
         if ($tenant) {
-            $tenantLocale = is_array($tenant->settings) ? ($tenant->settings['locale'] ?? null) : null;
+            $tenantLocale = is_array($settings) ? ($settings['locale'] ?? null) : null;
 
             if ($tenantLocale && in_array($tenantLocale, self::SUPPORTED_LOCALES, true)) {
                 return $tenantLocale;

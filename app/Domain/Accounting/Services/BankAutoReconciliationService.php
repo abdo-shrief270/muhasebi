@@ -32,9 +32,20 @@ class BankAutoReconciliationService
         $unmatched = 0;
         $distribution = ['high' => 0, 'medium' => 0, 'low' => 0];
 
-        $recon->statementLines()->unmatched()->where('auto_matched', false)->chunk(200, function ($lines) use ($tenantId, &$matched, &$unmatched, &$distribution) {
+        // Pre-load all candidate invoices and bills once to avoid N+1 queries per chunk
+        $invoices = Invoice::where('tenant_id', $tenantId)
+            ->whereIn('status', ['sent', 'partially_paid', 'overdue'])
+            ->with('client')
+            ->get();
+
+        $bills = Bill::where('tenant_id', $tenantId)
+            ->whereIn('status', ['approved', 'partially_paid', 'overdue'])
+            ->with('vendor')
+            ->get();
+
+        $recon->statementLines()->unmatched()->where('auto_matched', false)->chunk(200, function ($lines) use ($invoices, $bills, &$matched, &$unmatched, &$distribution) {
             foreach ($lines as $line) {
-                $result = $this->matchLine($line, $tenantId);
+                $result = $this->matchLine($line, $invoices, $bills);
 
                 if ($result !== null) {
                     $matched++;
@@ -61,8 +72,11 @@ class BankAutoReconciliationService
 
     /**
      * Match a single line. Returns confidence score or null if no match.
+     *
+     * @param  \Illuminate\Support\Collection  $invoices  Pre-loaded invoices
+     * @param  \Illuminate\Support\Collection  $bills     Pre-loaded bills
      */
-    private function matchLine(BankStatementLine $line, int $tenantId): ?float
+    private function matchLine(BankStatementLine $line, \Illuminate\Support\Collection $invoices, \Illuminate\Support\Collection $bills): ?float
     {
         $amount = abs((float) $line->amount);
         $amountStr = (string) $amount;
@@ -70,20 +84,19 @@ class BankAutoReconciliationService
 
         // Deposits match invoices, withdrawals match bills
         if ($isDeposit) {
-            return $this->matchAgainstInvoices($line, $amountStr, $tenantId);
+            return $this->matchAgainstInvoices($line, $amountStr, $invoices);
         }
 
-        return $this->matchAgainstBills($line, $amountStr, $tenantId);
+        return $this->matchAgainstBills($line, $amountStr, $bills);
     }
 
     /**
      * Try matching a deposit line against invoices (exact, tolerance, description).
+     *
+     * @param  \Illuminate\Support\Collection  $invoices  Pre-loaded invoices
      */
-    private function matchAgainstInvoices(BankStatementLine $line, string $amount, int $tenantId): ?float
+    private function matchAgainstInvoices(BankStatementLine $line, string $amount, \Illuminate\Support\Collection $invoices): ?float
     {
-        $invoices = Invoice::where('tenant_id', $tenantId)
-            ->whereIn('status', ['sent', 'partially_paid', 'overdue'])
-            ->get();
 
         // Pass 1: Exact amount + reference match (confidence 100)
         if ($line->reference) {
@@ -142,12 +155,11 @@ class BankAutoReconciliationService
 
     /**
      * Try matching a withdrawal line against bills (exact, tolerance, description).
+     *
+     * @param  \Illuminate\Support\Collection  $bills  Pre-loaded bills
      */
-    private function matchAgainstBills(BankStatementLine $line, string $amount, int $tenantId): ?float
+    private function matchAgainstBills(BankStatementLine $line, string $amount, \Illuminate\Support\Collection $bills): ?float
     {
-        $bills = Bill::where('tenant_id', $tenantId)
-            ->whereIn('status', ['approved', 'partially_paid', 'overdue'])
-            ->get();
 
         // Pass 1: Exact amount + reference match (confidence 100)
         if ($line->reference) {

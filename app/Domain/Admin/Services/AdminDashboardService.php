@@ -20,11 +20,17 @@ class AdminDashboardService
      */
     public function getKpis(): array
     {
-        $tenantsActive = Tenant::query()->where('status', TenantStatus::Active)->count();
-        $tenantsTrial = Tenant::query()->where('status', TenantStatus::Trial)->count();
-        $tenantsSuspended = Tenant::query()->where('status', TenantStatus::Suspended)->count();
-        $tenantsCancelled = Tenant::query()->where('status', TenantStatus::Cancelled)->count();
-        $tenantsTotal = $tenantsActive + $tenantsTrial + $tenantsSuspended + $tenantsCancelled;
+        $tenantCounts = Tenant::query()
+            ->select('status', DB::raw('COUNT(*) as count'))
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
+
+        $tenantsActive = $tenantCounts[TenantStatus::Active->value] ?? $tenantCounts[TenantStatus::Active] ?? 0;
+        $tenantsTrial = $tenantCounts[TenantStatus::Trial->value] ?? $tenantCounts[TenantStatus::Trial] ?? 0;
+        $tenantsSuspended = $tenantCounts[TenantStatus::Suspended->value] ?? $tenantCounts[TenantStatus::Suspended] ?? 0;
+        $tenantsCancelled = $tenantCounts[TenantStatus::Cancelled->value] ?? $tenantCounts[TenantStatus::Cancelled] ?? 0;
+        $tenantsTotal = array_sum($tenantCounts);
 
         // MRR from active subscriptions
         $mrr = (float) Subscription::withoutGlobalScopes()

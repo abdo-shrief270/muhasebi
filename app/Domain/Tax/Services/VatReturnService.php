@@ -44,9 +44,10 @@ class VatReturnService
         $netVat = bcsub($outputVat['total'], $inputVat['total'], 2);
         $isPayable = bccomp($netVat, '0', 2) > 0;
 
-        // 4. VAT exempt and zero-rated breakdown
-        $vatBreakdown = $this->vatBreakdownByRate($tenantId, $from, $to);
-        $exemptSales = $this->getExemptSales($tenantId, $from, $to);
+        // 4. VAT exempt and zero-rated breakdown (single query)
+        $vatData = $this->vatBreakdownWithExempt($tenantId, $from, $to);
+        $vatBreakdown = $vatData['breakdown'];
+        $exemptSales = $vatData['exempt'];
         $zeroRatedSales = $this->getZeroRatedSales($tenantId, $from, $to);
 
         // 5. Reverse charge amounts (from GL entries on reverse charge accounts)
@@ -107,7 +108,7 @@ class VatReturnService
     }
 
     /**
-     * Calculate Output VAT from sales invoices.
+     * Calculate Output VAT from sales invoices (single query for both standard and credit notes).
      *
      * @return array<string, mixed>
      */
@@ -115,40 +116,34 @@ class VatReturnService
     {
         $excludedStatuses = [InvoiceStatus::Draft, InvoiceStatus::Cancelled];
 
-        // Sales invoices VAT
-        $salesVat = Invoice::query()
+        $rows = Invoice::query()
             ->where('tenant_id', $tenantId)
             ->whereNotIn('status', $excludedStatuses)
-            ->where('type', InvoiceType::Standard)
+            ->whereIn('type', [InvoiceType::Standard, InvoiceType::CreditNote])
             ->whereBetween('date', [$from, $to])
+            ->select('type')
             ->selectRaw('COALESCE(SUM(vat_amount), 0) as total_vat')
             ->selectRaw('COALESCE(SUM(subtotal), 0) as taxable_amount')
-            ->selectRaw('COUNT(*) as invoice_count')
-            ->first();
+            ->selectRaw('COUNT(*) as doc_count')
+            ->groupBy('type')
+            ->get()
+            ->keyBy('type');
 
-        // Credit notes reduce output VAT
-        $creditNotesVat = Invoice::query()
-            ->where('tenant_id', $tenantId)
-            ->whereNotIn('status', $excludedStatuses)
-            ->where('type', InvoiceType::CreditNote)
-            ->whereBetween('date', [$from, $to])
-            ->selectRaw('COALESCE(SUM(vat_amount), 0) as total_vat')
-            ->selectRaw('COUNT(*) as count')
-            ->first();
+        $salesRow = $rows[InvoiceType::Standard->value] ?? $rows[InvoiceType::Standard] ?? null;
+        $creditRow = $rows[InvoiceType::CreditNote->value] ?? $rows[InvoiceType::CreditNote] ?? null;
 
-        $netOutputVat = bcsub(
-            (string) ($salesVat->total_vat ?? '0'),
-            (string) ($creditNotesVat->total_vat ?? '0'),
-            2,
-        );
+        $salesVatTotal = (string) ($salesRow->total_vat ?? '0');
+        $creditVatTotal = (string) ($creditRow->total_vat ?? '0');
+
+        $netOutputVat = bcsub($salesVatTotal, $creditVatTotal, 2);
 
         return [
             'total' => $netOutputVat,
-            'taxable_amount' => number_format((float) ($salesVat->taxable_amount ?? 0), 2, '.', ''),
-            'sales_vat' => number_format((float) ($salesVat->total_vat ?? 0), 2, '.', ''),
-            'credit_notes_vat' => number_format((float) ($creditNotesVat->total_vat ?? 0), 2, '.', ''),
-            'invoice_count' => (int) ($salesVat->invoice_count ?? 0),
-            'credit_notes_count' => (int) ($creditNotesVat->count ?? 0),
+            'taxable_amount' => number_format((float) ($salesRow->taxable_amount ?? 0), 2, '.', ''),
+            'sales_vat' => number_format((float) ($salesRow->total_vat ?? 0), 2, '.', ''),
+            'credit_notes_vat' => number_format((float) ($creditRow->total_vat ?? 0), 2, '.', ''),
+            'invoice_count' => (int) ($salesRow->doc_count ?? 0),
+            'credit_notes_count' => (int) ($creditRow->doc_count ?? 0),
         ];
     }
 
@@ -182,15 +177,15 @@ class VatReturnService
     }
 
     /**
-     * Break down VAT by rate from invoice lines.
+     * Break down VAT by rate from invoice lines and extract exempt sales in a single query.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array{breakdown: array<int, array<string, mixed>>, exempt: array<string, mixed>}
      */
-    private function vatBreakdownByRate(int $tenantId, string $from, string $to): array
+    private function vatBreakdownWithExempt(int $tenantId, string $from, string $to): array
     {
         $excludedStatuses = [InvoiceStatus::Draft, InvoiceStatus::Cancelled];
 
-        $breakdown = InvoiceLine::query()
+        $rows = InvoiceLine::query()
             ->join('invoices', 'invoice_lines.invoice_id', '=', 'invoices.id')
             ->where('invoices.tenant_id', $tenantId)
             ->whereNotIn('invoices.status', $excludedStatuses)
@@ -200,42 +195,27 @@ class VatReturnService
             ->selectRaw('COALESCE(SUM(invoice_lines.line_total), 0) as taxable_amount')
             ->selectRaw('COALESCE(SUM(invoice_lines.vat_amount), 0) as vat_amount')
             ->selectRaw('COUNT(*) as line_count')
+            ->selectRaw('SUM(CASE WHEN invoices.type = ? AND invoice_lines.vat_rate = 0 THEN invoice_lines.line_total ELSE 0 END) as exempt_standard_total', [InvoiceType::Standard->value])
+            ->selectRaw('SUM(CASE WHEN invoices.type = ? AND invoice_lines.vat_rate = 0 THEN 1 ELSE 0 END) as exempt_standard_count', [InvoiceType::Standard->value])
             ->orderBy('invoice_lines.vat_rate')
             ->get();
 
-        return $breakdown->map(fn ($row) => [
+        $breakdown = $rows->map(fn ($row) => [
             'rate' => number_format((float) $row->vat_rate, 2, '.', ''),
             'rate_label' => $row->vat_rate == 0 ? 'معفى / Exempt' : "{$row->vat_rate}%",
             'taxable_amount' => number_format((float) $row->taxable_amount, 2, '.', ''),
             'vat_amount' => number_format((float) $row->vat_amount, 2, '.', ''),
             'line_count' => $row->line_count,
         ])->toArray();
-    }
 
-    /**
-     * Get exempt sales total (zero VAT rate, explicitly exempt items).
-     *
-     * @return array<string, mixed>
-     */
-    private function getExemptSales(int $tenantId, string $from, string $to): array
-    {
-        $excludedStatuses = [InvoiceStatus::Draft, InvoiceStatus::Cancelled];
-
-        $result = InvoiceLine::query()
-            ->join('invoices', 'invoice_lines.invoice_id', '=', 'invoices.id')
-            ->where('invoices.tenant_id', $tenantId)
-            ->whereNotIn('invoices.status', $excludedStatuses)
-            ->where('invoices.type', InvoiceType::Standard)
-            ->whereBetween('invoices.date', [$from, $to])
-            ->where('invoice_lines.vat_rate', 0)
-            ->selectRaw('COALESCE(SUM(invoice_lines.line_total), 0) as total_amount')
-            ->selectRaw('COUNT(*) as line_count')
-            ->first();
-
-        return [
-            'total' => number_format((float) ($result->total_amount ?? 0), 2, '.', ''),
-            'line_count' => (int) ($result->line_count ?? 0),
+        // Exempt sales are the zero-rate rows limited to standard invoices
+        $zeroRateRow = $rows->first(fn ($row) => $row->vat_rate == 0);
+        $exempt = [
+            'total' => number_format((float) ($zeroRateRow->exempt_standard_total ?? 0), 2, '.', ''),
+            'line_count' => (int) ($zeroRateRow->exempt_standard_count ?? 0),
         ];
+
+        return ['breakdown' => $breakdown, 'exempt' => $exempt];
     }
 
     /**

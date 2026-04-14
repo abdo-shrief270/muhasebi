@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\AccountsPayable\Services;
 
-use App\Domain\Accounting\Models\Account;
+use App\Domain\Accounting\Services\GLPostingService;
 use App\Domain\Accounting\Services\JournalEntryService;
 use App\Domain\AccountsPayable\Enums\BillStatus;
 use App\Domain\AccountsPayable\Enums\PaymentMethod;
@@ -19,6 +19,7 @@ class BillPaymentService
 {
     public function __construct(
         private readonly JournalEntryService $journalEntryService,
+        private readonly GLPostingService $glPostingService,
     ) {}
 
     /**
@@ -85,17 +86,17 @@ class BillPaymentService
             $tenantId = (int) app('tenant.id');
 
             // Resolve GL accounts
-            $apAccountId = $this->resolveAccountByCode(
+            $apAccountId = $this->glPostingService->resolveAccount(
                 config('accounting.default_accounts.accounts_payable'),
                 $tenantId
             );
-            $paymentAccountId = $this->resolveAccountByCode(
+            $paymentAccountId = $this->glPostingService->resolveAccount(
                 $method->defaultAccountCode(),
                 $tenantId
             );
 
             // Create the journal entry: DEBIT AP, CREDIT payment account
-            $journalEntry = $this->journalEntryService->create([
+            $journalEntry = $this->glPostingService->post([
                 'date' => $data['date'] ?? now()->toDateString(),
                 'description' => "سداد دفعة - فاتورة مشتريات رقم {$bill->bill_number}",
                 'reference' => $data['reference'] ?? $bill->bill_number,
@@ -114,8 +115,6 @@ class BillPaymentService
                     ],
                 ],
             ]);
-
-            $this->journalEntryService->post($journalEntry);
 
             // Create payment record
             $payment = BillPayment::query()->create([
@@ -194,24 +193,4 @@ class BillPaymentService
         });
     }
 
-    /**
-     * Resolve an account ID by its code for a given tenant.
-     *
-     * @throws ValidationException
-     */
-    private function resolveAccountByCode(string $code, int $tenantId): int
-    {
-        $account = Account::query()
-            ->forTenant($tenantId)
-            ->where('code', $code)
-            ->first();
-
-        if (! $account) {
-            throw ValidationException::withMessages([
-                'account' => ["Required account with code '{$code}' not found. Please set up your chart of accounts."],
-            ]);
-        }
-
-        return $account->id;
-    }
 }

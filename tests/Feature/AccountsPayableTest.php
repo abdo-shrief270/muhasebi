@@ -5,9 +5,26 @@ declare(strict_types=1);
 use App\Domain\AccountsPayable\Enums\BillStatus;
 use App\Domain\AccountsPayable\Enums\BillType;
 use App\Domain\AccountsPayable\Models\BillLine;
+use App\Domain\AccountsPayable\Models\Vendor;
 
 test('vendor can be created with required fields', function () {
-    expect(true)->toBeTrue(); // Placeholder — requires tenant setup
+    $tenant = createTenant();
+    app()->instance('tenant.id', $tenant->id);
+
+    $vendor = Vendor::factory()->create([
+        'tenant_id' => $tenant->id,
+        'name_ar' => 'مورد اختبار',
+        'name_en' => 'Test Vendor',
+        'code' => 'V-0001',
+    ]);
+
+    expect($vendor)->toBeInstanceOf(Vendor::class)
+        ->and($vendor->name_ar)->toBe('مورد اختبار')
+        ->and($vendor->name_en)->toBe('Test Vendor')
+        ->and($vendor->code)->toBe('V-0001')
+        ->and($vendor->tenant_id)->toBe($tenant->id)
+        ->and($vendor->is_active)->toBeTrue()
+        ->and($vendor->currency)->toBe('EGP');
 });
 
 test('bill status transitions are correct', function () {

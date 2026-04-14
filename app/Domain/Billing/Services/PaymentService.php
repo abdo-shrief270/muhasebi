@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Billing\Services;
 
-use App\Domain\Accounting\Models\Account;
+use App\Domain\Accounting\Services\GLPostingService;
 use App\Domain\Accounting\Services\JournalEntryService;
 use App\Domain\Billing\Enums\InvoiceStatus;
 use App\Domain\Billing\Enums\InvoiceType;
@@ -21,6 +21,7 @@ class PaymentService
     public function __construct(
         private readonly JournalEntryService $journalEntryService,
         private readonly InvoiceService $invoiceService,
+        private readonly GLPostingService $glPostingService,
     ) {}
 
     /**
@@ -93,10 +94,10 @@ class PaymentService
             // Resolve GL accounts
             $paymentAccountId = $this->getPaymentAccountId($method, $tenantId);
             $arAccountId = $settings->ar_account_id
-                ?? $this->resolveAccountByCode(config('accounting.default_accounts.accounts_receivable'), $tenantId);
+                ?? $this->glPostingService->resolveAccount(config('accounting.default_accounts.accounts_receivable'), $tenantId);
 
             // Create the journal entry for this payment
-            $journalEntry = $this->journalEntryService->create([
+            $journalEntry = $this->glPostingService->post([
                 'date' => $data['date'] ?? now()->toDateString(),
                 'description' => "تحصيل دفعة - فاتورة رقم {$invoice->invoice_number}",
                 'reference' => $data['reference'] ?? $invoice->invoice_number,
@@ -115,8 +116,6 @@ class PaymentService
                     ],
                 ],
             ]);
-
-            $this->journalEntryService->post($journalEntry);
 
             // Create payment record
             $payment = Payment::query()->create([
@@ -391,27 +390,7 @@ class PaymentService
             PaymentMethod::BankTransfer, PaymentMethod::Check, PaymentMethod::CreditCard, PaymentMethod::MobileWallet => config('accounting.default_accounts.bank'),
         };
 
-        return $this->resolveAccountByCode($code, $tenantId);
+        return $this->glPostingService->resolveAccount($code, $tenantId);
     }
 
-    /**
-     * Resolve an account ID by its code for a given tenant.
-     *
-     * @throws ValidationException
-     */
-    private function resolveAccountByCode(string $code, int $tenantId): int
-    {
-        $account = Account::query()
-            ->forTenant($tenantId)
-            ->where('code', $code)
-            ->first();
-
-        if (! $account) {
-            throw ValidationException::withMessages([
-                'account' => ["Required account with code '{$code}' not found. Please set up your chart of accounts."],
-            ]);
-        }
-
-        return $account->id;
-    }
 }

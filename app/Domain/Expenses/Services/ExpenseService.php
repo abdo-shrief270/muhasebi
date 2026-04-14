@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Expenses\Services;
 
-use App\Domain\Accounting\Models\Account;
+use App\Domain\Accounting\Services\GLPostingService;
 use App\Domain\Accounting\Services\JournalEntryService;
 use App\Domain\Expenses\Enums\ExpenseStatus;
 use App\Domain\Expenses\Models\Expense;
@@ -18,6 +18,7 @@ class ExpenseService
 {
     public function __construct(
         private readonly JournalEntryService $journalEntryService,
+        private readonly GLPostingService $glPostingService,
     ) {}
 
     /**
@@ -233,7 +234,7 @@ class ExpenseService
             }
 
             // Resolve AP account
-            $apAccountId = $this->resolveAccountByCode(
+            $apAccountId = $this->glPostingService->resolveAccount(
                 config('accounting.default_accounts.accounts_payable'),
                 $tenantId
             );
@@ -256,7 +257,7 @@ class ExpenseService
                 $netAmount = (string) $expense->amount;
                 $vatAmount = (string) $expense->vat_amount;
 
-                $vatInputAccountId = $this->resolveAccountByCode(
+                $vatInputAccountId = $this->glPostingService->resolveAccount(
                     config('accounting.default_accounts.vat_input'),
                     $tenantId
                 );
@@ -282,14 +283,12 @@ class ExpenseService
                 'description' => "مصروف: {$expense->description}",
             ];
 
-            $journalEntry = $this->journalEntryService->create([
+            $journalEntry = $this->glPostingService->post([
                 'date' => $expense->date->toDateString(),
                 'description' => "مصروف: {$expense->description}",
                 'reference' => "EXP-{$expense->id}",
                 'lines' => $jeLines,
             ]);
-
-            $this->journalEntryService->post($journalEntry);
 
             $expense->update([
                 'journal_entry_id' => $journalEntry->id,
@@ -353,17 +352,17 @@ class ExpenseService
             $currency = $expense->currency ?? 'EGP';
             $total = (string) $expense->total;
 
-            $apAccountId = $this->resolveAccountByCode(
+            $apAccountId = $this->glPostingService->resolveAccount(
                 config('accounting.default_accounts.accounts_payable'),
                 $tenantId
             );
 
-            $bankAccountId = $this->resolveAccountByCode(
+            $bankAccountId = $this->glPostingService->resolveAccount(
                 config('accounting.default_accounts.bank'),
                 $tenantId
             );
 
-            $journalEntry = $this->journalEntryService->create([
+            $this->glPostingService->post([
                 'date' => now()->toDateString(),
                 'description' => "سداد مصروف: {$expense->description}",
                 'reference' => "EXP-PAY-{$expense->id}",
@@ -384,8 +383,6 @@ class ExpenseService
                     ],
                 ],
             ]);
-
-            $this->journalEntryService->post($journalEntry);
 
             return $expense->refresh();
         });
@@ -508,24 +505,4 @@ class ExpenseService
         ];
     }
 
-    /**
-     * Resolve an account ID by its code for the current tenant.
-     *
-     * @throws ValidationException
-     */
-    private function resolveAccountByCode(string $code, int $tenantId): int
-    {
-        $account = Account::query()
-            ->forTenant($tenantId)
-            ->where('code', $code)
-            ->first();
-
-        if (! $account) {
-            throw ValidationException::withMessages([
-                'account' => ["Required account with code '{$code}' not found. Please set up your chart of accounts."],
-            ]);
-        }
-
-        return $account->id;
-    }
 }

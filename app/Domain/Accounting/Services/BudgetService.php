@@ -135,6 +135,30 @@ class BudgetService
         // Get actuals per month for the fiscal year
         $yearStart = $fiscalYear->start_date;
 
+        // Bulk query: get all actuals grouped by account_id and month in a SINGLE query
+        $periodEnd = $yearStart->copy()->addMonths($throughMonth)->subDay();
+        $bulkActuals = DB::table('journal_entry_lines')
+            ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
+            ->where('journal_entries.tenant_id', $tenantId)
+            ->where('journal_entries.status', JournalEntryStatus::Posted->value)
+            ->whereNull('journal_entries.deleted_at')
+            ->whereIn('journal_entry_lines.account_id', $accountIds)
+            ->whereBetween('journal_entries.date', [$yearStart->toDateString(), $periodEnd->toDateString()])
+            ->select(
+                'journal_entry_lines.account_id',
+                DB::raw('EXTRACT(MONTH FROM journal_entries.date) as month_num'),
+                DB::raw('COALESCE(SUM(journal_entry_lines.debit), 0) as total_debit'),
+                DB::raw('COALESCE(SUM(journal_entry_lines.credit), 0) as total_credit'),
+            )
+            ->groupBy('journal_entry_lines.account_id', DB::raw('EXTRACT(MONTH FROM journal_entries.date)'))
+            ->get();
+
+        // Index bulk results: actuals[account_id][month_num] = {total_debit, total_credit}
+        $actualsIndex = [];
+        foreach ($bulkActuals as $row) {
+            $actualsIndex[$row->account_id][(int) $row->month_num] = $row;
+        }
+
         $rows = [];
         $totalBudget = '0.00';
         $totalActual = '0.00';
@@ -146,18 +170,30 @@ class BudgetService
             // Budget YTD (sum m1..throughMonth)
             $budgetYtd = $line->amountForRange(1, $throughMonth);
 
-            // Actual YTD from GL
-            $periodEnd = $yearStart->copy()->addMonths($throughMonth)->subDay();
-            $actualYtd = $this->getAccountActual($tenantId, $account->id, $yearStart->toDateString(), $periodEnd->toDateString(), $isDebitNormal);
+            // Actual YTD from bulk data
+            $actualYtd = '0.00';
 
             // Monthly breakdown
             $monthlyData = [];
             for ($m = 1; $m <= $throughMonth; $m++) {
                 $monthStart = $yearStart->copy()->addMonths($m - 1);
-                $monthEnd = $yearStart->copy()->addMonths($m)->subDay();
+                // Determine the calendar month number for this fiscal month
+                $calendarMonth = (int) $monthStart->format('n');
 
                 $monthBudget = $line->amountForMonth($m);
-                $monthActual = $this->getAccountActual($tenantId, $account->id, $monthStart->toDateString(), $monthEnd->toDateString(), $isDebitNormal);
+
+                // Look up bulk actuals for this account and calendar month
+                $monthActual = '0.00';
+                if (isset($actualsIndex[$account->id][$calendarMonth])) {
+                    $r = $actualsIndex[$account->id][$calendarMonth];
+                    $debit = (string) $r->total_debit;
+                    $credit = (string) $r->total_credit;
+                    $monthActual = $isDebitNormal
+                        ? bcsub($debit, $credit, 2)
+                        : bcsub($credit, $debit, 2);
+                }
+
+                $actualYtd = bcadd($actualYtd, $monthActual, 2);
 
                 $monthVariance = bcsub($monthBudget, $monthActual, 2);
 

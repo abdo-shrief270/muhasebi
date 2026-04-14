@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Collection\Services;
 
-use App\Domain\Accounting\Models\Account;
+use App\Domain\Accounting\Services\GLPostingService;
 use App\Domain\Accounting\Services\JournalEntryService;
 use App\Domain\Billing\Enums\InvoiceStatus;
 use App\Domain\Billing\Models\Invoice;
@@ -22,6 +22,7 @@ class CollectionService
 {
     public function __construct(
         private readonly JournalEntryService $journalEntryService,
+        private readonly GLPostingService $glPostingService,
     ) {}
 
     /**
@@ -246,17 +247,17 @@ class CollectionService
             $tenantId = (int) app('tenant.id');
 
             // Resolve GL accounts
-            $badDebtAccountId = $this->resolveAccountByCode(
+            $badDebtAccountId = $this->glPostingService->resolveAccount(
                 config('accounting.default_accounts.bad_debt_expense'),
                 $tenantId
             );
-            $arAccountId = $this->resolveAccountByCode(
+            $arAccountId = $this->glPostingService->resolveAccount(
                 config('accounting.default_accounts.accounts_receivable'),
                 $tenantId
             );
 
             // Post GL journal entry
-            $journalEntry = $this->journalEntryService->create([
+            $journalEntry = $this->glPostingService->post([
                 'date' => now()->toDateString(),
                 'description' => "شطب ديون معدومة - فاتورة رقم {$invoice->invoice_number}",
                 'reference' => $invoice->invoice_number,
@@ -275,8 +276,6 @@ class CollectionService
                     ],
                 ],
             ]);
-
-            $this->journalEntryService->post($journalEntry);
 
             // Update invoice write-off fields
             $currentWriteOff = (string) ($invoice->write_off_amount ?? '0');
@@ -509,24 +508,4 @@ class CollectionService
         ];
     }
 
-    /**
-     * Resolve an account ID by its code for a given tenant.
-     *
-     * @throws ValidationException
-     */
-    private function resolveAccountByCode(string $code, int $tenantId): int
-    {
-        $account = Account::query()
-            ->forTenant($tenantId)
-            ->where('code', $code)
-            ->first();
-
-        if (! $account) {
-            throw ValidationException::withMessages([
-                'account' => ["Required account with code '{$code}' not found. Please set up your chart of accounts."],
-            ]);
-        }
-
-        return $account->id;
-    }
 }

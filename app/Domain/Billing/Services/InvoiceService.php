@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Billing\Services;
 
-use App\Domain\Accounting\Models\Account;
+use App\Domain\Accounting\Services\GLPostingService;
 use App\Domain\Accounting\Services\JournalEntryService;
 use App\Domain\Billing\Enums\InvoiceStatus;
 use App\Domain\Billing\Enums\InvoiceType;
@@ -20,6 +20,7 @@ class InvoiceService
 {
     public function __construct(
         private readonly JournalEntryService $journalEntryService,
+        private readonly GLPostingService $glPostingService,
     ) {}
 
     /**
@@ -254,10 +255,10 @@ class InvoiceService
 
             // Resolve account IDs
             $arAccountId = $settings->ar_account_id
-                ?? $this->resolveAccountByCode(config('accounting.default_accounts.accounts_receivable'), $tenantId);
+                ?? $this->glPostingService->resolveAccount(config('accounting.default_accounts.accounts_receivable'), $tenantId);
 
             $vatAccountId = $settings->vat_account_id
-                ?? $this->resolveAccountByCode(config('accounting.default_accounts.vat_output'), $tenantId);
+                ?? $this->glPostingService->resolveAccount(config('accounting.default_accounts.vat_output'), $tenantId);
 
             // Build journal entry lines
             $jeLines = [];
@@ -275,7 +276,7 @@ class InvoiceService
             // Credit: Revenue — group by account_id from lines
             $revenueByAccount = [];
             $defaultRevenueAccountId = $settings->revenue_account_id
-                ?? $this->resolveAccountByCode(config('accounting.default_accounts.revenue'), $tenantId);
+                ?? $this->glPostingService->resolveAccount(config('accounting.default_accounts.revenue'), $tenantId);
 
             foreach ($invoice->lines as $line) {
                 $accountId = $line->account_id ?? $defaultRevenueAccountId;
@@ -304,14 +305,12 @@ class InvoiceService
             }
 
             // Create and post the journal entry
-            $journalEntry = $this->journalEntryService->create([
+            $journalEntry = $this->glPostingService->post([
                 'date' => $invoice->date->toDateString(),
                 'description' => "فاتورة رقم {$invoice->invoice_number}",
                 'reference' => $invoice->invoice_number,
                 'lines' => $jeLines,
             ]);
-
-            $this->journalEntryService->post($journalEntry);
 
             $invoice->update([
                 'journal_entry_id' => $journalEntry->id,
@@ -360,7 +359,7 @@ class InvoiceService
                 'next_credit_note_number' => 1,
                 'next_debit_note_number' => 1,
                 'default_due_days' => 30,
-                'default_vat_rate' => 14.00,
+                'default_vat_rate' => (float) config('tax.vat_rate', '14.00'),
             ]
         );
     }
@@ -457,24 +456,4 @@ class InvoiceService
         }
     }
 
-    /**
-     * Resolve an account ID by its code for the current tenant.
-     *
-     * @throws ValidationException
-     */
-    private function resolveAccountByCode(string $code, int $tenantId): int
-    {
-        $account = Account::query()
-            ->forTenant($tenantId)
-            ->where('code', $code)
-            ->first();
-
-        if (! $account) {
-            throw ValidationException::withMessages([
-                'account' => ["Required account with code '{$code}' not found. Please set up your chart of accounts."],
-            ]);
-        }
-
-        return $account->id;
-    }
 }
