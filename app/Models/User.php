@@ -12,6 +12,8 @@ use App\Domain\Tenant\Models\Tenant;
 use App\Domain\TimeTracking\Models\Timer;
 use App\Domain\TimeTracking\Models\TimesheetEntry;
 use Database\Factories\UserFactory;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
@@ -46,7 +48,7 @@ use Spatie\Permission\Traits\HasRoles;
     'password_changed_at',
 ])]
 #[Hidden(['password', 'remember_token', 'two_factor_recovery_codes'])]
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /**
      * Super admins are NOT tenant-scoped.
@@ -131,6 +133,14 @@ class User extends Authenticatable
     public function isSuperAdmin(): bool
     {
         return $this->role === UserRole::SuperAdmin;
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return match ($panel->getId()) {
+            'admin' => $this->isSuperAdmin() && $this->is_active,
+            default => false,
+        };
     }
 
     public function isAdmin(): bool

@@ -11,6 +11,9 @@ class PlanSeeder extends Seeder
 {
     public function run(): void
     {
+        $catalog = array_keys(config('features.catalog', []));
+        $bundles = config('features.plan_bundles', []);
+
         $plans = [
             [
                 'name_en' => 'Free Trial',
@@ -27,13 +30,6 @@ class PlanSeeder extends Seeder
                     'max_clients' => 10,
                     'max_storage_bytes' => 536870912,
                     'max_invoices_per_month' => 20,
-                ],
-                'features' => [
-                    'e_invoice' => false,
-                    'api_access' => false,
-                    'custom_reports' => false,
-                    'client_portal' => false,
-                    'priority_support' => false,
                 ],
                 'is_active' => true,
                 'sort_order' => 0,
@@ -54,13 +50,6 @@ class PlanSeeder extends Seeder
                     'max_storage_bytes' => 2147483648,
                     'max_invoices_per_month' => 200,
                 ],
-                'features' => [
-                    'e_invoice' => false,
-                    'api_access' => false,
-                    'custom_reports' => true,
-                    'client_portal' => false,
-                    'priority_support' => false,
-                ],
                 'is_active' => true,
                 'sort_order' => 1,
             ],
@@ -79,13 +68,6 @@ class PlanSeeder extends Seeder
                     'max_clients' => 200,
                     'max_storage_bytes' => 10737418240,
                     'max_invoices_per_month' => 1000,
-                ],
-                'features' => [
-                    'e_invoice' => true,
-                    'api_access' => true,
-                    'custom_reports' => true,
-                    'client_portal' => true,
-                    'priority_support' => false,
                 ],
                 'is_active' => true,
                 'sort_order' => 2,
@@ -106,19 +88,19 @@ class PlanSeeder extends Seeder
                     'max_storage_bytes' => 53687091200,
                     'max_invoices_per_month' => -1,
                 ],
-                'features' => [
-                    'e_invoice' => true,
-                    'api_access' => true,
-                    'custom_reports' => true,
-                    'client_portal' => true,
-                    'priority_support' => true,
-                ],
                 'is_active' => true,
                 'sort_order' => 3,
             ],
         ];
 
         foreach ($plans as $plan) {
+            $enabled = $bundles[$plan['slug']] ?? [];
+            $features = [];
+            foreach ($catalog as $key) {
+                $features[$key] = in_array($key, $enabled, true);
+            }
+            $plan['features'] = $features;
+
             Plan::updateOrCreate(
                 ['slug' => $plan['slug']],
                 $plan,
