@@ -14,16 +14,19 @@ use App\Http\Middleware\ClientPortalMiddleware;
 use App\Http\Middleware\CompressResponse;
 use App\Http\Middleware\DetectLocale;
 use App\Http\Middleware\Enforce2fa;
+use App\Http\Middleware\EnforceSuperAdmin2fa;
 use App\Http\Middleware\EnsureActiveUser;
 use App\Http\Middleware\EnsureSuperAdmin;
 use App\Http\Middleware\IdempotencyKey;
 use App\Http\Middleware\IdentifyTenant;
+use App\Http\Middleware\LogAdminActivity;
 use App\Http\Middleware\LogApiRequest;
 use App\Http\Middleware\MeterApiUsage;
 use App\Http\Middleware\PreventDuplicateRequests;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\SetTimezone;
+use App\Http\Middleware\ThrottleAdminLogin;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -73,6 +76,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'idempotent' => IdempotencyKey::class,
             'no-duplicate' => PreventDuplicateRequests::class,
             'enforce.2fa' => Enforce2fa::class,
+            'admin.audit' => LogAdminActivity::class,
+            'admin.2fa' => EnforceSuperAdmin2fa::class,
+            'admin.login.throttle' => ThrottleAdminLogin::class,
         ]);
 
         $middleware->priority([

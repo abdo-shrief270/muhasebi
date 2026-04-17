@@ -29,7 +29,11 @@ use App\Domain\Payroll\Models\PayrollRun;
 use App\Domain\Tax\Models\TaxReturn;
 use App\Domain\Tax\Models\WhtCertificate;
 use App\Domain\Shared\Enums\UserRole;
+use App\Domain\Shared\Models\FeatureFlag;
 use App\Domain\Shared\Services\QueryAnalyzer;
+use App\Domain\Subscription\Models\Plan;
+use App\Domain\Subscription\Models\Subscription;
+use App\Domain\Tenant\Models\Tenant;
 use App\Domain\TimeTracking\Models\TimesheetEntry;
 use App\Models\User;
 use App\Policies\AccountPolicy;
@@ -47,6 +51,11 @@ use App\Policies\InvoicePolicy;
 use App\Policies\JournalEntryPolicy;
 use App\Policies\PaymentPolicy;
 use App\Policies\PayrollRunPolicy;
+use App\Policies\SuperAdmin\FeatureFlagPolicy as SuperAdminFeatureFlagPolicy;
+use App\Policies\SuperAdmin\PlanPolicy as SuperAdminPlanPolicy;
+use App\Policies\SuperAdmin\SubscriptionPolicy as SuperAdminSubscriptionPolicy;
+use App\Policies\SuperAdmin\TenantPolicy as SuperAdminTenantPolicy;
+use App\Policies\SuperAdmin\UserPolicy as SuperAdminUserPolicy;
 use App\Policies\TaxReturnPolicy;
 use App\Policies\TimesheetEntryPolicy;
 use App\Policies\CostCenterPolicy;
@@ -126,6 +135,12 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(200)->by($request->user()?->id ?: $request->ip());
         });
 
+        // SuperAdmin panel login: 5 attempts per minute per IP. Used by the
+        // `throttle:admin-login` middleware on Filament's login POST route.
+        RateLimiter::for('admin-login', function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip());
+        });
+
         // Expensive operations — apply via throttle:reports, throttle:exports, throttle:imports middleware
         RateLimiter::for('reports', function (Request $request) {
             return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
@@ -170,6 +185,15 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(TimesheetEntry::class, TimesheetEntryPolicy::class);
         Gate::policy(Vendor::class, VendorPolicy::class);
         Gate::policy(WhtCertificate::class, WhtCertificatePolicy::class);
+
+        // SuperAdmin panel policies (Filament v5 /admin).
+        // Gate::before() above grants SuperAdmin a blanket bypass; these are a
+        // defensive second layer in case the bypass is ever scoped down.
+        Gate::policy(Tenant::class, SuperAdminTenantPolicy::class);
+        Gate::policy(Plan::class, SuperAdminPlanPolicy::class);
+        Gate::policy(Subscription::class, SuperAdminSubscriptionPolicy::class);
+        Gate::policy(FeatureFlag::class, SuperAdminFeatureFlagPolicy::class);
+        Gate::policy(User::class, SuperAdminUserPolicy::class);
     }
 
     private function registerPermissionGates(): void
