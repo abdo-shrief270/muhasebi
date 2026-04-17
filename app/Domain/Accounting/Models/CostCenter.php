@@ -4,12 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domain\Accounting\Models;
 
-<<<<<<< HEAD
-use App\Domain\Shared\Traits\BelongsToTenant;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Table;
-use Illuminate\Database\Eloquent\Builder;
-=======
 use App\Domain\Accounting\Enums\CostCenterType;
 use App\Domain\Shared\Traits\BelongsToTenant;
 use App\Domain\Tenant\Models\Tenant;
@@ -18,68 +12,36 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
->>>>>>> feat/cc-4
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-<<<<<<< HEAD
-=======
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
->>>>>>> feat/cc-4
 
 #[Table('cost_centers')]
 #[Fillable([
     'tenant_id',
-<<<<<<< HEAD
-=======
     'parent_id',
->>>>>>> feat/cc-4
     'code',
     'name_ar',
     'name_en',
     'type',
-<<<<<<< HEAD
-    'parent_id',
-    'manager_id',
-    'budget_amount',
-    'is_active',
-    'notes',
-=======
     'is_active',
     'budget',
     'description',
->>>>>>> feat/cc-4
 ])]
 class CostCenter extends Model
 {
     use BelongsToTenant;
-<<<<<<< HEAD
-    use SoftDeletes;
-
-    /** @var array<string, mixed> */
-    protected $attributes = [
-        'is_active' => true,
-    ];
-
-=======
     use HasFactory;
     use LogsActivity;
     use SoftDeletes;
 
->>>>>>> feat/cc-4
     /** @return array<string, string> */
     protected function casts(): array
     {
         return [
-<<<<<<< HEAD
-            'is_active' => 'boolean',
-            'budget_amount' => 'decimal:2',
-        ];
-    }
-
-=======
             'type' => CostCenterType::class,
             'is_active' => 'boolean',
             'budget' => 'decimal:2',
@@ -101,19 +63,15 @@ class CostCenter extends Model
         return CostCenterFactory::new();
     }
 
->>>>>>> feat/cc-4
     // ──────────────────────────────────────
     // Relationships
     // ──────────────────────────────────────
 
-<<<<<<< HEAD
-=======
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
     }
 
->>>>>>> feat/cc-4
     public function parent(): BelongsTo
     {
         return $this->belongsTo(self::class, 'parent_id');
@@ -124,15 +82,9 @@ class CostCenter extends Model
         return $this->hasMany(self::class, 'parent_id');
     }
 
-<<<<<<< HEAD
-    public function manager(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\User::class, 'manager_id');
-=======
     public function journalEntryLines(): HasMany
     {
         return $this->hasMany(JournalEntryLine::class, 'cost_center_id');
->>>>>>> feat/cc-4
     }
 
     // ──────────────────────────────────────
@@ -144,14 +96,11 @@ class CostCenter extends Model
         return $query->where('is_active', true);
     }
 
-<<<<<<< HEAD
-=======
     public function scopeRoots(Builder $query): Builder
     {
         return $query->whereNull('parent_id');
     }
 
->>>>>>> feat/cc-4
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
         if (! $term) {
@@ -159,21 +108,6 @@ class CostCenter extends Model
         }
 
         return $query->where(function (Builder $q) use ($term): void {
-<<<<<<< HEAD
-            $q->where('code', 'ilike', "%{$term}%")
-                ->orWhere('name_ar', 'ilike', "%{$term}%")
-                ->orWhere('name_en', 'ilike', "%{$term}%");
-        });
-    }
-
-    public function scopeOfType(Builder $query, ?string $type): Builder
-    {
-        if (! $type) {
-            return $query;
-        }
-
-        return $query->where('type', $type);
-=======
             $q->where('name_ar', 'ilike', "%{$term}%")
                 ->orWhere('name_en', 'ilike', "%{$term}%")
                 ->orWhere('code', 'ilike', "%{$term}%");
@@ -299,6 +233,5 @@ class CostCenter extends Model
             ->logOnly(['code', 'name_ar', 'name_en', 'type', 'is_active'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
->>>>>>> feat/cc-4
     }
 }

@@ -8,14 +8,16 @@ it('every feature referenced in plan_bundles exists in the catalog', function ()
     $catalogKeys = array_keys(config('features.catalog', []));
     $bundles = config('features.plan_bundles', []);
 
+    $unknown = [];
     foreach ($bundles as $planSlug => $bundledFeatures) {
         foreach ($bundledFeatures as $feature) {
-            expect($catalogKeys)->toContain(
-                $feature,
-                "Plan [{$planSlug}] references unknown feature [{$feature}] — add it to config/features.php catalog or fix the bundle."
-            );
+            if (! in_array($feature, $catalogKeys, true)) {
+                $unknown[] = "{$planSlug}:{$feature}";
+            }
         }
     }
+
+    expect($unknown)->toBe([]);
 });
 
 it('seeded plans expose every catalog feature as a boolean', function (): void {
@@ -25,13 +27,10 @@ it('seeded plans expose every catalog feature as a boolean', function (): void {
 
     foreach (['free_trial', 'starter', 'professional', 'enterprise'] as $slug) {
         $plan = Plan::where('slug', $slug)->first();
-        expect($plan)->not->toBeNull("Plan [{$slug}] not seeded");
+        expect($plan)->not->toBeNull();
 
         foreach ($catalogKeys as $key) {
-            expect($plan->features)->toHaveKey(
-                $key,
-                "Plan [{$slug}] missing feature key [{$key}]"
-            );
+            expect($plan->features)->toHaveKey($key);
             expect($plan->features[$key])->toBeBool();
         }
     }
@@ -44,7 +43,7 @@ it('enterprise plan enables every catalog feature', function (): void {
     $catalogKeys = array_keys(config('features.catalog', []));
 
     foreach ($catalogKeys as $key) {
-        expect($plan->hasFeature($key))->toBeTrue("Enterprise missing feature [{$key}]");
+        expect($plan->hasFeature($key))->toBeTrue();
     }
 });
 

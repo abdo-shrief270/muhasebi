@@ -33,6 +33,7 @@ class UserFactory extends Factory
             'timezone' => null,
             'client_id' => null,
             'is_active' => true,
+            'two_factor_enabled' => false,
             'remember_token' => Str::random(10),
             'last_login_at' => null,
         ];
@@ -43,6 +44,7 @@ class UserFactory extends Factory
         return $this->state(fn () => [
             'tenant_id' => null,
             'role' => UserRole::SuperAdmin,
+            'two_factor_enabled' => true,
         ]);
     }
 
@@ -50,6 +52,7 @@ class UserFactory extends Factory
     {
         return $this->state(fn () => [
             'role' => UserRole::Admin,
+            'two_factor_enabled' => true,
         ]);
     }
 

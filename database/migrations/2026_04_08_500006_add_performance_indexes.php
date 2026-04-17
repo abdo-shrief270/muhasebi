@@ -69,9 +69,9 @@ return new class extends Migration
         DB::statement('CREATE INDEX IF NOT EXISTS idx_fixed_assets_name_en_trgm ON fixed_assets USING GIN (name_en gin_trgm_ops)');
         DB::statement('CREATE INDEX IF NOT EXISTS idx_fixed_assets_code_trgm ON fixed_assets USING GIN (code gin_trgm_ops)');
 
-        // vendors
-        DB::statement('CREATE INDEX IF NOT EXISTS idx_vendors_name_trgm ON vendors USING GIN (name gin_trgm_ops)');
+        // vendors — schema uses name_ar/name_en (no single 'name' column)
         DB::statement('CREATE INDEX IF NOT EXISTS idx_vendors_name_ar_trgm ON vendors USING GIN (name_ar gin_trgm_ops)');
+        DB::statement('CREATE INDEX IF NOT EXISTS idx_vendors_name_en_trgm ON vendors USING GIN (name_en gin_trgm_ops)');
         DB::statement('CREATE INDEX IF NOT EXISTS idx_vendors_email_trgm ON vendors USING GIN (email gin_trgm_ops)');
     }
 
@@ -127,8 +127,8 @@ return new class extends Migration
         DB::statement('DROP INDEX IF EXISTS idx_fixed_assets_name_en_trgm');
         DB::statement('DROP INDEX IF EXISTS idx_fixed_assets_code_trgm');
 
-        DB::statement('DROP INDEX IF EXISTS idx_vendors_name_trgm');
         DB::statement('DROP INDEX IF EXISTS idx_vendors_name_ar_trgm');
+        DB::statement('DROP INDEX IF EXISTS idx_vendors_name_en_trgm');
         DB::statement('DROP INDEX IF EXISTS idx_vendors_email_trgm');
     }
 };

@@ -44,9 +44,9 @@ it('allows access to a feature included in the plan', function (): void {
     $response = $this->withHeader('X-Tenant', $tenant->slug)
         ->getJson('/api/v1/clients');
 
-    // Professional includes 'clients' — expect 2xx, not a feature_not_available 403
-    expect($response->status())->not->toBe(403)
-        ->or(fn () => $response->json('error.code'))->not->toBe('feature_not_available');
+    // Professional includes 'clients' — must NOT be blocked by feature middleware.
+    expect($response->json('error'))->not->toBe('feature_not_available');
+    expect($response->json('error'))->not->toBe('subscription_inactive');
 });
 
 it('blocks access when plan does not include the feature', function (): void {
@@ -59,7 +59,7 @@ it('blocks access when plan does not include the feature', function (): void {
         ->getJson('/api/v1/eta/documents');
 
     $response->assertStatus(403)
-        ->assertJsonPath('error.code', 'feature_not_available');
+        ->assertJsonPath('error', 'feature_not_available');
 });
 
 it('blocks access when tenant has no subscription', function (): void {
@@ -72,7 +72,7 @@ it('blocks access when tenant has no subscription', function (): void {
         ->getJson('/api/v1/eta/documents');
 
     $response->assertStatus(403)
-        ->assertJsonPath('error.code', 'subscription_inactive');
+        ->assertJsonPath('error', 'subscription_inactive');
 });
 
 it('allows access when a global FeatureFlag overrides the plan', function (): void {
@@ -93,6 +93,6 @@ it('allows access when a global FeatureFlag overrides the plan', function (): vo
     $response = $this->withHeader('X-Tenant', $tenant->slug)
         ->getJson('/api/v1/eta/documents');
 
-    // With flag enabled, should NOT be blocked by feature middleware
-    expect($response->json('error.code'))->not->toBe('feature_not_available');
+    // With flag enabled, must NOT be blocked by feature middleware.
+    expect($response->json('error'))->not->toBe('feature_not_available');
 });
