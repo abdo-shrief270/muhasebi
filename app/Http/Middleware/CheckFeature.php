@@ -6,6 +6,7 @@ namespace App\Http\Middleware;
 
 use App\Domain\Shared\Services\FeatureFlagService;
 use App\Domain\Subscription\Models\Subscription;
+use App\Domain\Subscription\Services\PlanFeatureCache;
 use App\Http\ApiResponse;
 use Closure;
 use Illuminate\Http\Request;
@@ -44,9 +45,7 @@ class CheckFeature
             );
         }
 
-        $plan = $subscription->plan;
-
-        if ($plan && $plan->hasFeature($feature)) {
+        if ($subscription->plan_id && PlanFeatureCache::has((int) $subscription->plan_id, $feature)) {
             return $next($request);
         }
 

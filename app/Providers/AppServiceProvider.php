@@ -14,6 +14,12 @@ use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\Payment;
 use App\Domain\Billing\Observers\InvoiceObserver;
 use App\Domain\Billing\Observers\PaymentObserver;
+use App\Domain\Shared\Models\FeatureFlag;
+use App\Domain\Shared\Observers\FeatureFlagObserver;
+use App\Domain\Subscription\Models\Plan;
+use App\Domain\Subscription\Models\Subscription;
+use App\Domain\Subscription\Observers\PlanObserver;
+use App\Domain\Subscription\Observers\SubscriptionObserver;
 use App\Domain\AccountsPayable\Models\Bill;
 use App\Domain\AccountsPayable\Models\Vendor;
 use App\Domain\Expense\Models\Expense;
@@ -146,6 +152,9 @@ class AppServiceProvider extends ServiceProvider
         Payment::observe(PaymentObserver::class);
         JournalEntry::observe(JournalEntryObserver::class);
         Account::observe(AccountObserver::class);
+        Plan::observe(PlanObserver::class);
+        Subscription::observe(SubscriptionObserver::class);
+        FeatureFlag::observe(FeatureFlagObserver::class);
     }
 
     private function registerPolicies(): void
