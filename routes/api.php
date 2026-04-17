@@ -918,33 +918,42 @@ Route::prefix('v1')->group(function (): void {
         // Super Admin routes
         // ──────────────────────────────────
         Route::middleware(['super_admin', 'admin.ip', 'enforce.2fa'])->prefix('admin')->name('admin.')->group(function (): void {
-            Route::apiResource('plans', PlanController::class)->only(['store', 'update', 'destroy']);
+            // ── DEPRECATED: use Filament /admin/plans — sunset 2026-07-17 ──
+            Route::middleware('deprecated:/admin/plans,2026-07-17')->group(function (): void {
+                Route::apiResource('plans', PlanController::class)->only(['store', 'update', 'destroy']);
+            });
 
-            // Dashboard & Revenue
+            // Dashboard & Revenue (not deprecated — no Filament equivalent)
             Route::get('dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
             Route::get('revenue/monthly', [AdminDashboardController::class, 'monthlyRevenue'])->name('revenue.monthly');
             Route::get('revenue/by-plan', [AdminDashboardController::class, 'revenueByPlan'])->name('revenue.by-plan');
 
-            // Tenant Management
-            Route::get('tenants', [AdminTenantController::class, 'index'])->name('tenants.index');
-            Route::get('tenants/{tenant}', [AdminTenantController::class, 'show'])->name('tenants.show');
-            Route::put('tenants/{tenant}', [AdminTenantController::class, 'update'])->name('tenants.update');
-            Route::post('tenants/{tenant}/suspend', [AdminTenantController::class, 'suspend'])->middleware('throttle:10,1')->name('tenants.suspend');
-            Route::post('tenants/{tenant}/activate', [AdminTenantController::class, 'activate'])->middleware('throttle:10,1')->name('tenants.activate');
-            Route::post('tenants/{tenant}/cancel', [AdminTenantController::class, 'cancel'])->middleware('throttle:10,1')->name('tenants.cancel');
-            Route::post('tenants/{tenant}/impersonate', [AdminTenantController::class, 'impersonate'])->middleware('throttle:5,1')->name('tenants.impersonate');
+            // ── DEPRECATED: use Filament /admin/tenants — sunset 2026-07-17 ──
+            Route::middleware('deprecated:/admin/tenants,2026-07-17')->group(function (): void {
+                Route::get('tenants', [AdminTenantController::class, 'index'])->name('tenants.index');
+                Route::get('tenants/{tenant}', [AdminTenantController::class, 'show'])->name('tenants.show');
+                Route::put('tenants/{tenant}', [AdminTenantController::class, 'update'])->name('tenants.update');
+                Route::post('tenants/{tenant}/suspend', [AdminTenantController::class, 'suspend'])->middleware('throttle:10,1')->name('tenants.suspend');
+                Route::post('tenants/{tenant}/activate', [AdminTenantController::class, 'activate'])->middleware('throttle:10,1')->name('tenants.activate');
+                Route::post('tenants/{tenant}/cancel', [AdminTenantController::class, 'cancel'])->middleware('throttle:10,1')->name('tenants.cancel');
+                Route::post('tenants/{tenant}/impersonate', [AdminTenantController::class, 'impersonate'])->middleware('throttle:5,1')->name('tenants.impersonate');
+            });
 
-            // Subscription Management
-            Route::post('subscriptions/assign', [AdminSubscriptionController::class, 'assign'])->name('subscriptions.assign');
-            Route::get('subscriptions', [AdminSubscriptionController::class, 'index'])->name('subscriptions.index');
-            Route::get('subscriptions/{subscription}', [AdminSubscriptionController::class, 'show'])->name('subscriptions.show');
-            Route::put('subscriptions/{subscription}', [AdminSubscriptionController::class, 'update'])->name('subscriptions.update');
-            Route::post('subscriptions/payments/{payment}/refund', [AdminSubscriptionController::class, 'refund'])->name('subscriptions.refund');
+            // ── DEPRECATED: use Filament /admin/subscriptions — sunset 2026-07-17 ──
+            Route::middleware('deprecated:/admin/subscriptions,2026-07-17')->group(function (): void {
+                Route::post('subscriptions/assign', [AdminSubscriptionController::class, 'assign'])->name('subscriptions.assign');
+                Route::get('subscriptions', [AdminSubscriptionController::class, 'index'])->name('subscriptions.index');
+                Route::get('subscriptions/{subscription}', [AdminSubscriptionController::class, 'show'])->name('subscriptions.show');
+                Route::put('subscriptions/{subscription}', [AdminSubscriptionController::class, 'update'])->name('subscriptions.update');
+                Route::post('subscriptions/payments/{payment}/refund', [AdminSubscriptionController::class, 'refund'])->name('subscriptions.refund');
+            });
 
-            // User Management
-            Route::get('users', [AdminUserController::class, 'index'])->name('users.index');
-            Route::post('users/create-super-admin', [AdminUserController::class, 'createSuperAdmin'])->name('users.create-super-admin');
-            Route::patch('users/{user}/toggle-active', [AdminUserController::class, 'toggleActive'])->name('users.toggle-active');
+            // ── DEPRECATED: use Filament /admin/users — sunset 2026-07-17 ──
+            Route::middleware('deprecated:/admin/users,2026-07-17')->group(function (): void {
+                Route::get('users', [AdminUserController::class, 'index'])->name('users.index');
+                Route::post('users/create-super-admin', [AdminUserController::class, 'createSuperAdmin'])->name('users.create-super-admin');
+                Route::patch('users/{user}/toggle-active', [AdminUserController::class, 'toggleActive'])->name('users.toggle-active');
+            });
 
             // Investors
             Route::apiResource('investors', AdminInvestorController::class);
@@ -961,13 +970,16 @@ Route::prefix('v1')->group(function (): void {
             Route::delete('distributions/{distribution}', [AdminProfitDistributionController::class, 'destroy'])->name('distributions.destroy');
             Route::get('investors/{investor}/payslip', [AdminProfitDistributionController::class, 'payslip'])->name('investors.payslip');
 
-            // Activity Log
-            Route::get('activity-log', [AdminActivityLogController::class, 'index'])->name('activity-log.index');
-            Route::get('tenants/{tenantId}/activity', [AdminActivityLogController::class, 'forTenant'])->name('tenants.activity');
+            // ── DEPRECATED: use Filament /admin/audit-logs — sunset 2026-07-17 ──
+            Route::middleware('deprecated:/admin/audit-logs,2026-07-17')->group(function (): void {
+                // Activity Log
+                Route::get('activity-log', [AdminActivityLogController::class, 'index'])->name('activity-log.index');
+                Route::get('tenants/{tenantId}/activity', [AdminActivityLogController::class, 'forTenant'])->name('tenants.activity');
 
-            // Audit Logs (Spatie Activity Log viewer)
-            Route::get('audit-logs', [AdminAuditLogController::class, 'index'])->name('audit-logs.index');
-            Route::get('audit-logs/stats', [AdminAuditLogController::class, 'stats'])->name('audit-logs.stats');
+                // Audit Logs (Spatie Activity Log viewer)
+                Route::get('audit-logs', [AdminAuditLogController::class, 'index'])->name('audit-logs.index');
+                Route::get('audit-logs/stats', [AdminAuditLogController::class, 'stats'])->name('audit-logs.stats');
+            });
 
             // Platform Settings
             Route::get('settings', [AdminPlatformSettingsController::class, 'index'])->name('settings.index');
@@ -1009,12 +1021,14 @@ Route::prefix('v1')->group(function (): void {
                 Route::post('blog/toggle-publish', [AdminBatchController::class, 'toggleBlogPublish'])->middleware('throttle:10,1')->name('blog.toggle-publish');
             });
 
-            // Feature Flags
-            Route::get('feature-flags', [AdminFeatureFlagController::class, 'index'])->name('feature-flags.index');
-            Route::post('feature-flags', [AdminFeatureFlagController::class, 'store'])->name('feature-flags.store');
-            Route::put('feature-flags/{featureFlag}', [AdminFeatureFlagController::class, 'update'])->name('feature-flags.update');
-            Route::delete('feature-flags/{featureFlag}', [AdminFeatureFlagController::class, 'destroy'])->name('feature-flags.destroy');
-            Route::get('feature-flags/check', [AdminFeatureFlagController::class, 'checkForTenant'])->name('feature-flags.check');
+            // ── DEPRECATED: use Filament /admin/feature-flags — sunset 2026-07-17 ──
+            Route::middleware('deprecated:/admin/feature-flags,2026-07-17')->group(function (): void {
+                Route::get('feature-flags', [AdminFeatureFlagController::class, 'index'])->name('feature-flags.index');
+                Route::post('feature-flags', [AdminFeatureFlagController::class, 'store'])->name('feature-flags.store');
+                Route::put('feature-flags/{featureFlag}', [AdminFeatureFlagController::class, 'update'])->name('feature-flags.update');
+                Route::delete('feature-flags/{featureFlag}', [AdminFeatureFlagController::class, 'destroy'])->name('feature-flags.destroy');
+                Route::get('feature-flags/check', [AdminFeatureFlagController::class, 'checkForTenant'])->name('feature-flags.check');
+            });
 
             // Currency Management (admin)
             Route::post('currencies', [CurrencyController::class, 'store'])->name('currencies.store');

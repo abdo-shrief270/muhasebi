@@ -12,6 +12,7 @@ use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\CheckSubscription;
 use App\Http\Middleware\ClientPortalMiddleware;
 use App\Http\Middleware\CompressResponse;
+use App\Http\Middleware\Deprecated;
 use App\Http\Middleware\DetectLocale;
 use App\Http\Middleware\Enforce2fa;
 use App\Http\Middleware\EnforceSuperAdmin2fa;
@@ -79,6 +80,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.audit' => LogAdminActivity::class,
             'admin.2fa' => EnforceSuperAdmin2fa::class,
             'admin.login.throttle' => ThrottleAdminLogin::class,
+            'deprecated' => Deprecated::class,
         ]);
 
         $middleware->priority([
