@@ -69,9 +69,12 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                'admin.login.throttle',
+                'admin.audit',
             ])
             ->authMiddleware([
                 Authenticate::class,
+                'admin.2fa',
             ]);
     }
 }

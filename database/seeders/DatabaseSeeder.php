@@ -12,13 +12,14 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             PermissionSeeder::class,       // 1. Roles & permissions (required by users)
-            PlanSeeder::class,             // 2. Subscription plans
-            SuperAdminSeeder::class,       // 3. Super admin user
-            DemoTenantSeeder::class,       // 4. Demo tenant with sample data
-            SyncUserRolesSeeder::class,    // 5. Sync enum roles → Spatie roles
-            CmsSeeder::class,              // 6. Landing page, pages, testimonials, FAQs
-            BlogSeeder::class,             // 7. Blog categories, tags, sample posts
-            CurrencySeeder::class,         // 8. Currencies + initial exchange rates
+            RolesSeeder::class,            // 2. Tenant-level roles (admin/accountant/auditor/limited)
+            PlanSeeder::class,             // 3. Subscription plans
+            SuperAdminSeeder::class,       // 4. Super admin user
+            DemoTenantSeeder::class,       // 5. Demo tenant with sample data
+            SyncUserRolesSeeder::class,    // 6. Sync enum roles → Spatie roles
+            CmsSeeder::class,              // 7. Landing page, pages, testimonials, FAQs
+            BlogSeeder::class,             // 8. Blog categories, tags, sample posts
+            CurrencySeeder::class,         // 9. Currencies + initial exchange rates
         ]);
     }
 }

@@ -247,7 +247,7 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── Audit Compliance (admin only — view_audit permission) ──
-            Route::middleware('permission:view_audit')->prefix('audit-compliance')->name('audit-compliance.')->group(function (): void {
+            Route::middleware(['feature:audit_log', 'permission:view_audit'])->prefix('audit-compliance')->name('audit-compliance.')->group(function (): void {
                 Route::get('user-access', [AuditComplianceController::class, 'userAccess'])->name('user-access');
                 Route::get('changes', [AuditComplianceController::class, 'changes'])->name('changes');
                 Route::get('high-risk', [AuditComplianceController::class, 'highRisk'])->name('high-risk');
@@ -276,7 +276,7 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── Clients (admin + accountant) ──
-            Route::middleware('permission:manage_clients')->group(function (): void {
+            Route::middleware(['feature:clients', 'permission:manage_clients'])->group(function (): void {
                 Route::apiResource('clients', ClientController::class);
                 Route::post('clients/{client}/restore', [ClientController::class, 'restore'])->name('clients.restore');
                 Route::patch('clients/{client}/toggle-active', [ClientController::class, 'toggleActive'])->name('clients.toggle-active');
@@ -284,18 +284,18 @@ Route::prefix('v1')->group(function (): void {
                 Route::post('clients/{client}/messages', [ClientController::class, 'sendMessage'])->name('clients.send-message');
                 Route::post('import/clients', [CsvImportController::class, 'importClients'])->name('import.clients');
             });
-            Route::middleware('permission:invite_client_portal')->group(function (): void {
+            Route::middleware(['feature:client_portal', 'permission:invite_client_portal'])->group(function (): void {
                 Route::post('clients/{client}/invite-portal', [ClientController::class, 'invitePortalUser'])->name('clients.invite-portal');
             });
 
             // ── Chart of Accounts (admin + accountant) ──
-            Route::middleware('permission:manage_accounts')->group(function (): void {
+            Route::middleware(['feature:accounting', 'permission:manage_accounts'])->group(function (): void {
                 // ── Account Suggestions (AI categorization) ──
                 Route::get('account-suggestions', [AccountSuggestionController::class, 'suggest'])->name('account-suggestions.suggest');
                 Route::post('account-suggestions/train', [AccountSuggestionController::class, 'train'])->name('account-suggestions.train');
             });
 
-            Route::middleware('permission:manage_accounts')->group(function (): void {
+            Route::middleware(['feature:accounting', 'permission:manage_accounts'])->group(function (): void {
                 Route::get('accounts/tree', [AccountController::class, 'tree'])->name('accounts.tree');
                 Route::apiResource('accounts', AccountController::class);
                 Route::post('import/accounts', [CsvImportController::class, 'importAccounts'])->name('import.accounts');
@@ -380,12 +380,12 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── Journal Entries (admin + accountant for CRUD, admin only for post) ──
-            Route::middleware('permission:manage_journal_entries')->group(function (): void {
+            Route::middleware(['feature:accounting', 'permission:manage_journal_entries'])->group(function (): void {
                 Route::apiResource('journal-entries', JournalEntryController::class);
                 Route::post('journal-entries/{journalEntry}/reverse', [JournalEntryController::class, 'reverse'])->name('journal-entries.reverse');
                 Route::post('import/opening-balances', [CsvImportController::class, 'importOpeningBalances'])->name('import.opening-balances');
             });
-            Route::middleware('permission:post_journal_entries')->group(function (): void {
+            Route::middleware(['feature:accounting', 'permission:post_journal_entries'])->group(function (): void {
                 Route::post('journal-entries/{journalEntry}/post', [JournalEntryController::class, 'post'])->name('journal-entries.post');
                 Route::apiResource('fiscal-years', FiscalYearController::class)->only(['index', 'store', 'show']);
                 Route::post('fiscal-periods/{fiscalPeriod}/close', [FiscalPeriodController::class, 'close'])->name('fiscal-periods.close');
@@ -393,13 +393,13 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── Recurring Journal Entries ──
-            Route::middleware('permission:manage_accounts')->group(function (): void {
+            Route::middleware(['feature:accounting', 'permission:manage_accounts'])->group(function (): void {
                 Route::apiResource('recurring-journal-entries', RecurringJournalEntryController::class);
                 Route::post('recurring-journal-entries/{recurringJournalEntry}/toggle', [RecurringJournalEntryController::class, 'toggle'])->name('recurring-journal-entries.toggle');
             });
 
             // ── Invoices (admin + accountant) ──
-            Route::middleware('permission:manage_invoices')->group(function (): void {
+            Route::middleware(['feature:invoicing', 'permission:manage_invoices'])->group(function (): void {
                 Route::apiResource('invoices', InvoiceController::class);
                 Route::post('invoices/pre-check', function (Request $request) {
                     $request->validate([
@@ -421,28 +421,28 @@ Route::prefix('v1')->group(function (): void {
                 Route::post('invoices/{invoice}/credit-note', [InvoiceController::class, 'creditNote'])->name('invoices.credit-note');
                 Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
             });
-            Route::middleware('permission:send_invoices')->group(function (): void {
+            Route::middleware(['feature:invoicing', 'permission:send_invoices'])->group(function (): void {
                 Route::post('invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
             });
 
             // ── Recurring Invoices ──
-            Route::middleware('permission:manage_invoices')->group(function (): void {
+            Route::middleware(['feature:invoicing', 'permission:manage_invoices'])->group(function (): void {
                 Route::apiResource('recurring-invoices', RecurringInvoiceController::class);
             });
 
             // ── AR Collection ──
-            Route::middleware('permission:manage_collections')->prefix('collections')->name('collections.')->group(function (): void {
+            Route::middleware(['feature:collections', 'permission:manage_collections'])->prefix('collections')->name('collections.')->group(function (): void {
                 Route::get('overview', [CollectionController::class, 'overview'])->name('overview');
                 Route::get('actions', [CollectionController::class, 'listActions'])->name('actions.index');
                 Route::post('actions', [CollectionController::class, 'logAction'])->name('actions.store');
                 Route::get('clients/{client}', [CollectionController::class, 'clientSummary'])->name('clients.summary');
                 Route::get('reports/effectiveness', [CollectionController::class, 'effectiveness'])->name('reports.effectiveness');
             });
-            Route::post('invoices/{invoice}/write-off', [CollectionController::class, 'writeOff'])->name('invoices.write-off')->middleware('permission:manage_collections');
-            Route::post('invoices/{invoice}/escalate', [CollectionController::class, 'escalate'])->name('invoices.escalate')->middleware('permission:manage_collections');
+            Route::post('invoices/{invoice}/write-off', [CollectionController::class, 'writeOff'])->name('invoices.write-off')->middleware(['feature:collections', 'permission:manage_collections']);
+            Route::post('invoices/{invoice}/escalate', [CollectionController::class, 'escalate'])->name('invoices.escalate')->middleware(['feature:collections', 'permission:manage_collections']);
 
             // ── Data Import ──
-            Route::middleware('permission:manage_clients')->prefix('import')->name('import.')->group(function (): void {
+            Route::middleware(['feature:clients', 'permission:manage_clients'])->prefix('import')->name('import.')->group(function (): void {
                 Route::get('/', [ImportController::class, 'index'])->name('index');
                 Route::post('/', [ImportController::class, 'store'])->name('store');
                 Route::get('template/{type}', [ImportController::class, 'template'])->name('template');
@@ -450,7 +450,7 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── Messaging (Beon.chat — WhatsApp/SMS) ──
-            Route::middleware('permission:manage_clients')->prefix('messaging')->name('messaging.')->group(function (): void {
+            Route::middleware(['feature:clients', 'permission:manage_clients'])->prefix('messaging')->name('messaging.')->group(function (): void {
                 Route::post('whatsapp', [MessagingController::class, 'sendWhatsApp'])->middleware('throttle:10,1')->name('whatsapp');
                 Route::post('sms', [MessagingController::class, 'sendSms'])->middleware('throttle:10,1')->name('sms');
                 Route::get('templates', [MessagingController::class, 'templates'])->name('templates');
@@ -467,20 +467,20 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── Payments (admin + accountant) ──
-            Route::middleware('permission:manage_payments')->group(function (): void {
+            Route::middleware(['feature:invoicing', 'permission:manage_payments'])->group(function (): void {
                 Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
                 Route::post('payments', [PaymentController::class, 'store'])->middleware('throttle:10,1')->name('payments.store');
                 Route::delete('payments/{payment}', [PaymentController::class, 'destroy'])->name('payments.destroy');
             });
 
             // ── Accounts Payable ──
-            Route::middleware('permission:manage_vendors')->group(function (): void {
+            Route::middleware(['feature:bills_vendors', 'permission:manage_vendors'])->group(function (): void {
                 Route::apiResource('vendors', VendorController::class);
                 Route::get('vendors/{vendor}/statement', [VendorController::class, 'statement'])->name('vendors.statement');
                 Route::get('vendors/reports/aging', [VendorController::class, 'aging'])->name('vendors.aging');
             });
 
-            Route::middleware('permission:manage_bills')->group(function (): void {
+            Route::middleware(['feature:bills_vendors', 'permission:manage_bills'])->group(function (): void {
                 Route::apiResource('bills', BillController::class);
                 Route::post('bills/{bill}/approve', [BillController::class, 'approve'])->name('bills.approve');
                 Route::post('bills/{bill}/cancel', [BillController::class, 'cancel'])->name('bills.cancel');
@@ -490,7 +490,7 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── Fixed Assets ──
-            Route::middleware('permission:manage_fixed_assets')->group(function (): void {
+            Route::middleware(['feature:fixed_assets', 'permission:manage_fixed_assets'])->group(function (): void {
                 Route::apiResource('asset-categories', AssetCategoryController::class);
                 Route::apiResource('fixed-assets', FixedAssetController::class);
                 Route::get('fixed-assets/{fixedAsset}/depreciation-schedule', [FixedAssetController::class, 'schedule'])->name('fixed-assets.schedule');
@@ -502,7 +502,7 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── Expenses ──
-            Route::middleware('permission:manage_expenses')->group(function (): void {
+            Route::middleware(['feature:expenses', 'permission:manage_expenses'])->group(function (): void {
                 Route::apiResource('expense-categories', ExpenseCategoryController::class);
                 Route::apiResource('expenses', ExpenseController::class);
                 Route::post('expenses/{expense}/submit', [ExpenseController::class, 'submit'])->name('expenses.submit');
@@ -519,7 +519,7 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── Cost Centers ──
-            Route::middleware('permission:manage_cost_centers')->group(function (): void {
+            Route::middleware(['feature:cost_centers', 'permission:manage_cost_centers'])->group(function (): void {
                 Route::apiResource('cost-centers', CostCenterController::class);
                 Route::get('cost-centers/{costCenter}/pnl', [CostCenterController::class, 'profitAndLoss'])->name('cost-centers.pnl');
                 Route::get('cost-centers/reports/cost-analysis', [CostCenterController::class, 'costAnalysis'])->name('cost-centers.cost-analysis');
@@ -527,7 +527,7 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── Inventory Management ──
-            Route::middleware('permission:manage_inventory')->group(function (): void {
+            Route::middleware(['feature:inventory', 'permission:manage_inventory'])->group(function (): void {
                 // Product Categories
                 Route::get('product-categories', [InventoryController::class, 'categoryIndex'])->name('product-categories.index');
                 Route::post('product-categories', [InventoryController::class, 'categoryStore'])->name('product-categories.store');
@@ -547,7 +547,7 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── Tax Management ──
-            Route::middleware('permission:manage_tax')->group(function (): void {
+            Route::middleware(['feature:tax', 'permission:manage_tax'])->group(function (): void {
                 // WHT Certificates
                 Route::get('wht-certificates', [WhtCertificateController::class, 'index'])->name('wht-certificates.index');
                 Route::post('wht-certificates/generate', [WhtCertificateController::class, 'generate'])->name('wht-certificates.generate');
@@ -589,7 +589,7 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── Documents (all tenant roles) ──
-            Route::middleware('permission:manage_documents')->group(function (): void {
+            Route::middleware(['feature:documents', 'permission:manage_documents'])->group(function (): void {
                 Route::get('documents/quota', [DocumentController::class, 'quota'])->name('documents.quota');
                 Route::post('documents/bulk', [DocumentController::class, 'bulkStore'])->name('documents.bulk');
                 Route::apiResource('documents', DocumentController::class);
@@ -630,7 +630,7 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── Timesheets (admin + accountant) ──
-            Route::middleware('permission:manage_timesheets')->group(function (): void {
+            Route::middleware(['feature:timesheets', 'permission:manage_timesheets'])->group(function (): void {
                 Route::get('timesheets/summary', [TimesheetController::class, 'summary'])->name('timesheets.summary');
                 Route::post('timesheets/bulk-submit', [TimesheetController::class, 'bulkSubmit'])->name('timesheets.bulk-submit');
                 Route::apiResource('timesheets', TimesheetController::class);
@@ -647,7 +647,7 @@ Route::prefix('v1')->group(function (): void {
                     Route::post('generate', [TimeBillingController::class, 'generate'])->name('generate');
                 });
             });
-            Route::middleware('permission:approve_timesheets')->group(function (): void {
+            Route::middleware(['feature:timesheets', 'permission:approve_timesheets'])->group(function (): void {
                 Route::post('timesheets/bulk-approve', [TimesheetController::class, 'bulkApprove'])->name('timesheets.bulk-approve');
                 Route::post('timesheets/{timesheet}/approve', [TimesheetController::class, 'approve'])->name('timesheets.approve');
             });
@@ -667,7 +667,7 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── Employees (admin only) ──
-            Route::middleware('permission:manage_employees')->prefix('employees')->name('employees.')->group(function (): void {
+            Route::middleware(['feature:payroll', 'permission:manage_employees'])->prefix('employees')->name('employees.')->group(function (): void {
                 Route::get('/', [PayrollController::class, 'listEmployees'])->name('index');
                 Route::post('/', [PayrollController::class, 'storeEmployee'])->name('store');
                 Route::get('{employee}', [PayrollController::class, 'showEmployee'])->name('show');
@@ -676,7 +676,7 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── Payroll (admin only) ──
-            Route::middleware('permission:manage_payroll')->prefix('payroll')->name('payroll.')->group(function (): void {
+            Route::middleware(['feature:payroll', 'permission:manage_payroll'])->prefix('payroll')->name('payroll.')->group(function (): void {
                 Route::get('/', [PayrollController::class, 'index'])->name('index');
                 Route::post('/', [PayrollController::class, 'store'])->name('store');
                 Route::get('{payrollRun}', [PayrollController::class, 'show'])->name('show');
@@ -689,7 +689,7 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── Payroll Extensions ──
-            Route::middleware('permission:manage_payroll')->group(function (): void {
+            Route::middleware(['feature:payroll', 'permission:manage_payroll'])->group(function (): void {
                 // Salary Components
                 Route::apiResource('salary-components', SalaryComponentController::class)->except(['show']);
                 Route::post('employees/{employee}/salary-components', [SalaryComponentController::class, 'assign'])->name('employees.salary-components.assign');
@@ -718,7 +718,7 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── Labor Law Calculations ──
-            Route::middleware('permission:manage_payroll')->prefix('labor-law')->name('labor-law.')->group(function (): void {
+            Route::middleware(['feature:payroll', 'permission:manage_payroll'])->prefix('labor-law')->name('labor-law.')->group(function (): void {
                 Route::post('overtime', [LaborLawController::class, 'calculateOvertime']);
                 Route::post('end-of-service', [LaborLawController::class, 'calculateEndOfService']);
                 Route::get('leave-entitlement/{employee}', [LaborLawController::class, 'leaveEntitlement']);
@@ -727,7 +727,7 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── Social Insurance (SISA) ──
-            Route::middleware('permission:manage_payroll')->prefix('social-insurance')->name('social-insurance.')->group(function (): void {
+            Route::middleware(['feature:payroll', 'permission:manage_payroll'])->prefix('social-insurance')->name('social-insurance.')->group(function (): void {
                 Route::post('calculate', [SocialInsuranceController::class, 'calculate'])->name('calculate');
                 Route::get('monthly-report', [SocialInsuranceController::class, 'monthlyReport'])->name('monthly-report');
                 Route::post('register', [SocialInsuranceController::class, 'register'])->name('register');
@@ -735,7 +735,7 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── ETA E-Invoicing (admin + accountant) ──
-            Route::middleware('permission:manage_eta')->prefix('eta')->name('eta.')->group(function (): void {
+            Route::middleware(['feature:e_invoice', 'permission:manage_eta'])->prefix('eta')->name('eta.')->group(function (): void {
                 Route::get('settings', [EtaController::class, 'showSettings'])->name('settings.show');
                 Route::put('settings', [EtaController::class, 'updateSettings'])->name('settings.update');
                 Route::get('documents', [EtaController::class, 'indexDocuments'])->name('documents.index');
@@ -815,7 +815,7 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── Executive Dashboard ──
-            Route::middleware('permission:view_reports')->prefix('dashboard')->name('dashboard.')->group(function (): void {
+            Route::middleware(['feature:reports', 'permission:view_reports'])->prefix('dashboard')->name('dashboard.')->group(function (): void {
                 Route::get('overview', [ExecutiveDashboardController::class, 'overview'])->name('overview');
                 Route::get('revenue', [ExecutiveDashboardController::class, 'revenueAnalysis'])->name('revenue');
                 Route::get('cash-flow', [ExecutiveDashboardController::class, 'cashFlow'])->name('cash-flow');
@@ -826,7 +826,7 @@ Route::prefix('v1')->group(function (): void {
 
             // CSV/JSONL Exports (streaming, memory-efficient)
             // ── Budget vs Actuals ──
-            Route::middleware('permission:manage_accounts')->prefix('budgets')->name('budgets.')->group(function (): void {
+            Route::middleware(['feature:budgeting', 'permission:manage_accounts'])->prefix('budgets')->name('budgets.')->group(function (): void {
                 Route::get('/', [BudgetController::class, 'index'])->name('index');
                 Route::post('/', [BudgetController::class, 'store'])->name('store');
                 Route::get('{budget}', [BudgetController::class, 'show'])->name('show');
@@ -838,7 +838,7 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── Custom Report Builder ──
-            Route::middleware('permission:view_reports')->prefix('custom-reports')->name('custom-reports.')->group(function (): void {
+            Route::middleware(['feature:custom_reports', 'permission:view_reports'])->prefix('custom-reports')->name('custom-reports.')->group(function (): void {
                 Route::post('execute', [CustomReportController::class, 'execute'])->name('execute');
                 Route::get('/', [CustomReportController::class, 'index'])->name('index');
                 Route::post('/', [CustomReportController::class, 'store'])->name('store');
@@ -849,7 +849,7 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── Scheduled Reports ──
-            Route::middleware('permission:manage_reports')->prefix('scheduled-reports')->name('scheduled-reports.')->group(function (): void {
+            Route::middleware(['feature:reports', 'permission:manage_reports'])->prefix('scheduled-reports')->name('scheduled-reports.')->group(function (): void {
                 Route::get('/', [ScheduledReportController::class, 'index'])->name('index');
                 Route::post('/', [ScheduledReportController::class, 'store'])->name('store');
                 Route::get('{scheduledReport}', [ScheduledReportController::class, 'show'])->name('show');
@@ -866,7 +866,7 @@ Route::prefix('v1')->group(function (): void {
             });
 
             // ── Anomaly Detection ──
-            Route::middleware('permission:view_reports')->prefix('anomalies')->name('anomalies.')->group(function (): void {
+            Route::middleware(['feature:reports', 'permission:view_reports'])->prefix('anomalies')->name('anomalies.')->group(function (): void {
                 Route::get('/', [AnomalyDetectionController::class, 'detectAll'])->name('detect-all');
                 Route::get('duplicates', [AnomalyDetectionController::class, 'duplicates'])->name('duplicates');
                 Route::get('unusual-amounts', [AnomalyDetectionController::class, 'unusualAmounts'])->name('unusual-amounts');
