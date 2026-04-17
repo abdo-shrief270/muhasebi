@@ -80,6 +80,9 @@ class FeatureFlagService
 
     /**
      * Clear all feature flag caches (call after admin updates).
+     *
+     * Invoked automatically by FeatureFlagObserver on save/delete and
+     * may also be called manually from console/admin actions.
      */
     public static function clearCache(): void
     {
@@ -87,7 +90,7 @@ class FeatureFlagService
         foreach ($flags as $flag) {
             Cache::forget("feature_flag:{$flag->key}");
         }
-        // Also clear tenant-specific caches (pattern-based if supported)
-        // For simple cache stores, tenant caches expire after TTL
+        // Per-tenant rollups expire via TTL; most cache stores don't
+        // support pattern deletion so we rely on the 5-minute window.
     }
 }
