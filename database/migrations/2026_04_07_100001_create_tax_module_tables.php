@@ -10,26 +10,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('wht_certificates', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('vendor_id')->constrained('vendors')->cascadeOnDelete();
-            $table->string('certificate_number')->nullable()->unique();
-            $table->date('period_from');
-            $table->date('period_to');
-            $table->decimal('total_payments', 15, 2)->default(0);
-            $table->decimal('total_wht', 15, 2)->default(0);
-            $table->string('status')->default('draft');
-            $table->timestamp('issued_at')->nullable();
-            $table->timestamp('submitted_at')->nullable();
-            $table->jsonb('data')->nullable();
-            $table->timestamps();
-            $table->softDeletes();
-
-            $table->index(['tenant_id', 'vendor_id']);
-            $table->index(['tenant_id', 'status']);
-            $table->index(['tenant_id', 'period_from', 'period_to']);
-        });
+        // wht_certificates is owned by 2026_04_07_600001_create_wht_certificates_table.php
+        // (which has a more complete schema: total_taxable_amount, wht_rate, wht_amount,
+        // notes, created_by, tenant+certificate_number unique). A duplicate create was
+        // landing here ahead of the vendors table (both share timestamp 2026_04_07_100001;
+        // alphabetical order put tax_module before vendors), causing migrate:fresh to fail.
 
         Schema::create('tax_returns', function (Blueprint $table) {
             $table->id();
@@ -74,6 +59,5 @@ return new class extends Migration
     {
         Schema::dropIfExists('tax_adjustments');
         Schema::dropIfExists('tax_returns');
-        Schema::dropIfExists('wht_certificates');
     }
 };
