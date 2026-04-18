@@ -26,10 +26,10 @@ class AdminDashboardService
             ->pluck('count', 'status')
             ->toArray();
 
-        $tenantsActive = $tenantCounts[TenantStatus::Active->value] ?? $tenantCounts[TenantStatus::Active] ?? 0;
-        $tenantsTrial = $tenantCounts[TenantStatus::Trial->value] ?? $tenantCounts[TenantStatus::Trial] ?? 0;
-        $tenantsSuspended = $tenantCounts[TenantStatus::Suspended->value] ?? $tenantCounts[TenantStatus::Suspended] ?? 0;
-        $tenantsCancelled = $tenantCounts[TenantStatus::Cancelled->value] ?? $tenantCounts[TenantStatus::Cancelled] ?? 0;
+        $tenantsActive = $tenantCounts[TenantStatus::Active->value] ?? 0;
+        $tenantsTrial = $tenantCounts[TenantStatus::Trial->value] ?? 0;
+        $tenantsSuspended = $tenantCounts[TenantStatus::Suspended->value] ?? 0;
+        $tenantsCancelled = $tenantCounts[TenantStatus::Cancelled->value] ?? 0;
         $tenantsTotal = array_sum($tenantCounts);
 
         // MRR from active subscriptions

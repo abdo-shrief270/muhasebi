@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('url', 500);
-            $table->string('secret', 64); // HMAC signing secret
+            $table->text('secret'); // HMAC signing secret (encrypted cast — ciphertext is ~200+ chars)
             $table->json('events'); // ['invoice.created', 'payment.received', ...]
             $table->string('description')->nullable();
             $table->boolean('is_active')->default(true);
