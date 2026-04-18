@@ -13,6 +13,7 @@ return new class extends Migration
             $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->foreignId('employee_id')->constrained('employees')->cascadeOnDelete();
             $table->foreignId('salary_component_id')->constrained('salary_components')->cascadeOnDelete();
+            $table->string('calculation_type', 32)->default('fixed');
             $table->decimal('amount', 15, 2)->default(0);
             $table->decimal('percentage', 5, 2)->default(0);
             $table->date('effective_from');

@@ -9,6 +9,7 @@ use App\Domain\Tenant\Models\Tenant;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -26,6 +27,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class LeaveType extends Model
 {
     use BelongsToTenant;
+    use HasFactory;
 
     /** @return array<string, string> */
     protected function casts(): array

@@ -174,6 +174,7 @@ class ClientPortalEnhancedService
             'payment_id' => $paymentData['payment_id'] ?? null,
         ]);
 
+        $installment->loadMissing('plan');
         $plan = $installment->plan;
         $paidCount = $plan->installments()->where('status', InstallmentStatus::Paid)->count();
         $remainingAmount = bcsub(

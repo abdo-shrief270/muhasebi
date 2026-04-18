@@ -19,8 +19,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'salary_component_id',
     'calculation_type',
     'amount',
+    'percentage',
     'effective_from',
     'effective_to',
+    'notes',
 ])]
 class EmployeeSalaryDetail extends Model
 {
@@ -32,6 +34,7 @@ class EmployeeSalaryDetail extends Model
         return [
             'calculation_type' => CalculationType::class,
             'amount' => 'decimal:2',
+            'percentage' => 'decimal:2',
             'effective_from' => 'date',
             'effective_to' => 'date',
         ];
@@ -62,18 +65,20 @@ class EmployeeSalaryDetail extends Model
 
     /**
      * Calculate the effective amount based on the calculation type.
+     * Fixed components return the raw amount; percentage components apply
+     * the stored percentage to the relevant basis (basic or gross salary).
      */
-    public function effectiveAmount(string $basicSalary, string $grossSalary): string
+    public function effectiveAmount(string $basicSalary = '0', string $grossSalary = '0'): string
     {
         return match ($this->calculation_type) {
             CalculationType::Fixed => (string) $this->amount,
             CalculationType::PercentageOfBasic => bcdiv(
-                bcmul((string) $this->amount, $basicSalary, 4),
+                bcmul((string) $this->percentage, $basicSalary, 4),
                 '100',
                 2,
             ),
             CalculationType::PercentageOfGross => bcdiv(
-                bcmul((string) $this->amount, $grossSalary, 4),
+                bcmul((string) $this->percentage, $grossSalary, 4),
                 '100',
                 2,
             ),
