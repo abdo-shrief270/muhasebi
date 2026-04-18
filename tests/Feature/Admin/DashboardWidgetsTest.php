@@ -130,7 +130,7 @@ describe('RevenueHealthOverview', function (): void {
         ]);
 
         $stats = invokeWidgetStats(new RevenueHealthOverview);
-        $failure = $stats[2];
+        $failure = $stats[3];
 
         expect(statLabel($failure))->toBe('Payment failures (30d)')
             ->and(statValue($failure))->toBe('33.3%');

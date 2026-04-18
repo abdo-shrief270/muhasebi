@@ -7,6 +7,7 @@ namespace App\Filament\Admin\Widgets;
 use App\Domain\Subscription\Enums\SubscriptionStatus;
 use App\Domain\Subscription\Models\Subscription;
 use App\Domain\Tenant\Models\Tenant;
+use App\Models\User;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -38,6 +39,11 @@ class PlatformStatsOverview extends StatsOverviewWidget
             ->whereBetween('trial_ends_at', [now(), now()->addDays(7)])
             ->count();
 
+        $activeUsers7d = User::query()
+            ->withoutGlobalScope('tenant')
+            ->where('last_login_at', '>=', now()->subDays(7))
+            ->count();
+
         return [
             Stat::make('Total Tenants', (string) $totalTenants)
                 ->description('All registered tenants')
@@ -63,6 +69,11 @@ class PlatformStatsOverview extends StatsOverviewWidget
                 ->description('Trials expiring within a week')
                 ->descriptionIcon('heroicon-m-clock')
                 ->color($trialsEnding > 0 ? 'warning' : 'gray'),
+
+            Stat::make('Active Users (7d)', (string) $activeUsers7d)
+                ->description('Logged in within last 7 days')
+                ->descriptionIcon('heroicon-m-user-group')
+                ->color($activeUsers7d > 0 ? 'success' : 'gray'),
         ];
     }
 }

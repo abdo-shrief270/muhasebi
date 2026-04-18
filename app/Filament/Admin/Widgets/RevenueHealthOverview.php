@@ -21,9 +21,24 @@ class RevenueHealthOverview extends StatsOverviewWidget
         return [
             $this->churnStat(),
             $this->trialConversionStat(),
+            $this->pastDueStat(),
             $this->paymentFailureStat(),
             $this->refundStat(),
         ];
+    }
+
+    /** Count of subscriptions currently in PastDue — a direct alert on revenue at risk. */
+    private function pastDueStat(): Stat
+    {
+        $count = Subscription::query()
+            ->withoutGlobalScope('tenant')
+            ->where('status', SubscriptionStatus::PastDue)
+            ->count();
+
+        return Stat::make('Past-due subs', (string) $count)
+            ->description($count === 0 ? 'No past-due subscriptions' : 'Needs dunning follow-up')
+            ->descriptionIcon('heroicon-m-exclamation-circle')
+            ->color($count > 0 ? 'danger' : 'success');
     }
 
     /** Approximates monthly churn: subs cancelled in last 30d / subs active at window start. */

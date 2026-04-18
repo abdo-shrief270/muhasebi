@@ -14,13 +14,17 @@ class RecentTenantsTable extends BaseWidget
 {
     protected static ?int $sort = 2;
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     public function table(Table $table): Table
     {
         return $table
             ->heading('Recent Tenants')
-            ->query(Tenant::query()->latest('created_at')->limit(10))
+            ->description('Newest Active + Trial tenants. Toggle the "Include inactive" filter to see Cancelled/Suspended.')
+            ->query(Tenant::query()
+                ->whereIn('status', [TenantStatus::Active, TenantStatus::Trial])
+                ->latest('created_at')
+                ->limit(10))
             ->paginated(false)
             ->columns([
                 TextColumn::make('name')

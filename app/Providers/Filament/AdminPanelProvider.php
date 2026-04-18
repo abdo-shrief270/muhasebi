@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Providers\Filament;
 
 use App\Filament\Admin\Widgets\MrrTrendChart;
+use App\Filament\Admin\Widgets\PlanDistributionDonut;
 use App\Filament\Admin\Widgets\PlatformStatsOverview;
 use App\Filament\Admin\Widgets\RecentFailedPaymentsTable;
 use App\Filament\Admin\Widgets\RecentTenantsTable;
 use App\Filament\Admin\Widgets\RevenueHealthOverview;
+use App\Filament\Admin\Widgets\SignupsTrendChart;
 use App\Filament\Admin\Widgets\TenantStatusDonut;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -60,6 +62,8 @@ class AdminPanelProvider extends PanelProvider
                 RevenueHealthOverview::class,
                 MrrTrendChart::class,
                 TenantStatusDonut::class,
+                PlanDistributionDonut::class,
+                SignupsTrendChart::class,
                 RecentFailedPaymentsTable::class,
             ])
             ->navigationGroups([
