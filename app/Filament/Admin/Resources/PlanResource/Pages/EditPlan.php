@@ -18,4 +18,26 @@ class EditPlan extends EditRecord
             DeleteAction::make(),
         ];
     }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $data['features'] = PlanResource::featuresToCheckboxState($data['features'] ?? null);
+
+        return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        $data['features'] = PlanResource::checkboxStateToFeatures($data['features'] ?? []);
+
+        return $data;
+    }
 }

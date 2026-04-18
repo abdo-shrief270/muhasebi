@@ -131,7 +131,7 @@ class SubscriptionResource extends Resource
                     ->toggleable(),
                 TextColumn::make('price')
                     ->label('Price')
-                    ->money('EGP', true)
+                    ->money('EGP')
                     ->sortable(),
                 TextColumn::make('current_period_start')
                     ->label('Starts')

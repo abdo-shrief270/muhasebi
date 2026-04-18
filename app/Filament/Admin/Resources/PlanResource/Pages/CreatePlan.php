@@ -10,4 +10,15 @@ use Filament\Resources\Pages\CreateRecord;
 class CreatePlan extends CreateRecord
 {
     protected static string $resource = PlanResource::class;
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        $data['features'] = PlanResource::checkboxStateToFeatures($data['features'] ?? []);
+
+        return $data;
+    }
 }

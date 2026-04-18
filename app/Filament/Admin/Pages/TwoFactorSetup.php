@@ -10,7 +10,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Schema;
-use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Session;
 
 /**
@@ -41,8 +40,6 @@ class TwoFactorSetup extends Page
 
     public ?string $secret = null;
 
-    public ?string $qrUri = null;
-
     /** @var array<int, string>|null */
     public ?array $recoveryCodes = null;
 
@@ -62,11 +59,9 @@ class TwoFactorSetup extends Page
             return;
         }
 
-        // Re-use the in-flight secret so a reload doesn't invalidate the QR.
+        // Re-use the in-flight secret so a reload doesn't invalidate enrollment.
         $this->secret = Session::get('2fa.setup.secret') ?? TwoFactorService::generateSecret();
         Session::put('2fa.setup.secret', $this->secret);
-
-        $this->qrUri = TwoFactorService::getQrUri($user?->email ?? 'admin', $this->secret);
     }
 
     public function form(Schema $schema): Schema
@@ -182,21 +177,4 @@ class TwoFactorSetup extends Page
         return $result;
     }
 
-    public function qrSvg(): View|string
-    {
-        if (! $this->qrUri) {
-            return '';
-        }
-
-        // Filament v5 pulls chillerlan/php-qrcode in as a transitive dep.
-        $options = new \chillerlan\QRCode\QROptions([
-            'outputType' => \chillerlan\QRCode\QRCode::OUTPUT_MARKUP_SVG,
-            'imageBase64' => false,
-            'eccLevel' => \chillerlan\QRCode\Common\EccLevel::M,
-            'scale' => 6,
-            'cssClass' => 'qr-code',
-        ]);
-
-        return (new \chillerlan\QRCode\QRCode($options))->render($this->qrUri);
-    }
 }

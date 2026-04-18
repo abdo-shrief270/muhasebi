@@ -120,24 +120,7 @@ class PlanResource extends Resource
                         ->descriptions(self::featureDescriptions())
                         ->columns(3)
                         ->bulkToggleable()
-                        ->searchable()
-                        ->dehydrateStateUsing(function ($state): array {
-                            $selected = is_array($state) ? $state : [];
-                            $all = array_keys(config('features.catalog', []));
-                            $out = [];
-                            foreach ($all as $key) {
-                                $out[$key] = in_array($key, $selected, true);
-                            }
-
-                            return $out;
-                        })
-                        ->formatStateUsing(function ($state): array {
-                            if (! is_array($state)) {
-                                return [];
-                            }
-
-                            return array_keys(array_filter($state, fn ($v): bool => (bool) $v));
-                        }),
+                        ->searchable(),
                 ]),
         ]);
     }
@@ -162,11 +145,11 @@ class PlanResource extends Resource
                     ->color('gray'),
                 TextColumn::make('price_monthly')
                     ->label('Monthly')
-                    ->money('EGP', true)
+                    ->money('EGP')
                     ->sortable(),
                 TextColumn::make('price_annual')
                     ->label('Annual')
-                    ->money('EGP', true)
+                    ->money('EGP')
                     ->sortable(),
                 TextColumn::make('trial_days')
                     ->label('Trial (d)')
@@ -200,6 +183,55 @@ class PlanResource extends Resource
             'create' => Pages\CreatePlan::route('/create'),
             'edit' => Pages\EditPlan::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * Hydrate the DB `features` JSON (associative `{clients: true}` shape) into
+     * the flat list of catalog keys that Filament's CheckboxList expects.
+     * Unknown keys (e.g. removed from catalog) are dropped so validation passes.
+     *
+     * @param  array<string, mixed>|list<string>|null  $stored
+     * @return list<string>
+     */
+    public static function featuresToCheckboxState(?array $stored): array
+    {
+        if (! is_array($stored)) {
+            return [];
+        }
+
+        $catalog = array_keys(config('features.catalog', []));
+
+        // Support both shapes: ['clients' => true, ...] and ['clients', 'documents'].
+        $selected = [];
+        foreach ($stored as $key => $value) {
+            if (is_int($key)) {
+                if (is_string($value)) {
+                    $selected[] = $value;
+                }
+            } elseif ((bool) $value) {
+                $selected[] = (string) $key;
+            }
+        }
+
+        return array_values(array_intersect($selected, $catalog));
+    }
+
+    /**
+     * Convert the CheckboxList state (flat list) back into the associative
+     * `{key: bool}` shape stored in the `features` JSON column.
+     *
+     * @param  list<string>|null  $selected
+     * @return array<string, bool>
+     */
+    public static function checkboxStateToFeatures(?array $selected): array
+    {
+        $selected = is_array($selected) ? $selected : [];
+        $out = [];
+        foreach (array_keys(config('features.catalog', [])) as $key) {
+            $out[$key] = in_array($key, $selected, true);
+        }
+
+        return $out;
     }
 
     /** @return array<string, string> */
