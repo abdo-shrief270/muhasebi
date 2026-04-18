@@ -10,18 +10,17 @@ use Illuminate\Support\Facades\App;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Forces the admin panel into Arabic locale by default, overridable per-user via
- * `users.locale` (which is set by users on their own profile). Filament ships
- * Arabic translations for its chrome (buttons, pagination, modals), and
- * lang/ar/admin.php covers our resource labels and nav groups. Arabic locale
- * also flips the HTML direction to RTL via Filament's layout/direction key.
+ * Sets the admin panel locale. Defaults to English (LTR); individual users can
+ * switch themselves to Arabic (RTL) via `users.locale` on their profile.
+ * Filament ships chrome translations for both locales and flips HTML direction
+ * automatically via its layout/direction translation key.
  */
 class SetAdminLocale
 {
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
-        $locale = $user?->locale ?? 'ar';
+        $locale = $user?->locale ?? 'en';
 
         if (in_array($locale, ['ar', 'en'], true)) {
             App::setLocale($locale);
