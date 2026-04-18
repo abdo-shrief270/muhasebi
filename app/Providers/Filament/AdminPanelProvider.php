@@ -70,6 +70,7 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make('Tenancy'),
                 NavigationGroup::make('Billing'),
                 NavigationGroup::make('Investors'),
+                NavigationGroup::make('Content'),
                 NavigationGroup::make('Platform'),
             ])
             ->middleware([
