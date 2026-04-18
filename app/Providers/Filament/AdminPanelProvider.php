@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
+use App\Filament\Admin\Widgets\MrrTrendChart;
+use App\Filament\Admin\Widgets\PlatformStatsOverview;
+use App\Filament\Admin\Widgets\RecentFailedPaymentsTable;
+use App\Filament\Admin\Widgets\RecentTenantsTable;
+use App\Filament\Admin\Widgets\RevenueHealthOverview;
+use App\Filament\Admin\Widgets\TenantStatusDonut;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use App\Filament\Admin\Widgets\PlatformStatsOverview;
-use App\Filament\Admin\Widgets\RecentTenantsTable;
 use Filament\Navigation\NavigationGroup;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
@@ -53,6 +57,10 @@ class AdminPanelProvider extends PanelProvider
                 AccountWidget::class,
                 PlatformStatsOverview::class,
                 RecentTenantsTable::class,
+                RevenueHealthOverview::class,
+                MrrTrendChart::class,
+                TenantStatusDonut::class,
+                RecentFailedPaymentsTable::class,
             ])
             ->navigationGroups([
                 NavigationGroup::make('Tenancy'),

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Widgets;
 
-use App\Domain\Shared\Enums\TenantStatus;
 use App\Domain\Subscription\Enums\SubscriptionStatus;
 use App\Domain\Subscription\Models\Subscription;
 use App\Domain\Tenant\Models\Tenant;
@@ -50,9 +49,14 @@ class PlatformStatsOverview extends StatsOverviewWidget
                 ->descriptionIcon('heroicon-m-check-badge')
                 ->color('success'),
 
-            Stat::make('MRR', 'EGP ' . number_format($mrr, 2))
+            Stat::make('MRR', 'EGP '.number_format($mrr, 2))
                 ->description('Monthly Recurring Revenue')
                 ->descriptionIcon('heroicon-m-banknotes')
+                ->color('info'),
+
+            Stat::make('ARR', 'EGP '.number_format($mrr * 12, 2))
+                ->description('Annual Recurring Revenue (MRR × 12)')
+                ->descriptionIcon('heroicon-m-chart-bar')
                 ->color('info'),
 
             Stat::make('Trials Ending (7d)', (string) $trialsEnding)
