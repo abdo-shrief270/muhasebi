@@ -36,6 +36,16 @@ class ContactSubmissionResource extends Resource
 
     protected static ?int $navigationSort = 100;
 
+    public static function getModelLabel(): string
+    {
+        return (string) __('admin.resources.contact_submission.singular');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return (string) __('admin.resources.contact_submission.plural');
+    }
+
     public static function getNavigationBadge(): ?string
     {
         $unread = static::getEloquentQuery()->where('is_read', false)->count();

@@ -36,7 +36,15 @@ class WebhookEndpointResource extends Resource
 
     protected static ?int $navigationSort = 80;
 
-    protected static ?string $modelLabel = 'Webhook Endpoint';
+    public static function getModelLabel(): string
+    {
+        return (string) __('admin.resources.webhook_endpoint.singular');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return (string) __('admin.resources.webhook_endpoint.plural');
+    }
 
     public static function getEloquentQuery(): Builder
     {

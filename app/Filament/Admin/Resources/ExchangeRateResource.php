@@ -32,6 +32,16 @@ class ExchangeRateResource extends Resource
 
     protected static ?int $navigationSort = 60;
 
+    public static function getModelLabel(): string
+    {
+        return (string) __('admin.resources.exchange_rate.singular');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return (string) __('admin.resources.exchange_rate.plural');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([

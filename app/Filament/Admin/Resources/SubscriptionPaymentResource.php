@@ -37,9 +37,15 @@ class SubscriptionPaymentResource extends Resource
 
     protected static ?int $navigationSort = 40;
 
-    protected static ?string $modelLabel = 'Payment';
+    public static function getModelLabel(): string
+    {
+        return (string) __('admin.resources.subscription_payment.singular');
+    }
 
-    protected static ?string $pluralModelLabel = 'Subscription Payments';
+    public static function getPluralModelLabel(): string
+    {
+        return (string) __('admin.resources.subscription_payment.plural');
+    }
 
     public static function getNavigationBadge(): ?string
     {

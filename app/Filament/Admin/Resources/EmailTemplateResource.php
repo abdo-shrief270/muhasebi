@@ -32,6 +32,16 @@ class EmailTemplateResource extends Resource
 
     protected static ?int $navigationSort = 90;
 
+    public static function getModelLabel(): string
+    {
+        return (string) __('admin.resources.email_template.singular');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return (string) __('admin.resources.email_template.plural');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([

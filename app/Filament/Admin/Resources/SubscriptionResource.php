@@ -38,6 +38,16 @@ class SubscriptionResource extends Resource
 
     protected static ?int $navigationSort = 30;
 
+    public static function getModelLabel(): string
+    {
+        return (string) __('admin.resources.subscription.singular');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return (string) __('admin.resources.subscription.plural');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([

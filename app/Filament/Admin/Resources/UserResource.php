@@ -39,6 +39,16 @@ class UserResource extends Resource
 
     protected static ?int $navigationSort = 40;
 
+    public static function getModelLabel(): string
+    {
+        return (string) __('admin.resources.user.singular');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return (string) __('admin.resources.user.plural');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([

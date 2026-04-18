@@ -6,6 +6,7 @@ namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\AuditLogResource\Pages;
 use BackedEnum;
+use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -14,7 +15,6 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Filament\Forms;
 use Illuminate\Database\Eloquent\Builder;
 use Spatie\Activitylog\Models\Activity;
 
@@ -22,15 +22,21 @@ class AuditLogResource extends Resource
 {
     protected static ?string $model = Activity::class;
 
-    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Platform';
-
-    protected static ?string $modelLabel = 'Audit Log Entry';
-
-    protected static ?string $pluralModelLabel = 'Audit Log';
+    protected static string|\UnitEnum|null $navigationGroup = 'Platform';
 
     protected static ?int $navigationSort = 60;
+
+    public static function getModelLabel(): string
+    {
+        return (string) __('admin.resources.audit_log.singular');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return (string) __('admin.resources.audit_log.plural');
+    }
 
     public static function form(Schema $schema): Schema
     {

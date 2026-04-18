@@ -32,6 +32,16 @@ class TestimonialResource extends Resource
 
     protected static ?int $navigationSort = 160;
 
+    public static function getModelLabel(): string
+    {
+        return (string) __('admin.resources.testimonial.singular');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return (string) __('admin.resources.testimonial.plural');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([

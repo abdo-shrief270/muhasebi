@@ -34,6 +34,16 @@ class InvestorResource extends Resource
 
     protected static ?int $navigationSort = 80;
 
+    public static function getModelLabel(): string
+    {
+        return (string) __('admin.resources.investor.singular');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return (string) __('admin.resources.investor.plural');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([

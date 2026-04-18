@@ -24,13 +24,23 @@ class PlanResource extends Resource
 {
     protected static ?string $model = Plan::class;
 
-    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedSquares2x2;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSquares2x2;
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Billing';
+    protected static string|\UnitEnum|null $navigationGroup = 'Billing';
 
     protected static ?string $recordTitleAttribute = 'name_en';
 
     protected static ?int $navigationSort = 20;
+
+    public static function getModelLabel(): string
+    {
+        return (string) __('admin.resources.plan.singular');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return (string) __('admin.resources.plan.plural');
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -240,7 +250,7 @@ class PlanResource extends Resource
         $catalog = config('features.catalog', []);
         $options = [];
         foreach ($catalog as $key => $meta) {
-            $options[$key] = ($meta['name_en'] ?? $key) . ' · ' . ($meta['name_ar'] ?? '');
+            $options[$key] = ($meta['name_en'] ?? $key).' · '.($meta['name_ar'] ?? '');
         }
 
         return $options;
@@ -254,7 +264,7 @@ class PlanResource extends Resource
         foreach ($catalog as $key => $meta) {
             $category = $meta['category'] ?? 'module';
             $group = $meta['group'] ?? '';
-            $descriptions[$key] = ucfirst($category) . ($group ? " · {$group}" : '');
+            $descriptions[$key] = ucfirst($category).($group ? " · {$group}" : '');
         }
 
         return $descriptions;

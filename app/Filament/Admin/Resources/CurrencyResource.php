@@ -32,6 +32,16 @@ class CurrencyResource extends Resource
 
     protected static ?int $navigationSort = 50;
 
+    public static function getModelLabel(): string
+    {
+        return (string) __('admin.resources.currency.singular');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return (string) __('admin.resources.currency.plural');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([

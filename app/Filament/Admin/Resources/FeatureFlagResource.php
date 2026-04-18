@@ -26,13 +26,23 @@ class FeatureFlagResource extends Resource
 {
     protected static ?string $model = FeatureFlag::class;
 
-    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedFlag;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFlag;
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Platform';
+    protected static string|\UnitEnum|null $navigationGroup = 'Platform';
 
     protected static ?string $recordTitleAttribute = 'key';
 
     protected static ?int $navigationSort = 50;
+
+    public static function getModelLabel(): string
+    {
+        return (string) __('admin.resources.feature_flag.singular');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return (string) __('admin.resources.feature_flag.plural');
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -160,7 +170,7 @@ class FeatureFlagResource extends Resource
         $catalog = config('features.catalog', []);
         $options = [];
         foreach ($catalog as $key => $meta) {
-            $options[$key] = ($meta['name_en'] ?? $key) . " ({$key})";
+            $options[$key] = ($meta['name_en'] ?? $key)." ({$key})";
         }
 
         return $options;

@@ -35,6 +35,16 @@ class BlogPostResource extends Resource
 
     protected static ?int $navigationSort = 120;
 
+    public static function getModelLabel(): string
+    {
+        return (string) __('admin.resources.blog_post.singular');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return (string) __('admin.resources.blog_post.plural');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([

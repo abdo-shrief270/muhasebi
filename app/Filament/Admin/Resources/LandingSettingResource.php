@@ -30,6 +30,16 @@ class LandingSettingResource extends Resource
 
     protected static ?int $navigationSort = 170;
 
+    public static function getModelLabel(): string
+    {
+        return (string) __('admin.resources.landing_setting.singular');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return (string) __('admin.resources.landing_setting.plural');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([

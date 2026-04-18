@@ -12,6 +12,7 @@ use App\Filament\Admin\Widgets\RecentTenantsTable;
 use App\Filament\Admin\Widgets\RevenueHealthOverview;
 use App\Filament\Admin\Widgets\SignupsTrendChart;
 use App\Filament\Admin\Widgets\TenantStatusDonut;
+use App\Http\Middleware\SetAdminLocale;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -39,7 +40,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->passwordReset()
-            ->brandName('Muhasebi · SuperAdmin')
+            ->brandName(fn (): string => (string) __('admin.brand'))
             ->colors([
                 'primary' => Color::Indigo,
                 'danger' => Color::Rose,
@@ -67,11 +68,11 @@ class AdminPanelProvider extends PanelProvider
                 RecentFailedPaymentsTable::class,
             ])
             ->navigationGroups([
-                NavigationGroup::make('Tenancy'),
-                NavigationGroup::make('Billing'),
-                NavigationGroup::make('Investors'),
-                NavigationGroup::make('Content'),
-                NavigationGroup::make('Platform'),
+                NavigationGroup::make('Tenancy')->label(fn (): string => (string) __('admin.nav_groups.tenancy')),
+                NavigationGroup::make('Billing')->label(fn (): string => (string) __('admin.nav_groups.billing')),
+                NavigationGroup::make('Investors')->label(fn (): string => (string) __('admin.nav_groups.investors')),
+                NavigationGroup::make('Content')->label(fn (): string => (string) __('admin.nav_groups.content')),
+                NavigationGroup::make('Platform')->label(fn (): string => (string) __('admin.nav_groups.platform')),
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -83,6 +84,7 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                SetAdminLocale::class,
                 'admin.login.throttle',
                 'admin.audit',
             ])

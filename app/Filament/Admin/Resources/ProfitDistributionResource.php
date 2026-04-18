@@ -38,9 +38,15 @@ class ProfitDistributionResource extends Resource
 
     protected static ?int $navigationSort = 90;
 
-    protected static ?string $modelLabel = 'Distribution';
+    public static function getModelLabel(): string
+    {
+        return (string) __('admin.resources.profit_distribution.singular');
+    }
 
-    protected static ?string $pluralModelLabel = 'Profit Distributions';
+    public static function getPluralModelLabel(): string
+    {
+        return (string) __('admin.resources.profit_distribution.plural');
+    }
 
     public static function getEloquentQuery(): Builder
     {

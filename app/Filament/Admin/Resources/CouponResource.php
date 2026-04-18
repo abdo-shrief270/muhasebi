@@ -35,6 +35,16 @@ class CouponResource extends Resource
 
     protected static ?int $navigationSort = 70;
 
+    public static function getModelLabel(): string
+    {
+        return (string) __('admin.resources.coupon.singular');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return (string) __('admin.resources.coupon.plural');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
