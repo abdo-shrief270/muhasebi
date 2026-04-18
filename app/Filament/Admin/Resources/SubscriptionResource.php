@@ -4,16 +4,20 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Domain\Subscription\Enums\DiscountType;
 use App\Domain\Subscription\Enums\SubscriptionStatus;
+use App\Domain\Subscription\Models\Coupon;
 use App\Domain\Subscription\Models\Plan;
 use App\Domain\Subscription\Models\Subscription;
 use App\Filament\Admin\Resources\SubscriptionResource\Pages;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -21,14 +25,16 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class SubscriptionResource extends Resource
 {
     protected static ?string $model = Subscription::class;
 
-    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedCreditCard;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCreditCard;
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Billing';
+    protected static string|\UnitEnum|null $navigationGroup = 'Billing';
 
     protected static ?int $navigationSort = 30;
 
@@ -159,6 +165,116 @@ class SubscriptionResource extends Resource
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                Action::make('extend_trial')
+                    ->label('Extend trial')
+                    ->icon(Heroicon::OutlinedClock)
+                    ->color('warning')
+                    ->visible(fn (Subscription $record): bool => $record->status === SubscriptionStatus::Trial)
+                    ->schema([
+                        Forms\Components\TextInput::make('days')
+                            ->label('Extra days')
+                            ->numeric()
+                            ->minValue(1)
+                            ->maxValue(90)
+                            ->required()
+                            ->default(7),
+                        Forms\Components\Textarea::make('reason')
+                            ->label('Reason')
+                            ->required()
+                            ->minLength(5)
+                            ->rows(2),
+                    ])
+                    ->action(function (Subscription $record, array $data): void {
+                        $days = (int) $data['days'];
+                        $base = $record->trial_ends_at ?? now();
+                        $newEnds = $base->copy()->addDays($days);
+
+                        $metadata = $record->metadata ?? [];
+                        $metadata['trial_extensions'][] = [
+                            'days' => $days,
+                            'reason' => $data['reason'],
+                            'by' => Auth::id(),
+                            'at' => now()->toIso8601String(),
+                        ];
+
+                        $record->forceFill([
+                            'trial_ends_at' => $newEnds,
+                            'metadata' => $metadata,
+                        ])->save();
+
+                        Notification::make()
+                            ->title("Trial extended by {$days} days")
+                            ->body('New end: '.$newEnds->format('Y-m-d H:i'))
+                            ->success()
+                            ->send();
+                    }),
+                Action::make('apply_coupon')
+                    ->label('Apply coupon')
+                    ->icon(Heroicon::OutlinedTicket)
+                    ->color('primary')
+                    ->visible(fn (Subscription $record): bool => in_array(
+                        $record->status,
+                        [SubscriptionStatus::Trial, SubscriptionStatus::Active],
+                        true
+                    ))
+                    ->schema([
+                        Forms\Components\Select::make('coupon_id')
+                            ->label('Coupon')
+                            ->options(fn (): array => Coupon::query()
+                                ->redeemable()
+                                ->pluck('code', 'id')
+                                ->all())
+                            ->searchable()
+                            ->required(),
+                    ])
+                    ->action(function (Subscription $record, array $data): void {
+                        $coupon = Coupon::query()->findOrFail($data['coupon_id']);
+
+                        if (! $coupon->appliesToPlan((int) $record->plan_id)) {
+                            Notification::make()
+                                ->title('Coupon not valid for this plan')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        $originalPrice = (float) $record->price;
+                        $discount = $coupon->discountFor($originalPrice);
+                        $newPrice = round(max(0, $originalPrice - $discount), 2);
+
+                        DB::transaction(function () use ($record, $coupon, $originalPrice, $discount, $newPrice): void {
+                            $metadata = $record->metadata ?? [];
+                            $metadata['coupon_applications'][] = [
+                                'coupon_id' => $coupon->id,
+                                'coupon_code' => $coupon->code,
+                                'discount_type' => $coupon->discount_type->value,
+                                'discount_value' => (float) $coupon->discount_value,
+                                'original_price' => $originalPrice,
+                                'discount' => $discount,
+                                'new_price' => $newPrice,
+                                'by' => Auth::id(),
+                                'at' => now()->toIso8601String(),
+                            ];
+
+                            $record->forceFill([
+                                'price' => $newPrice,
+                                'metadata' => $metadata,
+                            ])->save();
+
+                            $coupon->increment('used_count');
+                        });
+
+                        $label = $coupon->discount_type === DiscountType::Percent
+                            ? number_format((float) $coupon->discount_value, 2).'%'
+                            : number_format((float) $coupon->discount_value, 2).' '.$coupon->currency;
+
+                        Notification::make()
+                            ->title("Coupon {$coupon->code} applied ({$label})")
+                            ->body("Price: {$originalPrice} → {$newPrice}")
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
