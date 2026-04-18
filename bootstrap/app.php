@@ -22,6 +22,7 @@ use App\Http\Middleware\IdempotencyKey;
 use App\Http\Middleware\IdentifyTenant;
 use App\Http\Middleware\LogAdminActivity;
 use App\Http\Middleware\LogApiRequest;
+use App\Http\Middleware\LogImpersonatedApiRequests;
 use App\Http\Middleware\MeterApiUsage;
 use App\Http\Middleware\PreventDuplicateRequests;
 use App\Http\Middleware\SecurityHeaders;
@@ -81,6 +82,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.2fa' => EnforceSuperAdmin2fa::class,
             'admin.login.throttle' => ThrottleAdminLogin::class,
             'deprecated' => Deprecated::class,
+            'impersonation.log' => LogImpersonatedApiRequests::class,
         ]);
 
         $middleware->priority([

@@ -6,32 +6,34 @@ namespace App\Filament\Admin\Resources;
 
 use App\Domain\Shared\Enums\TenantStatus;
 use App\Domain\Subscription\Models\Plan;
+use App\Domain\Subscription\Models\Subscription;
 use App\Domain\Tenant\Models\Tenant;
 use App\Filament\Admin\Resources\TenantResource\Pages;
+use App\Filament\Admin\Resources\TenantResource\RelationManagers\FeatureOverridesRelationManager;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class TenantResource extends Resource
 {
     protected static ?string $model = Tenant::class;
 
-    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedBuildingOffice2;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice2;
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Tenancy';
+    protected static string|\UnitEnum|null $navigationGroup = 'Tenancy';
 
     protected static ?string $recordTitleAttribute = 'name';
 
@@ -124,7 +126,7 @@ class TenantResource extends Resource
                 TextColumn::make('plan')
                     ->label('Plan')
                     ->state(function (Tenant $record): ?string {
-                        $sub = \App\Domain\Subscription\Models\Subscription::query()
+                        $sub = Subscription::query()
                             ->withoutGlobalScope('tenant')
                             ->where('tenant_id', $record->id)
                             ->latest('id')
@@ -149,6 +151,11 @@ class TenantResource extends Resource
                     ->label('Trial Ends')
                     ->dateTime('Y-m-d')
                     ->toggleable()
+                    ->sortable(),
+                TextColumn::make('suspended_at')
+                    ->label('Suspended At')
+                    ->dateTime('Y-m-d H:i')
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->sortable(),
                 TextColumn::make('created_at')
                     ->label('Created')
@@ -181,17 +188,49 @@ class TenantResource extends Resource
                 Action::make('suspend')
                     ->label('Suspend')
                     ->icon(Heroicon::OutlinedNoSymbol)
-                    ->color('warning')
+                    ->color('danger')
                     ->visible(fn (Tenant $record): bool => $record->status !== TenantStatus::Suspended)
-                    ->requiresConfirmation()
-                    ->action(fn (Tenant $record) => $record->update(['status' => TenantStatus::Suspended])),
-                Action::make('activate')
-                    ->label('Activate')
+                    ->schema([
+                        Forms\Components\Textarea::make('reason')
+                            ->label('Suspension Reason')
+                            ->required()
+                            ->minLength(10)
+                            ->rows(3),
+                    ])
+                    ->action(function (Tenant $record, array $data): void {
+                        $record->forceFill([
+                            'status' => TenantStatus::Suspended,
+                            'suspended_at' => now(),
+                            'suspended_by' => Auth::id(),
+                            'suspension_reason' => $data['reason'],
+                        ])->save();
+
+                        Notification::make()
+                            ->title('Tenant suspended')
+                            ->success()
+                            ->send();
+                    }),
+                Action::make('reactivate')
+                    ->label('Reactivate')
                     ->icon(Heroicon::OutlinedCheckCircle)
                     ->color('success')
-                    ->visible(fn (Tenant $record): bool => $record->status !== TenantStatus::Active)
+                    ->visible(fn (Tenant $record): bool => $record->status === TenantStatus::Suspended)
                     ->requiresConfirmation()
-                    ->action(fn (Tenant $record) => $record->update(['status' => TenantStatus::Active])),
+                    ->modalHeading('Reactivate tenant')
+                    ->modalDescription('Reactivate this tenant? They will regain access immediately.')
+                    ->action(function (Tenant $record): void {
+                        $record->forceFill([
+                            'status' => TenantStatus::Active,
+                            'suspended_at' => null,
+                            'suspended_by' => null,
+                            'suspension_reason' => null,
+                        ])->save();
+
+                        Notification::make()
+                            ->title('Tenant reactivated')
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -208,6 +247,14 @@ class TenantResource extends Resource
             'create' => Pages\CreateTenant::route('/create'),
             'view' => Pages\ViewTenant::route('/{record}'),
             'edit' => Pages\EditTenant::route('/{record}/edit'),
+        ];
+    }
+
+    /** @return array<int, class-string> */
+    public static function getRelations(): array
+    {
+        return [
+            FeatureOverridesRelationManager::class,
         ];
     }
 }

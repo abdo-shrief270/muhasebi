@@ -42,6 +42,9 @@ use Spatie\Activitylog\Support\LogOptions;
     'favicon_path',
     'social_links',
     'custom_css',
+    'suspension_reason',
+    'suspended_at',
+    'suspended_by',
 ])]
 
 class Tenant extends Model
@@ -65,6 +68,7 @@ class Tenant extends Model
             'is_landing_page_active' => 'boolean',
             'social_links' => 'array',
             'custom_css' => 'array',
+            'suspended_at' => 'datetime',
         ];
     }
     // ──────────────────────────────────────
@@ -128,7 +132,7 @@ class Tenant extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'slug', 'status', 'settings'])
+            ->logOnly(['name', 'slug', 'status', 'settings', 'suspension_reason', 'suspended_at', 'suspended_by'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }

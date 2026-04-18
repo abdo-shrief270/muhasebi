@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Domain\Admin\Services\ImpersonationService;
 use App\Domain\Shared\Enums\UserRole;
 use App\Domain\Tenant\Models\Tenant;
 use App\Filament\Admin\Resources\UserResource\Pages;
 use App\Models\User;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -22,14 +25,15 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
-    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedUsers;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Platform';
+    protected static string|\UnitEnum|null $navigationGroup = 'Platform';
 
     protected static ?string $recordTitleAttribute = 'name';
 
@@ -146,6 +150,49 @@ class UserResource extends Resource
             ])
             ->recordActions([
                 EditAction::make(),
+                Action::make('impersonate')
+                    ->label('Impersonate')
+                    ->icon(Heroicon::OutlinedKey)
+                    ->color('danger')
+                    ->visible(fn (User $record): bool => auth()->user()?->isSuperAdmin() === true
+                        && ! $record->isSuperAdmin()
+                        && $record->is_active)
+                    ->requiresConfirmation()
+                    ->modalHeading('Impersonate user')
+                    ->modalDescription('You are about to generate a 1-hour API token as this user. This is logged and auditable.')
+                    ->modalSubmitActionLabel('Generate token')
+                    ->schema([
+                        Forms\Components\Textarea::make('reason')
+                            ->label('Reason')
+                            ->placeholder('Why do you need to impersonate this user? This is logged.')
+                            ->required()
+                            ->minLength(10)
+                            ->rows(3),
+                    ])
+                    ->action(function (User $record, array $data): void {
+                        try {
+                            $token = app(ImpersonationService::class)
+                                ->impersonateUser($record, (string) $data['reason']);
+                        } catch (AuthorizationException $e) {
+                            Notification::make()
+                                ->title('Impersonation denied')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->title('Impersonation token generated')
+                            ->body(view('filament.admin.notifications.impersonation-token', [
+                                'token' => $token,
+                                'user' => $record,
+                            ])->render())
+                            ->success()
+                            ->persistent()
+                            ->send();
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
