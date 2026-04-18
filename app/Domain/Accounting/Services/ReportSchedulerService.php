@@ -144,7 +144,7 @@ class ReportSchedulerService
 
         foreach ($report->recipients as $email) {
             Mail::to($email)->send(new ScheduledReportMail(
-                subject: $subject,
+                mailSubject: $subject,
                 reportName: $this->reportTypeLabel($report->report_type),
                 attachmentContent: $pdfContent,
                 attachmentFilename: $filename,
@@ -301,7 +301,7 @@ class ReportSchedulerService
             );
         }
 
-        return "تقرير {$this->reportTypeLabel($report->report_type)} - " . now()->format('Y-m-d');
+        return "تقرير {$this->reportTypeLabel($report->report_type)} - ".now()->format('Y-m-d');
     }
 
     private function reportTypeLabel(string $type): string

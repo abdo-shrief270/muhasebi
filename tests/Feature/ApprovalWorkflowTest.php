@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Domain\Workflow\Enums\ApprovalStatus;
-use App\Domain\Workflow\Enums\ApproverType;
-use App\Domain\Workflow\Models\ApprovalRequest;
-use App\Domain\Workflow\Models\ApprovalWorkflow;
 use App\Models\User;
 
 beforeEach(function (): void {
@@ -294,7 +290,7 @@ describe('Pending list', function (): void {
                 'steps' => [
                     ['approver_type' => 'user', 'approver_id' => $otherUser->id],
                 ],
-            })
+            ])
             ->assertCreated();
 
         $this->withHeader('X-Tenant', $this->tenant->slug)
