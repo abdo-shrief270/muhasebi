@@ -50,14 +50,13 @@ Known gap: the actual event-processing logic in `ECommerceService::webhookHandle
 
 ## P1 — Gaps blocking clean frontend integration
 
-### `/v1/me` missing `tenant.features` (§9.1)
-The machinery (`FeatureFlagService::getAllForTenant`) exists but isn't wired into the `/me` response. Frontend has to fetch `/v1/subscription` and misses per-tenant overrides entirely.
+### ~~`/v1/me` missing `tenant.features`~~ ✅ Done
+`/v1/me` now returns `data.tenant.features` as a `{key: bool}` map covering every flag defined in the `feature_flags` table, with per-tenant overrides merged in. The plan id is resolved from the tenant's active (or trial) subscription, so plan-bundled flags light up correctly.
 
-- [ ] In `AuthController::me()` (app/Domain/Auth/Controllers/AuthController.php:78-112), add to the `tenant` payload:
-  ```php
-  'features' => $tenant ? FeatureFlagService::getAllForTenant($tenant->id, $tenant->plan_id ?? null) : [],
-  ```
-- [ ] Verify it doesn't cause N+1 (cache the result per tenant, 60s).
+- [x] `AuthController::me()` calls `FeatureFlagService::getAllForTenant($tenantId, $planId)` via a private helper
+- [x] `FeatureFlagService` already caches the merged map per tenant for 5 minutes — `/me` polling won't thrash the DB
+- [x] Regression test in `AuthTest.php` asserts the map structure + merge semantics with one globally-enabled and one globally-disabled flag
+- [x] Docs updated in `docs/features/01-authentication.md` — noted that `features` is included on `tenant`
 
 ### Permissions missing from backend (§10.1)
 Frontend references these; backend doesn't define them. Decide per slug:

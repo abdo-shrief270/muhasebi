@@ -66,19 +66,45 @@
 **Response 200:** `{ "message": "Logged out" }`
 
 ### `GET /v1/me`
-**Purpose:** fetch the authenticated user, tenant, roles, permissions, and enabled features.
+**Purpose:** fetch the authenticated user plus their tenant (with merged feature-flag state), roles, and permissions.
 **Middleware:** `auth:sanctum`
 **Response 200:**
 ```json
 {
   "data": {
-    "user": { "id": 1, "name": "...", "email": "...", "locale": "ar", "timezone": "Africa/Cairo" },
-    "tenant": { "id": 1, "plan": "...", "features": ["invoicing","payroll","..."] },
-    "permissions": ["manage_invoices","view_reports"],
-    "two_factor_enabled": false
+    "id": 1,
+    "name": "...",
+    "email": "...",
+    "phone": "...",
+    "role": "admin",
+    "locale": "en",
+    "tenant_id": 1,
+    "timezone": "Africa/Cairo",
+    "is_active": true,
+    "email_verified_at": "2026-01-01T00:00:00.000000Z",
+    "last_login_at": "2026-04-19T10:30:00.000000Z",
+    "permissions": ["manage_invoices", "view_reports"],
+    "spatie_roles": ["tenant_admin"],
+    "tenant": {
+      "id": 1,
+      "name": "Acme Accounting",
+      "slug": "acme",
+      "email": "...",
+      "phone": "...",
+      "logo_path": "...",
+      "tagline": "...",
+      "primary_color": "#...",
+      "secondary_color": "#...",
+      "city": "Cairo",
+      "features": { "invoicing": true, "payroll": true, "ecommerce": false, ... }
+    }
   }
 }
 ```
+**Notes on `tenant.features`:**
+- Every key defined in the `feature_flags` table appears in the map, even when its value is `false`. Frontend should treat a missing key as "unknown flag — default off".
+- Per-tenant overrides are already merged in (disabled-for-tenant wins over plan-enabled wins over global).
+- The map is cached for 5 minutes per tenant inside `FeatureFlagService`; changes made via the admin panel propagate within that window.
 
 ### `PUT /v1/profile`
 **Purpose:** update the user's profile.

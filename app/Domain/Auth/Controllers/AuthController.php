@@ -8,6 +8,8 @@ use App\Domain\Auth\Requests\LoginRequest;
 use App\Domain\Auth\Requests\RegisterRequest;
 use App\Domain\Auth\Services\AuthService;
 use App\Domain\Auth\Services\PermissionService;
+use App\Domain\Shared\Services\FeatureFlagService;
+use App\Domain\Subscription\Models\Subscription;
 use App\Domain\Tenant\Models\Tenant;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
@@ -114,9 +116,28 @@ class AuthController extends Controller
                     'primary_color' => $tenant->primary_color,
                     'secondary_color' => $tenant->secondary_color,
                     'city' => $tenant->city,
+                    'features' => $this->tenantFeatures($tenant->id),
                 ] : null,
             ],
         ]);
+    }
+
+    /**
+     * Resolve the merged feature-flag map for a tenant, including per-tenant
+     * overrides layered on top of plan-bundled flags. Result is cached for
+     * 5 minutes inside FeatureFlagService::getAllForTenant, so repeated
+     * /me calls from the same tenant don't thrash the DB.
+     *
+     * @return array<string, bool>
+     */
+    private function tenantFeatures(int $tenantId): array
+    {
+        $planId = Subscription::query()
+            ->where('tenant_id', $tenantId)
+            ->active()
+            ->value('plan_id');
+
+        return FeatureFlagService::getAllForTenant($tenantId, $planId ? (int) $planId : null);
     }
 
     public function updateProfile(Request $request): JsonResponse

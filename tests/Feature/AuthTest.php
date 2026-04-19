@@ -271,6 +271,32 @@ describe('Me (Profile)', function (): void {
             ->assertJsonPath('data.role', 'admin');
     });
 
+    it('returns tenant.features map with merged flag state', function (): void {
+        $tenant = Tenant::factory()->create();
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id]);
+        actingAsUser($user);
+
+        \App\Domain\Shared\Models\FeatureFlag::create([
+            'key' => 'custom_reports',
+            'name' => 'Custom Reports',
+            'is_enabled_globally' => true,
+        ]);
+        \App\Domain\Shared\Models\FeatureFlag::create([
+            'key' => 'experimental_ai',
+            'name' => 'Experimental AI',
+            'is_enabled_globally' => false,
+        ]);
+        \Illuminate\Support\Facades\Cache::flush();
+
+        $response = $this->getJson('/api/v1/me');
+
+        $response->assertOk();
+        $features = $response->json('data.tenant.features');
+        expect($features)->toBeArray()
+            ->and($features['custom_reports'] ?? null)->toBeTrue()
+            ->and($features['experimental_ai'] ?? null)->toBeFalse();
+    });
+
     it('rejects unauthenticated request', function (): void {
         $response = $this->getJson('/api/v1/me');
 
