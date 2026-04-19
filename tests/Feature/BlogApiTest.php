@@ -213,7 +213,8 @@ describe('Admin Blog Posts', function (): void {
         ]);
 
         $this->deleteJson("/api/v1/admin/blog/posts/{$post->id}")->assertOk();
-        $this->assertDatabaseMissing('blog_posts', ['id' => $post->id]);
+        // BlogPost uses SoftDeletes — the row stays with a deleted_at stamp.
+        $this->assertSoftDeleted('blog_posts', ['id' => $post->id]);
     });
 });
 

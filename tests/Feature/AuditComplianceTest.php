@@ -153,10 +153,15 @@ describe('Export Audit Trail', function (): void {
 describe('API Endpoints', function (): void {
 
     it('requires view_audit permission', function (): void {
+        // Ensure the Spatie role exists in this test DB — seeders don't
+        // run by default under RefreshDatabase.
+        \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'accountant', 'guard_name' => 'web']);
+
         $accountant = \App\Models\User::factory()->create([
             'tenant_id' => $this->tenant->id,
+            'role' => \App\Domain\Shared\Enums\UserRole::Accountant,
         ]);
-        // Accountant does not have view_audit
+        // Accountant role does not include view_audit
         $accountant->assignRole('accountant');
         actingAsUser($accountant);
 

@@ -130,7 +130,8 @@ describe('Admin CMS Pages', function (): void {
         $page = CmsPage::create(['slug' => 'delete-me', 'title_ar' => 'حذف', 'title_en' => 'Delete']);
 
         $this->deleteJson("/api/v1/admin/pages/{$page->id}")->assertOk();
-        $this->assertDatabaseMissing('cms_pages', ['id' => $page->id]);
+        // CmsPage uses SoftDeletes.
+        $this->assertSoftDeleted('cms_pages', ['id' => $page->id]);
     });
 
     it('rejects non-super-admin access', function (): void {
