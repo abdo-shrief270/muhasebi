@@ -6,21 +6,18 @@ namespace App\Domain\ClientPortal\Services;
 
 use App\Domain\Client\Models\Client;
 use App\Domain\ClientPortal\Models\PortalInviteToken;
-use App\Domain\Notification\Services\NotificationService;
 use App\Domain\Shared\Enums\UserRole;
 use App\Domain\Tenant\Models\Tenant;
+use App\Mail\ClientPortalInviteMail;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ClientInvitationService
 {
     private const INVITE_TTL_DAYS = 7;
-
-    public function __construct(
-        private readonly NotificationService $notificationService,
-    ) {}
 
     /**
      * Invite a client to the portal. Creates a user linked to the Client,
@@ -72,7 +69,16 @@ class ClientInvitationService
             .'/portal/accept-invite?token='.$plaintext;
 
         $tenant = Tenant::query()->find($tenantId);
-        $this->notificationService->sendWelcome($user->id, $tenant?->name ?? 'محاسبي');
+        $tenantName = $tenant?->name ?? 'محاسبي';
+
+        // Send the dedicated invite email carrying the magic-link — the
+        // generic welcome flow assumes an already-authenticated user
+        // landing on /onboarding, which is a dead end for invited clients.
+        Mail::to($user->email)->send(new ClientPortalInviteMail(
+            userName: $user->name,
+            tenantName: $tenantName,
+            actionUrl: $inviteUrl,
+        ));
 
         return [
             'user' => $user,

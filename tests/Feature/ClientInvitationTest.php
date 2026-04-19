@@ -73,6 +73,22 @@ describe('POST /api/v1/clients/{client}/invite-portal', function (): void {
             'used_at' => null,
         ]);
     });
+
+    it('dispatches ClientPortalInviteMail with the magic-link URL', function (): void {
+        \Illuminate\Support\Facades\Mail::fake();
+
+        $this->withHeader('X-Tenant', $this->tenant->slug)
+            ->postJson("/api/v1/clients/{$this->client->id}/invite-portal", [
+                'email' => 'mailed@example.com',
+                'name' => 'Mailed Client',
+            ])
+            ->assertCreated();
+
+        \Illuminate\Support\Facades\Mail::assertQueued(\App\Mail\ClientPortalInviteMail::class, function ($mail) {
+            return $mail->hasTo('mailed@example.com')
+                && str_contains($mail->actionUrl, '/portal/accept-invite?token=');
+        });
+    });
 });
 
 describe('POST /api/v1/portal/accept-invite', function (): void {

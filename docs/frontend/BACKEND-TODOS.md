@@ -106,7 +106,7 @@ New `portal_invite_tokens` table (hashed token + TTL). Invite creation returns `
 - [x] 5 new regression tests (happy path, invalid token, replay rejection, expiry rejection, invite_url shape)
 - [x] `ClientController::invitePortalUser` response now includes top-level `invite_url` alongside `data`
 
-Note: the welcome email still uses the generic `WelcomeMail` and links to `/onboarding`. The magic-link URL is returned to the inviter (via the API response) for now — future polish would plumb it into a dedicated invite email template. Tracked separately if the product wants it.
+Follow-up landed: `ClientInvitationService` now sends the pre-existing (previously orphaned) `ClientPortalInviteMail` with the magic-link URL instead of the generic onboarding-welcome. Invited clients get the Arabic RTL template at `resources/views/emails/client-portal-invite.blade.php` with a direct "Enter Portal" CTA. Test added asserts the mail is queued with the expected URL.
 
 ### ~~Messaging `throttle:10,1` may be too low~~ ✅ Done
 Defined a named `messaging` limiter at **30/min per user** (keyed on user id, IP fallback) and swapped the `throttle:10,1` middleware on WhatsApp / SMS endpoints for `throttle:messaging`. 3x headroom over the old ceiling, single knob in `AppServiceProvider` to retune when we see real usage patterns.
