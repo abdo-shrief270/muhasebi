@@ -64,7 +64,10 @@ it('blocks access when plan does not include the feature', function (): void {
 
 it('blocks access when tenant has no subscription', function (): void {
     $tenant = createTenant();
-    // no subscription created
+    // createTenant() auto-provisions a trial subscription; strip it so we
+    // exercise the no-subscription path.
+    \App\Domain\Subscription\Models\Subscription::where('tenant_id', $tenant->id)->delete();
+
     $admin = createAdminUser($tenant);
     actingAsUser($admin);
 

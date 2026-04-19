@@ -58,6 +58,11 @@ describe('CheckSubscription middleware', function (): void {
     });
 
     it('blocks access with no subscription', function (): void {
+        // createTenant() auto-provisions a trial subscription so tenant-scoped
+        // HTTP tests pass the CheckSubscription middleware out of the box.
+        // This test wants the no-subscription state, so wipe it first.
+        Subscription::where('tenant_id', $this->tenant->id)->delete();
+
         app()->instance('tenant.id', $this->tenant->id);
 
         $middleware = new CheckSubscription;
