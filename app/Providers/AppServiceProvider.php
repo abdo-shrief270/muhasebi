@@ -156,6 +156,14 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('imports', function (Request $request) {
             return Limit::perMinute(3)->by($request->user()?->id ?: $request->ip());
         });
+
+        // Messaging (WhatsApp / SMS via Beon.chat). 30/min per user is a
+        // middle ground between accidental spam and legitimate bulk reminder
+        // workflows — raise here if firms hit the ceiling during
+        // end-of-month collection runs.
+        RateLimiter::for('messaging', function (Request $request) {
+            return Limit::perMinute(30)->by($request->user()?->id ?: $request->ip());
+        });
     }
 
     private function registerModelObservers(): void

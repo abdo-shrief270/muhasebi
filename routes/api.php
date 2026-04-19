@@ -463,8 +463,8 @@ Route::prefix('v1')->group(function (): void {
 
             // ── Messaging (Beon.chat — WhatsApp/SMS) ──
             Route::middleware(['feature:clients', 'permission:manage_clients'])->prefix('messaging')->name('messaging.')->group(function (): void {
-                Route::post('whatsapp', [MessagingController::class, 'sendWhatsApp'])->middleware('throttle:10,1')->name('whatsapp');
-                Route::post('sms', [MessagingController::class, 'sendSms'])->middleware('throttle:10,1')->name('sms');
+                Route::post('whatsapp', [MessagingController::class, 'sendWhatsApp'])->middleware('throttle:messaging')->name('whatsapp');
+                Route::post('sms', [MessagingController::class, 'sendSms'])->middleware('throttle:messaging')->name('sms');
                 Route::get('templates', [MessagingController::class, 'templates'])->name('templates');
                 Route::get('conversations', [MessagingController::class, 'conversations'])->name('conversations');
                 Route::get('conversations/{conversationId}', [MessagingController::class, 'conversationMessages'])->name('conversations.messages');

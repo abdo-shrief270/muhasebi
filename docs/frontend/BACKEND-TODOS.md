@@ -108,10 +108,13 @@ New `portal_invite_tokens` table (hashed token + TTL). Invite creation returns `
 
 Note: the welcome email still uses the generic `WelcomeMail` and links to `/onboarding`. The magic-link URL is returned to the inviter (via the API response) for now — future polish would plumb it into a dedicated invite email template. Tracked separately if the product wants it.
 
-### Messaging `throttle:10,1` may be too low (§5.2)
-10 sends/min per user is tight for an accounting firm with heavy reminder workflows.
+### ~~Messaging `throttle:10,1` may be too low~~ ✅ Done
+Defined a named `messaging` limiter at **30/min per user** (keyed on user id, IP fallback) and swapped the `throttle:10,1` middleware on WhatsApp / SMS endpoints for `throttle:messaging`. 3x headroom over the old ceiling, single knob in `AppServiceProvider` to retune when we see real usage patterns.
 
-- [ ] Consider raising to 30–60/min OR defining a named `messaging` limiter with per-tenant quota (e.g. 200/min/tenant). Only if user feedback confirms — don't pre-optimize.
+- [x] `RateLimiter::for('messaging', ...)` in `AppServiceProvider`
+- [x] `messaging/whatsapp` and `messaging/sms` now use `throttle:messaging`
+
+Not converted to per-tenant quota — adds complexity without a clear signal. If end-of-month collection runs hit the ceiling, raise the per-user cap first; per-tenant quota becomes worth it only if we see legitimate users blocking each other.
 
 ---
 
