@@ -28,7 +28,9 @@ use Spatie\Activitylog\Support\LogOptions;
     'installment_amount',
     'total_installments',
     'paid_installments',
+    'remaining_balance',
     'start_date',
+    'end_date',
     'approved_by',
     'approved_at',
     'notes',
@@ -92,6 +94,24 @@ class EmployeeLoan extends Model
     public function isActive(): bool
     {
         return $this->status === LoanStatus::Active;
+    }
+
+    /**
+     * Apply one scheduled installment: reduce remaining_balance by
+     * installment_amount, bump paid_installments, and auto-complete the loan
+     * when the balance hits zero.
+     */
+    public function recordInstallment(): void
+    {
+        $new = bcsub((string) $this->remaining_balance, (string) $this->installment_amount, 2);
+        $this->remaining_balance = bccomp($new, '0', 2) <= 0 ? '0.00' : $new;
+        $this->paid_installments = ($this->paid_installments ?? 0) + 1;
+
+        if (bccomp((string) $this->remaining_balance, '0', 2) === 0) {
+            $this->status = LoanStatus::Completed;
+        }
+
+        $this->save();
     }
 
     // ──────────────────────────────────────

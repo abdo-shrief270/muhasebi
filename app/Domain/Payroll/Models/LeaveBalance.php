@@ -17,9 +17,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'employee_id',
     'leave_type_id',
     'year',
-    'entitled',
-    'carried_forward',
-    'used',
+    'entitled_days',
+    'used_days',
+    'carried_days',
 ])]
 class LeaveBalance extends Model
 {
@@ -30,16 +30,16 @@ class LeaveBalance extends Model
     {
         return [
             'year' => 'integer',
-            'entitled' => 'decimal:2',
-            'carried_forward' => 'decimal:2',
-            'used' => 'decimal:2',
+            'entitled_days' => 'integer',
+            'used_days' => 'integer',
+            'carried_days' => 'integer',
         ];
     }
 
     /** @var array<string, mixed> */
     protected $attributes = [
-        'carried_forward' => '0.00',
-        'used' => '0.00',
+        'used_days' => 0,
+        'carried_days' => 0,
     ];
 
     // ──────────────────────────────────────
@@ -66,14 +66,19 @@ class LeaveBalance extends Model
     // ──────────────────────────────────────
 
     /**
-     * Calculate available leave days: entitled + carried_forward - used.
+     * Calculate available leave days: entitled + carried - used.
      */
-    public function availableDays(): string
+    public function availableDays(): int
     {
-        return bcsub(
-            bcadd((string) $this->entitled, (string) $this->carried_forward, 2),
-            (string) $this->used,
-            2,
-        );
+        return ($this->entitled_days ?? 0) + ($this->carried_days ?? 0) - ($this->used_days ?? 0);
+    }
+
+    /**
+     * Record leave taken against this balance and persist.
+     */
+    public function deductDays(int $days): void
+    {
+        $this->used_days = ($this->used_days ?? 0) + $days;
+        $this->save();
     }
 }

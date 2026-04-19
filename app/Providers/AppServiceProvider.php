@@ -65,6 +65,7 @@ use App\Policies\CostCenterPolicy;
 use App\Policies\VendorPolicy;
 use App\Policies\WhtCertificatePolicy;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -83,6 +84,16 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Factories live at database/factories/{Basename}Factory.php regardless
+        // of the model's namespace (App\Domain\Foo\Models\Bar). Laravel's default
+        // resolver assumes App\Models\* layout, so map by basename instead — lets
+        // us drop the per-model newFactory() overrides that were added piecemeal.
+        Factory::guessFactoryNamesUsing(function (string $modelName): string {
+            $basename = class_basename($modelName);
+
+            return "Database\\Factories\\{$basename}Factory";
+        });
+
         $this->registerPolicies();
         $this->registerPermissionGates();
         $this->configureRateLimiting();
