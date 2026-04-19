@@ -189,11 +189,14 @@ Items surfaced in `OPEN-QUESTIONS.md` but intentionally left alone:
 - `tests/Feature/ClientInvitationTest.php` — 6 new tests (invite_url, magic-link flow, email dispatch)
 - `tests/Feature/RbacPresetsTest.php` — 2 tests
 
-Pre-existing test failures noted but not addressed:
-- `AccountsPayableTest`: `BillStatus::canPay()` method missing
-- `ECommerceTest`: VAT math (10000 vs 11400) on pre-existing conversion test
-- `AlertRuleTest::Metric calculations → DSO`: bcmath rounding (30.00 vs 29.99)
-- Various parallel-isolation failures when running `php artisan test --parallel`
+Pre-existing test failures cleaned up alongside the release:
+- `AccountsPayableTest`: ~~`BillStatus::canPay()` method missing~~ — added; `BillPaymentService::store` was previously fatal because it called the undefined method on every request. Real bug, not just a test issue.
+- `ECommerceTest`: ~~VAT math (10000 vs 11400)~~ — test expected subtotal, got total; updated to assert both `subtotal` and `total` so the intent is explicit.
+- `AlertRuleTest::Metric calculations → DSO`: ~~bcmath rounding (30.00 vs 29.99)~~ — fixed both the test formula and the matching bug in `AlertEngineService::calculateDso` (dividing first at scale 6 truncated cents; multiplying first gives exact results for clean inputs).
+
+Still outstanding:
+- Various parallel-isolation failures when running `php artisan test --parallel`. Not investigated — test DB state leaks between workers. Run serially until fixed.
+- `AccountsPayableTest`: missing `VendorFactory` class — unrelated to AP status logic.
 
 ---
 

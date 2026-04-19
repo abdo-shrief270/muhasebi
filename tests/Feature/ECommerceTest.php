@@ -195,10 +195,12 @@ describe('POST /api/v1/ecommerce/orders/{order}/convert', function (): void {
         expect($order->synced_invoice_id)->not->toBeNull();
         expect($order->synced_at)->not->toBeNull();
 
-        // Verify the invoice total matches the order — 10000 → 10000
+        // Lines ship as pre-tax unit prices (subtotal 10,000) with vat_rate 14,
+        // so the generated invoice adds 1,400 in VAT → total 11,400.
         $invoice = $order->syncedInvoice;
         expect($invoice)->not->toBeNull();
-        expect((float) $invoice->total)->toBe(10000.00);
+        expect((float) $invoice->subtotal)->toBe(10000.00);
+        expect((float) $invoice->total)->toBe(11400.00);
     });
 
 });

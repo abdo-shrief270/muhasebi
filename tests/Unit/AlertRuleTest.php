@@ -16,8 +16,13 @@ describe('Metric calculations', function (): void {
         $creditSales = '300000.00';
         $periodDays = '90';
 
-        $ratio = bcdiv($accountsReceivable, $creditSales, 6);
-        $dso = bcmul($ratio, $periodDays, 2);
+        // DSO = (AR * periodDays) / creditSales. Multiply first so bcmath
+        // truncation doesn't eat a cent on exactly-divisible inputs.
+        $dso = bcdiv(
+            bcmul($accountsReceivable, $periodDays, 2),
+            $creditSales,
+            2
+        );
 
         expect($dso)->toBe('30.00');
     });
@@ -211,8 +216,7 @@ describe('DSO threshold trigger scenario', function (): void {
         $creditSales = '300000.00';
         $periodDays = '90';
 
-        $ratio = bcdiv($arTotal, $creditSales, 6);
-        $dso = bcmul($ratio, $periodDays, 2);
+        $dso = bcdiv(bcmul($arTotal, $periodDays, 2), $creditSales, 2);
 
         // Rule: DSO > 25
         $threshold = '25.00';
@@ -233,8 +237,7 @@ describe('DSO threshold trigger scenario', function (): void {
         $creditSales = '300000.00';
         $periodDays = '90';
 
-        $ratio = bcdiv($arTotal, $creditSales, 6);
-        $dso = bcmul($ratio, $periodDays, 2);
+        $dso = bcdiv(bcmul($arTotal, $periodDays, 2), $creditSales, 2);
 
         $threshold = '25.00';
         $triggered = bccomp($dso, $threshold, 2) === 1;

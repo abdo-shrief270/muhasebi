@@ -157,10 +157,14 @@ class AlertEngineService
             return '0.00';
         }
 
-        // DSO = (AR / Credit Sales) * 90
-        $ratio = bcdiv($arTotal, $creditSales, 6);
-
-        return bcmul($ratio, $periodDays, 2);
+        // DSO = (AR * 90) / Credit Sales — multiply first to avoid bcmath
+        // truncation error (dividing first at scale 6 would drop 30.00 to
+        // 29.99 for perfectly round inputs).
+        return bcdiv(
+            bcmul($arTotal, $periodDays, 2),
+            $creditSales,
+            2
+        );
     }
 
     /**

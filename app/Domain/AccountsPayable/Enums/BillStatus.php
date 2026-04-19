@@ -49,6 +49,11 @@ enum BillStatus: string
         return in_array($this, [self::Draft, self::Approved], true);
     }
 
+    public function canPay(): bool
+    {
+        return in_array($this, [self::Approved, self::PartiallyPaid], true);
+    }
+
     public function color(): string
     {
         return match ($this) {
