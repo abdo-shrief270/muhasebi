@@ -346,3 +346,26 @@ Affected routes:
 - `POST /api/v1/messaging/sms`
 
 **Frontend action:** relax any client-side cooldown UX from "1 every 6 seconds" to "1 every 2 seconds" if applicable. 429 still returns the standard `Retry-After` header.
+
+---
+
+## Impersonation landing route (NEW — frontend-only)
+
+When a SuperAdmin clicks **Impersonate** in the Filament admin panel, the backend mints a 1-hour Sanctum token and opens a new tab at:
+
+```
+{frontend_url}/auth/impersonate?token=<plaintext-sanctum-token>&redirect=<path>
+```
+
+**Frontend action — build this page:**
+
+1. Read `token` and `redirect` from the query string.
+2. Persist `token` the same way the normal login flow does (localStorage / auth store / cookie — whatever the app already uses for `Bearer` tokens).
+3. Clear any previously cached user/tenant state so the SPA re-fetches `/api/v1/me` as the impersonated user.
+4. Navigate (client-side) to the `redirect` path — default `/dashboard` if missing or not an internal path.
+5. Show a persistent banner while the token is active: **"Impersonating {user.email} — end session"**. Clicking "end session" should drop the token and return to login.
+
+**Security notes:**
+- Reject any `redirect` value that isn't a relative path starting with `/` (defeats open-redirect).
+- Token is single-use in spirit only — it's a normal Sanctum token that expires after 1 hour. No special revocation; just delete it from storage when the admin ends the impersonation.
+- Do not log the token to analytics or error trackers.

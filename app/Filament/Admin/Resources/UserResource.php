@@ -179,7 +179,7 @@ class UserResource extends Resource
                             ->minLength(10)
                             ->rows(3),
                     ])
-                    ->action(function (User $record, array $data): void {
+                    ->action(function (User $record, array $data, $livewire): void {
                         try {
                             $token = app(ImpersonationService::class)
                                 ->impersonateUser($record, (string) $data['reason']);
@@ -193,15 +193,21 @@ class UserResource extends Resource
                             return;
                         }
 
+                        $frontendUrl = rtrim((string) config('app.frontend_url', config('app.url')), '/');
+                        $impersonateUrl = $frontendUrl.'/auth/impersonate?token='.urlencode($token).'&redirect=%2Fdashboard';
+
                         Notification::make()
-                            ->title('Impersonation token generated')
+                            ->title('Opening '.$record->email.' in a new tab')
                             ->body(view('filament.admin.notifications.impersonation-token', [
                                 'token' => $token,
                                 'user' => $record,
+                                'url' => $impersonateUrl,
                             ])->render())
                             ->success()
                             ->persistent()
                             ->send();
+
+                        $livewire->js(sprintf('window.open(%s, "_blank", "noopener")', json_encode($impersonateUrl, JSON_UNESCAPED_SLASHES)));
                     }),
             ])
             ->toolbarActions([

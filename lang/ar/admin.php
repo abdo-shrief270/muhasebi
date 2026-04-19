@@ -43,4 +43,11 @@ return [
         'queue_monitor' => 'مراقبة الطابور',
         'two_factor_setup' => 'إعداد المصادقة الثنائية',
     ],
+
+    'topbar' => [
+        'switch_language' => 'تبديل اللغة',
+        'notifications' => 'الإشعارات',
+        'mark_all_read' => 'تعليم الكل كمقروء',
+        'no_notifications' => 'لا توجد إشعارات',
+    ],
 ];

@@ -13,6 +13,7 @@ use App\Filament\Admin\Widgets\RevenueHealthOverview;
 use App\Filament\Admin\Widgets\SignupsTrendChart;
 use App\Filament\Admin\Widgets\TenantStatusDonut;
 use App\Http\Middleware\SetAdminLocale;
+use App\Livewire\Admin\NotificationsBell;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -22,7 +23,10 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
+use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -74,6 +78,14 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make('Content')->label(fn (): string => (string) __('admin.nav_groups.content')),
                 NavigationGroup::make('Platform')->label(fn (): string => (string) __('admin.nav_groups.platform')),
             ])
+            ->renderHook(
+                PanelsRenderHook::USER_MENU_BEFORE,
+                fn (): View => view('filament.admin.topbar.locale-switcher'),
+            )
+            ->renderHook(
+                PanelsRenderHook::USER_MENU_BEFORE,
+                fn (): string => Blade::render('@livewire(\'admin.notifications-bell\')'),
+            )
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

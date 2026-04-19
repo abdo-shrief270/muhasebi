@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\LocaleToggleController;
 use App\Http\Controllers\AdminHealthController;
 use App\Http\Controllers\LandingPageController;
 use Illuminate\Support\Facades\Route;
@@ -15,3 +16,7 @@ Route::get('/company/{tenant:slug}', LandingPageController::class)->name('landin
 Route::middleware(['web', 'auth', 'super_admin'])
     ->get('/admin/health', [AdminHealthController::class, 'show'])
     ->name('admin.health');
+
+Route::middleware(['web', 'auth', 'super_admin'])
+    ->post('/admin/locale/toggle', LocaleToggleController::class)
+    ->name('admin.locale.toggle');

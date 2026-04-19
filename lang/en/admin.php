@@ -43,4 +43,11 @@ return [
         'queue_monitor' => 'Queue Monitor',
         'two_factor_setup' => 'Two-Factor Setup',
     ],
+
+    'topbar' => [
+        'switch_language' => 'Switch language',
+        'notifications' => 'Notifications',
+        'mark_all_read' => 'Mark all read',
+        'no_notifications' => 'No notifications yet',
+    ],
 ];
