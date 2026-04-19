@@ -42,7 +42,9 @@ describe('POST /api/v1/admin/distributions/calculate', function (): void {
         $response->assertCreated()
             ->assertJsonPath('count', 2);
 
-        expect(ProfitDistribution::query()->count())->toBe(2);
+        // Distributions span both tenants; count across them, not just the
+        // currently bound one.
+        expect(ProfitDistribution::query()->withoutGlobalScope('tenant')->count())->toBe(2);
     });
 
     it('skips inactive investors', function (): void {

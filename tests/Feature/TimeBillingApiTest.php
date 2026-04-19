@@ -32,8 +32,9 @@ describe('GET /api/v1/time-billing/preview', function (): void {
             ->getJson("/api/v1/time-billing/preview?client_id={$this->client->id}&date_from=2026-04-01&date_to=2026-04-30");
 
         $response->assertOk()
-            ->assertJsonPath('data.total_hours', 6)
-            ->assertJsonPath('data.total_amount', 1200)
+            // Service returns decimal totals as bcmath-compatible strings.
+            ->assertJsonPath('data.total_hours', '6.00')
+            ->assertJsonPath('data.total_amount', '1200.00')
             ->assertJsonPath('data.entry_count', 2);
     });
 

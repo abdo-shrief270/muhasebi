@@ -9,6 +9,7 @@ use App\Domain\Shared\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -20,14 +21,15 @@ use Spatie\Activitylog\Support\LogOptions;
 #[Fillable([
     'tenant_id',
     'account_id',
-    'name',
     'name_ar',
-    'description',
+    'name_en',
+    'code',
     'is_active',
 ])]
 class ExpenseCategory extends Model
 {
     use BelongsToTenant;
+    use HasFactory;
     use LogsActivity;
     use SoftDeletes;
 
@@ -86,7 +88,7 @@ class ExpenseCategory extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'name_ar', 'is_active'])
+            ->logOnly(['name_en', 'name_ar', 'code', 'is_active'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }

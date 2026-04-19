@@ -127,7 +127,9 @@ describe('processDue', function (): void {
 
         expect($processed)->toBe(1);
 
-        Mail::assertSent(ScheduledReportMail::class, 2); // 2 recipients
+        // ScheduledReportMail implements ShouldQueue — Mail::fake() captures
+        // it via assertQueued, not assertSent.
+        Mail::assertQueued(ScheduledReportMail::class, 2); // 2 recipients
 
         Carbon::setTestNow();
     });

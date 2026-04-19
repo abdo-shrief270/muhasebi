@@ -244,7 +244,8 @@ describe('Cancel posted invoice reverses JE', function (): void {
 
         // Post to GL first
         $this->withHeader('X-Tenant', $this->tenant->slug)
-            ->postJson("/api/v1/invoices/{$invoice->id}/post-to-gl");
+            ->postJson("/api/v1/invoices/{$invoice->id}/post-to-gl")
+            ->assertOk();
 
         $invoice->refresh();
         $originalJeId = $invoice->journal_entry_id;
@@ -252,7 +253,8 @@ describe('Cancel posted invoice reverses JE', function (): void {
 
         // Cancel the invoice
         $this->withHeader('X-Tenant', $this->tenant->slug)
-            ->postJson("/api/v1/invoices/{$invoice->id}/cancel");
+            ->postJson("/api/v1/invoices/{$invoice->id}/cancel")
+            ->assertOk();
 
         // The original JE should be reversed
         $originalJe = JournalEntry::query()->find($originalJeId);

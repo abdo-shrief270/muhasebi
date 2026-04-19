@@ -74,7 +74,9 @@ class SocialInsuranceController extends Controller
             'year' => ['required', 'integer', 'min:2020', 'max:2100'],
         ]);
 
-        $rates = $this->service->getRates($validated['year']);
+        // Query-string inputs stay as strings after validate(); cast to int
+        // so the service's strict int parameter typing is satisfied.
+        $rates = $this->service->getRates((int) $validated['year']);
 
         return $this->success($rates);
     }

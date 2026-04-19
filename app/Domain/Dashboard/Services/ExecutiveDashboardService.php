@@ -256,20 +256,23 @@ class ExecutiveDashboardService
         $year = substr($toDate, 0, 4);
         $fromDate = $filters['from'] ?? "{$year}-01-01";
 
-        $periodDays = max(1, (int) (strtotime($toDate) - strtotime($fromDate)) / 86400);
+        // Inclusive day count: from 2026-01-01 to 2026-03-31 is 90 days.
+        $periodDays = max(1, ((int) ((strtotime($toDate) - strtotime($fromDate)) / 86400)) + 1);
 
-        // DSO = (AR / Credit Sales) * Period Days
+        // DSO = (AR * Period Days) / Credit Sales
+        // Multiply first so bcmath scale-2 truncation doesn't eat a penny on
+        // clean inputs (e.g. 100000/300000 * 90 = 30.00, not 29.99).
         $arBalance = $this->getAccountTypeBalance(AccountType::Asset, '1121', $toDate);
         $creditSales = $this->sumByAccountType(AccountType::Revenue, $fromDate, $toDate);
         $dso = bccomp($creditSales, '0', 2) !== 0
-            ? bcmul(bcdiv($arBalance, $creditSales, 6), (string) $periodDays, 2)
+            ? bcdiv(bcmul($arBalance, (string) $periodDays, 2), $creditSales, 2)
             : '0.00';
 
-        // DPO = (AP / Cost of Sales) * Period Days
+        // DPO = (AP * Period Days) / Cost of Sales (same ordering as DSO).
         $apBalance = $this->getAccountTypeBalance(AccountType::Liability, '2111', $toDate);
         $costOfSales = $this->sumByAccountPrefix('51', $fromDate, $toDate, true);
         $dpo = bccomp($costOfSales, '0', 2) !== 0
-            ? bcmul(bcdiv($apBalance, $costOfSales, 6), (string) $periodDays, 2)
+            ? bcdiv(bcmul($apBalance, (string) $periodDays, 2), $costOfSales, 2)
             : '0.00';
 
         // Current ratio = Current Assets / Current Liabilities
@@ -527,9 +530,15 @@ class ExecutiveDashboardService
             return '0.00';
         }
 
+        // budgets.fiscal_year_id FKs to fiscal_years, and fiscal_years only
+        // exposes start_date/end_date (no denormalised integer year). Match
+        // the year by extracting it from start_date. Schema stores the line
+        // total on `annual_amount` (plus m1-m12 monthly breakdown columns)
+        // — there is no `amount` column.
         $query = DB::table('budget_lines')
             ->join('budgets', 'budget_lines.budget_id', '=', 'budgets.id')
-            ->where('budgets.fiscal_year', $year)
+            ->join('fiscal_years', 'budgets.fiscal_year_id', '=', 'fiscal_years.id')
+            ->whereRaw('EXTRACT(YEAR FROM fiscal_years.start_date) = ?', [$year])
             ->where('budgets.status', 'approved');
 
         if (app('tenant.id')) {
@@ -537,7 +546,7 @@ class ExecutiveDashboardService
         }
 
         $result = $query->select(
-            DB::raw('COALESCE(SUM(budget_lines.amount), 0) as total')
+            DB::raw('COALESCE(SUM(budget_lines.annual_amount), 0) as total')
         )->first();
 
         return number_format((float) ($result->total ?? 0), 2, '.', '');
@@ -561,8 +570,10 @@ class ExecutiveDashboardService
             $query->where('journal_entries.tenant_id', app('tenant.id'));
         }
 
+        // Postgres doesn't have DATE_FORMAT — use TO_CHAR with the matching
+        // format pattern. '%Y-%m' -> 'YYYY-MM'.
         $rows = $query->select(
-            DB::raw("DATE_FORMAT(journal_entries.date, '%Y-%m') as month"),
+            DB::raw("TO_CHAR(journal_entries.date, 'YYYY-MM') as month"),
             DB::raw('COALESCE(SUM(journal_entry_lines.credit), 0) as total_credit'),
             DB::raw('COALESCE(SUM(journal_entry_lines.debit), 0) as total_debit')
         )

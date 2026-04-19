@@ -190,11 +190,11 @@ class ReportSchedulerService
 
     private function nextWeekly(Carbon $now, int $dayOfWeek, int $hour, int $minute): Carbon
     {
-        // dayOfWeek: 1=Monday ... 7=Sunday (ISO)
-        $next = $now->copy()->setTime($hour, $minute, 0);
-        $next->next(Carbon::getDays()[$dayOfWeek % 7]);
-
-        return $next;
+        // dayOfWeek: 1=Monday ... 7=Sunday (ISO). Carbon::next() resets the
+        // time to midnight, so advance the day first then apply the time.
+        return $now->copy()
+            ->next(Carbon::getDays()[$dayOfWeek % 7])
+            ->setTime($hour, $minute, 0);
     }
 
     private function nextMonthly(Carbon $now, int $dayOfMonth, int $hour, int $minute): Carbon

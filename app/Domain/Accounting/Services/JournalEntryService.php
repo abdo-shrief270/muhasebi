@@ -327,14 +327,22 @@ class JournalEntryService
     public function generateEntryNumber(int $tenantId): string
     {
         $prefix = 'JE-';
+        $offset = mb_strlen($prefix) + 1;
 
+        // Bypass tenant scope + include soft-deleted rows so the counter
+        // doesn't collide after a deletion. Inlining $offset as an integer
+        // literal dodges a Postgres quirk where the bound parameter inside
+        // SUBSTRING(... FROM ?) sometimes caused the expression to evaluate
+        // to an empty string and the MAX() to return null.
         $maxNumber = JournalEntry::query()
-            ->forTenant($tenantId)
+            ->withoutGlobalScope('tenant')
+            ->withTrashed()
+            ->where('tenant_id', $tenantId)
             ->where('entry_number', 'like', $prefix.'%')
-            ->selectRaw("MAX(CAST(SUBSTRING(entry_number FROM ?) AS INTEGER)) as max_num", [mb_strlen($prefix) + 1])
+            ->selectRaw("MAX(CAST(SUBSTRING(entry_number FROM {$offset}) AS INTEGER)) as max_num")
             ->value('max_num') ?? 0;
 
-        $nextNumber = $maxNumber + 1;
+        $nextNumber = ((int) $maxNumber) + 1;
 
         return $prefix.str_pad((string) $nextNumber, 6, '0', STR_PAD_LEFT);
     }

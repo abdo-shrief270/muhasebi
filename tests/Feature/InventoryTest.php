@@ -138,25 +138,32 @@ test('turnover: COGS 60000, avg inventory 20000 → ratio 3.00', function () {
         'is_active' => true,
     ]);
 
-    // Create sale movements totalling COGS = 60000
-    InventoryMovement::create([
+    // Create sale movements totalling COGS = 60000. created_at isn't in
+    // InventoryMovement's fillable (strict-mode rejects it on mass-assign),
+    // so back-date by updating the timestamp column directly after insert.
+    $movement1 = InventoryMovement::create([
         'tenant_id' => $tenant->id,
         'product_id' => $product->id,
         'movement_type' => MovementType::Sale,
         'quantity' => 300,
         'unit_cost' => '100.00',
         'total_cost' => '30000.00',
-        'created_at' => now()->subDays(10),
     ]);
-    InventoryMovement::create([
+    $movement1->timestamps = false;
+    $movement1->created_at = now()->subDays(10);
+    $movement1->save();
+
+    $movement2 = InventoryMovement::create([
         'tenant_id' => $tenant->id,
         'product_id' => $product->id,
         'movement_type' => MovementType::Sale,
         'quantity' => 300,
         'unit_cost' => '100.00',
         'total_cost' => '30000.00',
-        'created_at' => now()->subDays(5),
     ]);
+    $movement2->timestamps = false;
+    $movement2->created_at = now()->subDays(5);
+    $movement2->save();
 
     $service = app(InventoryService::class);
     $report = $service->turnoverReport(

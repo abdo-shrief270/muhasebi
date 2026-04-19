@@ -243,27 +243,30 @@ describe('GET /api/v1/dashboard/kpis', function (): void {
 // ────────────────────────────────────────────────────────────────
 describe('GET /api/v1/dashboard/cash-flow', function (): void {
 
-    it('projects 30-day cash: current 50000, AR expected 20000, AP due 15000 = 55000', function (): void {
+    it('projects 30-day cash: current 50000, AR weighted 19000, AP due 15000 = 54000', function (): void {
         // Cash balance of 50000
         createDashboardEntry($this, $this->q1Period->id, '2026-01-05', $this->cashAccount->id, $this->revenueAccount->id, 50000.00);
 
         $client = Client::factory()->create(['tenant_id' => $this->tenant->id]);
 
-        // AR outstanding: ~21052.63 -> weighted at 95% current = ~20000
-        // We need 20000 from weighted inflows. Current bucket at 95%: 20000/0.95 = 21052.63
+        // AR 20000 in the "current" bucket weighted at 95% -> 19000 exact.
+        // Using a clean value avoids bcmath scale-2 truncation that would
+        // leave the projection a cent short (e.g. 21052.63 × 0.95 = 19999.99).
         Invoice::factory()->sent()->create([
             'tenant_id' => $this->tenant->id,
             'client_id' => $client->id,
             'date' => '2026-01-20',
             'due_date' => '2026-04-15', // future due date -> current bucket
-            'total' => 21052.63,
+            'total' => 20000.00,
             'amount_paid' => 0,
         ]);
 
         // AP due within 30 days: 15000
+        // vendor_id FKs to vendors.id (not clients.id) — use a real Vendor.
+        $vendor = \App\Domain\AccountsPayable\Models\Vendor::factory()->create(['tenant_id' => $this->tenant->id]);
         Bill::create([
             'tenant_id' => $this->tenant->id,
-            'vendor_id' => $client->id,
+            'vendor_id' => $vendor->id,
             'bill_number' => 'BILL-001',
             'date' => '2026-01-10',
             'due_date' => '2026-04-10', // within 30 days from March 31
@@ -282,8 +285,8 @@ describe('GET /api/v1/dashboard/cash-flow', function (): void {
 
         $response->assertOk();
         expect($response->json('data.current_cash_position'))->toBe('50000.00');
-        // projected_30_days = 50000 + (20000 - 15000) = 55000
-        expect($response->json('data.projected_30_days'))->toBe('55000.00');
+        // projected_30_days = 50000 + (19000 - 15000) = 54000
+        expect($response->json('data.projected_30_days'))->toBe('54000.00');
     });
 
     it('returns cash flow structure', function (): void {

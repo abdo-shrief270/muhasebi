@@ -93,10 +93,13 @@ describe('PUT /api/v1/eta/settings', function (): void {
             'token_expires_at' => now()->addHour(),
         ]);
 
+        // UpdateEtaSettingsRequest couples the two credentials with
+        // required_with, so they must be rotated together.
         $this->withHeader('X-Tenant', $this->tenant->slug)
             ->putJson('/api/v1/eta/settings', [
                 'client_id' => 'new-id',
-            ]);
+                'client_secret' => str_repeat('s', 20),
+            ])->assertOk();
 
         $settings = EtaSettings::query()->where('tenant_id', $this->tenant->id)->first();
         expect($settings->access_token)->toBeNull();

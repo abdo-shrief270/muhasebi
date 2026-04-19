@@ -26,7 +26,7 @@ test('overtime weekday: salary 6000, 10 hours = 337.50', function (): void {
 
     $response->assertOk()
         ->assertJsonPath('data.amount', '337.50')
-        ->assertJsonPath('data.rate', 1.35);
+        ->assertJsonPath('data.rate', '1.35');
 });
 
 test('overtime friday: salary 6000, 8 hours = 400.00', function (): void {
@@ -39,7 +39,8 @@ test('overtime friday: salary 6000, 8 hours = 400.00', function (): void {
 
     $response->assertOk()
         ->assertJsonPath('data.amount', '400.00')
-        ->assertJsonPath('data.rate', 2.0);
+        // OvertimeType::rate() returns bcmath-compatible strings, not floats.
+        ->assertJsonPath('data.rate', '2.00');
 });
 
 // ──────────────────────────────────────
@@ -58,7 +59,8 @@ test('end of service: salary 10000, 7 years = 150000', function (): void {
         ]);
 
     $response->assertOk()
-        ->assertJsonPath('data.total_months', 15.0)
+        // Service returns total_months as a plain int (5 + 5) + (5), not a float.
+        ->assertJsonPath('data.total_months', 15)
         ->assertJsonPath('data.amount', '150000.00');
 });
 
@@ -72,7 +74,7 @@ test('end of service: salary 10000, 3 years = 60000', function (): void {
         ]);
 
     $response->assertOk()
-        ->assertJsonPath('data.total_months', 6.0)
+        ->assertJsonPath('data.total_months', 6)
         ->assertJsonPath('data.amount', '60000.00');
 });
 
@@ -175,6 +177,8 @@ test('ContractType labels are all non-empty', function (): void {
 });
 
 test('OvertimeType rates: weekday=1.35, friday=2.0', function (): void {
-    expect(OvertimeType::Weekday->rate())->toBe(1.35);
-    expect(OvertimeType::Friday->rate())->toBe(2.0);
+    // rate() returns bcmath-compatible strings so payroll calcs don't lose
+    // precision in float arithmetic.
+    expect(OvertimeType::Weekday->rate())->toBe('1.35');
+    expect(OvertimeType::Friday->rate())->toBe('2.00');
 });

@@ -132,7 +132,7 @@ describe('Suggest Code', function (): void {
 
         $first = $suggestions[0];
         expect($first)->toHaveKeys(['eta_item_code_id', 'item_code', 'description', 'confidence', 'match_type']);
-        expect($first['confidence'])->toBeGreaterThan(0)->toBeLessThanOrEqualTo(100);
+        expect($first['confidence'])->toBeGreaterThan(0)->toBeLessThanOrEqual(100);
         expect($first['item_code'])->toBe('EG-SC-001');
     });
 });

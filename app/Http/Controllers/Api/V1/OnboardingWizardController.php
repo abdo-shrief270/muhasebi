@@ -23,9 +23,13 @@ class OnboardingWizardController extends Controller
     {
         $tenantId = (int) app('tenant.id');
 
-        return new OnboardingProgressResource(
-            $this->wizardService->getProgress($tenantId),
-        );
+        $progress = $this->wizardService->getProgress($tenantId);
+        // getProgress uses firstOrCreate, so the first call returns a model
+        // flagged wasRecentlyCreated=true — Laravel's ResourceResponse would
+        // then emit 201. A GET should always be 200.
+        $progress->wasRecentlyCreated = false;
+
+        return new OnboardingProgressResource($progress);
     }
 
     /**
@@ -100,6 +104,7 @@ class OnboardingWizardController extends Controller
 
         $tenantId = (int) app('tenant.id');
         $progress = $this->wizardService->completeStep($tenantId, $request->input('step'));
+        $progress->wasRecentlyCreated = false;
 
         return new OnboardingProgressResource($progress);
     }
@@ -115,6 +120,7 @@ class OnboardingWizardController extends Controller
 
         $tenantId = (int) app('tenant.id');
         $progress = $this->wizardService->skipStep($tenantId, $request->input('step'));
+        $progress->wasRecentlyCreated = false;
 
         return new OnboardingProgressResource($progress);
     }

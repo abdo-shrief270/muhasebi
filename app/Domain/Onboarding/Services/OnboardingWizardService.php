@@ -35,6 +35,14 @@ class OnboardingWizardService
                 ],
             );
 
+        // firstOrCreate leaves columns that relied on DB defaults (e.g. the
+        // bool flags, completed_at) absent from the model's attribute array,
+        // which the strict preventAccessingMissingAttributes flag then
+        // rejects. Refresh to hydrate the full row.
+        if ($progress->wasRecentlyCreated) {
+            $progress->refresh();
+        }
+
         return $progress;
     }
 

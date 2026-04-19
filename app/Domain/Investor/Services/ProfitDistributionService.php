@@ -51,8 +51,10 @@ class ProfitDistributionService
     public function calculate(int $month, int $year, array $expensesPerTenant): Collection
     {
         return DB::transaction(function () use ($month, $year, $expensesPerTenant): Collection {
-            // Get all active investor-tenant shares
+            // Super-admin context: bypass BelongsToTenant so we see every
+            // investor share across every tenant, not just the caller's own.
             $shares = InvestorTenantShare::query()
+                ->withoutGlobalScope('tenant')
                 ->whereHas('investor', fn ($q) => $q->where('is_active', true))
                 ->with(['investor', 'tenant'])
                 ->get();
@@ -72,8 +74,9 @@ class ProfitDistributionService
                 $tenantId = $share->tenant_id;
                 $investorId = $share->investor_id;
 
-                // Check for existing distribution
+                // Check for existing distribution — also cross-tenant.
                 $exists = ProfitDistribution::query()
+                    ->withoutGlobalScope('tenant')
                     ->where('investor_id', $investorId)
                     ->where('tenant_id', $tenantId)
                     ->forPeriod($month, $year)

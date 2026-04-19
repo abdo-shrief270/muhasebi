@@ -63,7 +63,13 @@ class InvestorService
      */
     public function getShares(Investor $investor): Collection
     {
-        return $investor->tenantShares()->with('tenant')->get();
+        // Super-admin context: an investor can hold stakes across tenants, so
+        // bypass the BelongsToTenant scope that would otherwise filter the
+        // result to the caller's current tenant only.
+        return $investor->tenantShares()
+            ->withoutGlobalScope('tenant')
+            ->with('tenant')
+            ->get();
     }
 
     /**

@@ -91,11 +91,13 @@ use App\Http\Controllers\Api\V1\Portal\ClientPortalController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalDocumentController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalInvoiceController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalMessageController;
+use App\Http\Controllers\Api\V1\Portal\ClientPortalEnhancedController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalNotificationController;
 use App\Http\Controllers\Api\V1\RecurringInvoiceController;
 use App\Http\Controllers\Api\V1\RecurringJournalEntryController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\ScheduledReportController;
+use App\Http\Controllers\Api\V1\StatementBuilderController;
 use App\Http\Controllers\Api\V1\RssFeedController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\RbacController;
@@ -876,6 +878,23 @@ Route::prefix('v1')->group(function (): void {
                 Route::post('{scheduledReport}/send-now', [ScheduledReportController::class, 'sendNow'])->name('send-now');
             });
 
+            // Custom statement builder (Balance Sheet, P&L, ratios, analyses)
+            Route::middleware(['feature:reports', 'permission:view_reports'])->prefix('statement-templates')->name('statement-templates.')->group(function (): void {
+                // Define string-literal routes before the model-bound ones so
+                // /ratios and /vertical-analysis aren't swallowed by the
+                // {statementTemplate} parameter.
+                Route::get('ratios', [StatementBuilderController::class, 'ratios'])->name('ratios');
+                Route::get('vertical-analysis', [StatementBuilderController::class, 'verticalAnalysis'])->name('vertical-analysis');
+                Route::get('horizontal-analysis', [StatementBuilderController::class, 'horizontalAnalysis'])->name('horizontal-analysis');
+
+                Route::get('/', [StatementBuilderController::class, 'index'])->name('index');
+                Route::post('/', [StatementBuilderController::class, 'store'])->middleware('permission:manage_reports')->name('store');
+                Route::get('{statementTemplate}', [StatementBuilderController::class, 'show'])->name('show');
+                Route::put('{statementTemplate}', [StatementBuilderController::class, 'update'])->middleware('permission:manage_reports')->name('update');
+                Route::delete('{statementTemplate}', [StatementBuilderController::class, 'destroy'])->middleware('permission:manage_reports')->name('destroy');
+                Route::get('{statementTemplate}/generate', [StatementBuilderController::class, 'generate'])->name('generate');
+            });
+
             Route::middleware(['permission:view_reports', 'throttle:exports'])->prefix('export')->name('export.')->group(function (): void {
                 Route::get('clients', [ExportController::class, 'clients'])->name('clients');
                 Route::get('invoices', [ExportController::class, 'invoices'])->name('invoices');
@@ -1150,6 +1169,19 @@ Route::prefix('v1')->group(function (): void {
                 Route::get('notifications', [ClientPortalNotificationController::class, 'index'])->name('notifications.index');
                 Route::post('notifications/{notification}/read', [ClientPortalNotificationController::class, 'markAsRead'])->name('notifications.read');
                 Route::post('notifications/read-all', [ClientPortalNotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+
+                // Invoice disputes
+                Route::get('disputes', [ClientPortalEnhancedController::class, 'disputes'])->name('disputes.index');
+                Route::post('disputes', [ClientPortalEnhancedController::class, 'createDispute'])->name('disputes.store');
+                Route::get('disputes/{dispute}', [ClientPortalEnhancedController::class, 'disputeShow'])->name('disputes.show');
+
+                // Payment plans
+                Route::get('payment-plans', [ClientPortalEnhancedController::class, 'paymentPlans'])->name('payment-plans.index');
+                Route::post('invoices/{invoice}/payment-plan', [ClientPortalEnhancedController::class, 'createPaymentPlan'])->name('invoices.payment-plan');
+                Route::post('installments/{installment}/pay', [ClientPortalEnhancedController::class, 'payInstallment'])->name('installments.pay');
+
+                // Client report summary
+                Route::get('reports', [ClientPortalEnhancedController::class, 'clientReport'])->name('reports');
             });
     });
 });

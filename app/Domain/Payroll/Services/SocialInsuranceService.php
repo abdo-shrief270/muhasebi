@@ -66,9 +66,11 @@ class SocialInsuranceService
      */
     public function monthlyReport(string $month): array
     {
+        // Eager-load the nested employee.user relation — the report reads
+        // $record->employee->user->name and strict mode prevents lazy loads.
         $records = EmployeeInsuranceRecord::where('is_active', true)
             ->where('insurance_type', '!=', 'exempted')
-            ->with('employee')
+            ->with('employee.user')
             ->get();
 
         $employees = [];
