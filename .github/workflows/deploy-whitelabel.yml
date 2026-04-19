@@ -79,6 +79,7 @@ jobs:
             ln -nfs $APP_PATH/shared/storage $APP_PATH/releases/$RELEASE/storage
 
             cd $APP_PATH/releases/$RELEASE
+            export COMPOSER_ALLOW_SUPERUSER=1
             composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
             npm ci && npm run build
 

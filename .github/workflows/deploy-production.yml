@@ -66,6 +66,7 @@ jobs:
             ln -nfs $PWD/$SHARED_DIR/storage $RELEASES_DIR/$RELEASE/storage
 
             cd $RELEASES_DIR/$RELEASE
+            export COMPOSER_ALLOW_SUPERUSER=1
             composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
             npm ci && npm run build
 
