@@ -37,11 +37,12 @@ jobs:
           USER: ${{ secrets.PRODUCTION_USER }}
           PATH_APP: ${{ secrets.PRODUCTION_APP_PATH }}
         run: |
-          ssh -i ~/.ssh/deploy_key $USER@$HOST bash -s << 'BACKUP'
+          ssh -i ~/.ssh/deploy_key $USER@$HOST "PATH_APP='$PATH_APP' bash -s" << 'BACKUP'
             set -e
-            cd $PATH_APP/current
+            cd "$PATH_APP/current"
             php artisan backup:database --filename=pre-deploy-$(date +%Y%m%d%H%M%S).sql
           BACKUP
+
 
       - name: Deploy with Zero Downtime
         env:
