@@ -43,7 +43,9 @@ class CostCenterFactory extends Factory
             ]),
             'type' => fake()->randomElement(CostCenterType::cases()),
             'is_active' => true,
-            'budget' => fake()->optional(0.5)->randomFloat(2, 10000, 100000),
+            // Column is NOT NULL with default 0 — factory must always supply
+            // a concrete value since Eloquent INSERTs the null explicitly.
+            'budget' => fake()->boolean(50) ? fake()->randomFloat(2, 10000, 100000) : 0,
             'description' => fake()->optional(0.3)->sentence(),
         ];
     }

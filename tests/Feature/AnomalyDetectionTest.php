@@ -80,8 +80,13 @@ describe('Unusual Amount Detection', function (): void {
     it('flags transactions with amounts exceeding 3 standard deviations', function (): void {
         $account = Account::factory()->create(['tenant_id' => $this->tenant->id]);
 
-        // Create 4 normal transactions and 1 outlier
-        $amounts = [100, 100, 100, 100, 10000];
+        // Need enough normal data that the outlier clears the mean + 3σ bar.
+        // With 4 normals of 100 and one 10000, the outlier inflates stddev to
+        // ~3960 and the threshold climbs above 13960 — the "outlier" is only
+        // 2σ from mean and wouldn't be flagged. Use more normals + a bigger
+        // outlier so the 3σ test actually triggers.
+        $normalAmounts = array_fill(0, 20, 100);
+        $amounts = array_merge($normalAmounts, [50000]);
         foreach ($amounts as $amount) {
             $entry = JournalEntry::factory()->posted()->create([
                 'tenant_id' => $this->tenant->id,
@@ -106,7 +111,7 @@ describe('Unusual Amount Detection', function (): void {
         expect($data)->not->toBeEmpty();
 
         $flaggedAmounts = collect($data)->pluck('details.amount')->all();
-        expect($flaggedAmounts)->toContain('10000.00');
+        expect($flaggedAmounts)->toContain('50000.00');
     });
 });
 

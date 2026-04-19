@@ -53,7 +53,8 @@ class AnomalyDetectionService
                     ->on('a.total', '=', 'b.total')
                     ->whereColumn('a.id', '<', 'b.id');
             })
-            ->whereRaw('ABS(DATEDIFF(a.date, b.date)) <= 3')
+            // Postgres: subtracting two dates yields an integer day count.
+            ->whereRaw('ABS(a.date - b.date) <= 3')
             ->select(
                 'a.id as a_id', 'a.invoice_number as a_number', 'a.client_id', 'a.total', 'a.date as a_date',
                 'b.id as b_id', 'b.invoice_number as b_number', 'b.date as b_date',
@@ -124,7 +125,8 @@ class AnomalyDetectionService
                 DB::raw('STDDEV_POP(journal_entry_lines.debit + journal_entry_lines.credit) as stddev_amount'),
             )
             ->groupBy('journal_entry_lines.account_id')
-            ->having('line_count', '>=', 5)
+            // Postgres can't reference SELECT aliases inside HAVING.
+            ->havingRaw('COUNT(*) >= 5')
             ->havingRaw('STDDEV_POP(journal_entry_lines.debit + journal_entry_lines.credit) > 0')
             ->get()
             ->keyBy('account_id');
@@ -353,10 +355,12 @@ class AnomalyDetectionService
         $results = $query->select(
             'journal_entry_lines.account_id',
             DB::raw('COUNT(*) as total_transactions'),
-            DB::raw('SUM(CASE WHEN CAST(journal_entry_lines.debit + journal_entry_lines.credit AS UNSIGNED) > 0 AND CAST(journal_entry_lines.debit + journal_entry_lines.credit AS UNSIGNED) % 100 = 0 THEN 1 ELSE 0 END) as round_transactions'),
+            // UNSIGNED is MySQL; Postgres uses BIGINT. MOD() is also
+            // cross-DB-safe here since we're already working with integers.
+            DB::raw('SUM(CASE WHEN CAST(journal_entry_lines.debit + journal_entry_lines.credit AS BIGINT) > 0 AND MOD(CAST(journal_entry_lines.debit + journal_entry_lines.credit AS BIGINT), 100) = 0 THEN 1 ELSE 0 END) as round_transactions'),
         )
             ->groupBy('journal_entry_lines.account_id')
-            ->having('total_transactions', '>=', 5)
+            ->havingRaw('COUNT(*) >= 5')
             ->get();
 
         $anomalies = [];
