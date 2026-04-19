@@ -51,13 +51,10 @@ class ReportSchedulerService
      */
     public function create(array $data): ScheduledReport
     {
-        $report = ScheduledReport::create($data);
+        $draft = new ScheduledReport($data);
+        $data['next_send_at'] = $this->calculateNextSend($draft);
 
-        $report->update([
-            'next_send_at' => $this->calculateNextSend($report),
-        ]);
-
-        return $report->fresh();
+        return ScheduledReport::create($data);
     }
 
     /**
