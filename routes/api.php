@@ -269,7 +269,7 @@ Route::prefix('v1')->group(function (): void {
                 Route::post('subscription/subscribe', [SubscriptionController::class, 'subscribe'])->middleware(['throttle:5,1', 'idempotent', 'no-duplicate'])->name('subscription.subscribe');
                 Route::post('subscription/cancel', [SubscriptionController::class, 'cancel'])->middleware(['throttle:5,1', 'no-duplicate'])->name('subscription.cancel');
                 Route::post('subscription/renew', [SubscriptionController::class, 'renew'])->middleware(['throttle:5,1', 'idempotent', 'no-duplicate'])->name('subscription.renew');
-                Route::post('subscription/change-plan', [SubscriptionController::class, 'changePlan'])->middleware('throttle:5,1')->name('subscription.change-plan');
+                Route::post('subscription/change-plan', [SubscriptionController::class, 'changePlan'])->middleware(['throttle:5,1', 'idempotent'])->name('subscription.change-plan');
                 Route::get('subscription/usage', [SubscriptionController::class, 'usage'])->name('subscription.usage');
                 Route::get('subscription/usage-history', [SubscriptionController::class, 'usageHistory'])->name('subscription.usage-history');
                 Route::get('subscription/payments', [SubscriptionController::class, 'payments'])->name('subscription.payments');
@@ -282,7 +282,7 @@ Route::prefix('v1')->group(function (): void {
                 Route::patch('clients/{client}/toggle-active', [ClientController::class, 'toggleActive'])->name('clients.toggle-active');
                 Route::get('clients/{client}/messages', [ClientController::class, 'messages'])->name('clients.messages');
                 Route::post('clients/{client}/messages', [ClientController::class, 'sendMessage'])->name('clients.send-message');
-                Route::post('import/clients', [CsvImportController::class, 'importClients'])->name('import.clients');
+                Route::post('import/clients', [CsvImportController::class, 'importClients'])->middleware('idempotent')->name('import.clients');
             });
             Route::middleware(['feature:client_portal', 'permission:invite_client_portal'])->group(function (): void {
                 Route::post('clients/{client}/invite-portal', [ClientController::class, 'invitePortalUser'])->name('clients.invite-portal');
@@ -298,7 +298,7 @@ Route::prefix('v1')->group(function (): void {
             Route::middleware(['feature:accounting', 'permission:manage_accounts'])->group(function (): void {
                 Route::get('accounts/tree', [AccountController::class, 'tree'])->name('accounts.tree');
                 Route::apiResource('accounts', AccountController::class);
-                Route::post('import/accounts', [CsvImportController::class, 'importAccounts'])->name('import.accounts');
+                Route::post('import/accounts', [CsvImportController::class, 'importAccounts'])->middleware('idempotent')->name('import.accounts');
 
                 // Bank Reconciliation
                 Route::prefix('bank-reconciliations')->name('bank-reconciliations.')->group(function (): void {
@@ -381,12 +381,12 @@ Route::prefix('v1')->group(function (): void {
 
             // ── Journal Entries (admin + accountant for CRUD, admin only for post) ──
             Route::middleware(['feature:accounting', 'permission:manage_journal_entries'])->group(function (): void {
-                Route::apiResource('journal-entries', JournalEntryController::class);
-                Route::post('journal-entries/{journalEntry}/reverse', [JournalEntryController::class, 'reverse'])->name('journal-entries.reverse');
-                Route::post('import/opening-balances', [CsvImportController::class, 'importOpeningBalances'])->name('import.opening-balances');
+                Route::apiResource('journal-entries', JournalEntryController::class)->middleware('idempotent');
+                Route::post('journal-entries/{journalEntry}/reverse', [JournalEntryController::class, 'reverse'])->middleware('idempotent')->name('journal-entries.reverse');
+                Route::post('import/opening-balances', [CsvImportController::class, 'importOpeningBalances'])->middleware('idempotent')->name('import.opening-balances');
             });
             Route::middleware(['feature:accounting', 'permission:post_journal_entries'])->group(function (): void {
-                Route::post('journal-entries/{journalEntry}/post', [JournalEntryController::class, 'post'])->name('journal-entries.post');
+                Route::post('journal-entries/{journalEntry}/post', [JournalEntryController::class, 'post'])->middleware('idempotent')->name('journal-entries.post');
                 Route::apiResource('fiscal-years', FiscalYearController::class)->only(['index', 'store', 'show']);
                 Route::post('fiscal-periods/{fiscalPeriod}/close', [FiscalPeriodController::class, 'close'])->name('fiscal-periods.close');
                 Route::post('fiscal-periods/{fiscalPeriod}/reopen', [FiscalPeriodController::class, 'reopen'])->name('fiscal-periods.reopen');
@@ -400,7 +400,7 @@ Route::prefix('v1')->group(function (): void {
 
             // ── Invoices (admin + accountant) ──
             Route::middleware(['feature:invoicing', 'permission:manage_invoices'])->group(function (): void {
-                Route::apiResource('invoices', InvoiceController::class);
+                Route::apiResource('invoices', InvoiceController::class)->middleware('idempotent');
                 Route::post('invoices/pre-check', function (Request $request) {
                     $request->validate([
                         'client_id' => 'required|integer',
@@ -416,13 +416,13 @@ Route::prefix('v1')->group(function (): void {
 
                     return response()->json(['data' => ['warnings' => $warnings, 'can_proceed' => empty(array_filter($warnings, fn ($w) => $w['severity'] === 'error'))]]);
                 })->name('invoices.pre-check');
-                Route::post('invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])->name('invoices.cancel');
-                Route::post('invoices/{invoice}/post-to-gl', [InvoiceController::class, 'postToGL'])->name('invoices.post-to-gl');
-                Route::post('invoices/{invoice}/credit-note', [InvoiceController::class, 'creditNote'])->name('invoices.credit-note');
+                Route::post('invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])->middleware('idempotent')->name('invoices.cancel');
+                Route::post('invoices/{invoice}/post-to-gl', [InvoiceController::class, 'postToGL'])->middleware('idempotent')->name('invoices.post-to-gl');
+                Route::post('invoices/{invoice}/credit-note', [InvoiceController::class, 'creditNote'])->middleware('idempotent')->name('invoices.credit-note');
                 Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
             });
             Route::middleware(['feature:invoicing', 'permission:send_invoices'])->group(function (): void {
-                Route::post('invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
+                Route::post('invoices/{invoice}/send', [InvoiceController::class, 'send'])->middleware('idempotent')->name('invoices.send');
             });
 
             // ── Recurring Invoices ──
@@ -444,7 +444,7 @@ Route::prefix('v1')->group(function (): void {
             // ── Data Import ──
             Route::middleware(['feature:clients', 'permission:manage_clients'])->prefix('import')->name('import.')->group(function (): void {
                 Route::get('/', [ImportController::class, 'index'])->name('index');
-                Route::post('/', [ImportController::class, 'store'])->name('store');
+                Route::post('/', [ImportController::class, 'store'])->middleware('idempotent')->name('store');
                 Route::get('template/{type}', [ImportController::class, 'template'])->name('template');
                 Route::get('{importJob}', [ImportController::class, 'show'])->name('show');
             });
@@ -469,7 +469,7 @@ Route::prefix('v1')->group(function (): void {
             // ── Payments (admin + accountant) ──
             Route::middleware(['feature:invoicing', 'permission:manage_payments'])->group(function (): void {
                 Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
-                Route::post('payments', [PaymentController::class, 'store'])->middleware('throttle:10,1')->name('payments.store');
+                Route::post('payments', [PaymentController::class, 'store'])->middleware(['throttle:10,1', 'idempotent'])->name('payments.store');
                 Route::delete('payments/{payment}', [PaymentController::class, 'destroy'])->name('payments.destroy');
             });
 
@@ -481,11 +481,11 @@ Route::prefix('v1')->group(function (): void {
             });
 
             Route::middleware(['feature:bills_vendors', 'permission:manage_bills'])->group(function (): void {
-                Route::apiResource('bills', BillController::class);
-                Route::post('bills/{bill}/approve', [BillController::class, 'approve'])->name('bills.approve');
-                Route::post('bills/{bill}/cancel', [BillController::class, 'cancel'])->name('bills.cancel');
+                Route::apiResource('bills', BillController::class)->middleware('idempotent');
+                Route::post('bills/{bill}/approve', [BillController::class, 'approve'])->middleware('idempotent')->name('bills.approve');
+                Route::post('bills/{bill}/cancel', [BillController::class, 'cancel'])->middleware('idempotent')->name('bills.cancel');
                 Route::get('bills/{bill}/payments', [BillPaymentController::class, 'index'])->name('bills.payments.index');
-                Route::post('bills/{bill}/payments', [BillPaymentController::class, 'store'])->name('bills.payments.store');
+                Route::post('bills/{bill}/payments', [BillPaymentController::class, 'store'])->middleware('idempotent')->name('bills.payments.store');
                 Route::delete('bill-payments/{billPayment}/void', [BillPaymentController::class, 'void'])->name('bill-payments.void');
             });
 
@@ -681,9 +681,9 @@ Route::prefix('v1')->group(function (): void {
                 Route::post('/', [PayrollController::class, 'store'])->name('store');
                 Route::get('{payrollRun}', [PayrollController::class, 'show'])->name('show');
                 Route::delete('{payrollRun}', [PayrollController::class, 'destroy'])->name('destroy');
-                Route::post('{payrollRun}/calculate', [PayrollController::class, 'calculate'])->name('calculate');
-                Route::post('{payrollRun}/approve', [PayrollController::class, 'approve'])->name('approve');
-                Route::post('{payrollRun}/mark-paid', [PayrollController::class, 'markPaid'])->name('mark-paid');
+                Route::post('{payrollRun}/calculate', [PayrollController::class, 'calculate'])->middleware('idempotent')->name('calculate');
+                Route::post('{payrollRun}/approve', [PayrollController::class, 'approve'])->middleware('idempotent')->name('approve');
+                Route::post('{payrollRun}/mark-paid', [PayrollController::class, 'markPaid'])->middleware('idempotent')->name('mark-paid');
                 Route::get('{payrollRun}/items', [PayrollController::class, 'items'])->name('items');
                 Route::get('{payrollRun}/items/{payrollItem}/payslip', [PayslipController::class, 'download'])->name('payslip');
             });
@@ -740,9 +740,9 @@ Route::prefix('v1')->group(function (): void {
                 Route::put('settings', [EtaController::class, 'updateSettings'])->name('settings.update');
                 Route::get('documents', [EtaController::class, 'indexDocuments'])->name('documents.index');
                 Route::post('documents/{invoice}/prepare', [EtaController::class, 'prepare'])->name('documents.prepare');
-                Route::post('documents/{invoice}/submit', [EtaController::class, 'submit'])->name('documents.submit');
+                Route::post('documents/{invoice}/submit', [EtaController::class, 'submit'])->middleware('idempotent')->name('documents.submit');
                 Route::get('documents/{invoice}', [EtaController::class, 'showDocument'])->name('documents.show');
-                Route::post('documents/{invoice}/cancel', [EtaController::class, 'cancelDocument'])->name('documents.cancel');
+                Route::post('documents/{invoice}/cancel', [EtaController::class, 'cancelDocument'])->middleware('idempotent')->name('documents.cancel');
                 Route::post('documents/{invoice}/check-status', [EtaController::class, 'checkStatus'])->name('documents.check-status');
                 Route::post('reconcile', [EtaController::class, 'reconcile'])->name('reconcile');
 

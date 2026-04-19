@@ -6,20 +6,20 @@ Follow-ups surfaced during the review in `OPEN-QUESTIONS.md`. Solo-dev punch lis
 
 ## P0 — Correctness / money-safety
 
-### Idempotency coverage is incomplete (§3.3)
-Only `POST /subscription/subscribe` and `POST /subscription/renew` have the `idempotent` middleware. Everything else the frontend generates UUIDs for is silently unprotected. Highest-risk endpoints (retries here can double-charge / double-book):
+### ~~Idempotency coverage is incomplete~~ ✅ Done
+Extended `idempotent` middleware to all financial-write endpoints. Done-by commit for this item noted inline:
 
-- [ ] `POST /invoices` — double invoice risk
-- [ ] `POST /invoices/{id}/send` — duplicate email sends
-- [ ] `POST /payments` — double payment (worst case)
-- [ ] `POST /bills/{id}/payments` — double vendor payment
-- [ ] `POST /subscription/change-plan` — double proration charge
-- [ ] `POST /payroll/{id}/calculate|approve|mark-paid` — double payroll run
-- [ ] `POST /eta/documents/{invoice}/submit|cancel` — ETA idempotency (they have their own, but the edge should still be protected)
-- [ ] `POST /bills` — duplicate bill entry
-- [ ] `POST /import` — duplicate import runs
-
-**How:** just add `'idempotent'` to each route's middleware array in `routes/api.php`. The middleware at `app/Http/Middleware/IdempotencyKey.php` already handles everything correctly.
+- [x] `POST /invoices` (apiResource + cancel/post-to-gl/credit-note)
+- [x] `POST /invoices/{id}/send`
+- [x] `POST /payments`
+- [x] `POST /bills` (apiResource + approve/cancel)
+- [x] `POST /bills/{id}/payments`
+- [x] `POST /payroll/{id}/calculate|approve|mark-paid`
+- [x] `POST /eta/documents/{invoice}/submit|cancel`
+- [x] `POST /subscription/change-plan`
+- [x] `POST /import`, `POST /import/clients`, `POST /import/accounts`, `POST /import/opening-balances`
+- [x] Also extended to `journal-entries` (apiResource + reverse + post) since misposting is expensive to undo
+- [x] Regression test added at `tests/Feature/IdempotencyMiddlewareTest.php` (5 assertions: no-key pass-through, replay preserves status, bad-UUID 422, GET skipped, failed responses not cached)
 
 ### 2FA flow does not match docs (§1.1)
 `POST /v1/login` does not return `requires_2fa`, and the issued token is full-access. Enforcement is downstream via `Enforce2fa` returning 403 `{code: "2fa_required"}`. This works for admins but:
