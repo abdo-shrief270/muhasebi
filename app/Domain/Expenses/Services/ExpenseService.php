@@ -504,5 +504,4 @@ class ExpenseService
             'by_month' => array_values($byMonth),
         ];
     }
-
 }

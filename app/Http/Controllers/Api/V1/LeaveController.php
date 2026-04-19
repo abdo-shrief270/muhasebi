@@ -10,6 +10,7 @@ use App\Domain\Payroll\Models\LeaveType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Payroll\StoreLeaveRequestRequest;
 use App\Http\Requests\Payroll\StoreLeaveTypeRequest;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -60,8 +61,8 @@ class LeaveController extends Controller
     {
         $validated = $request->validated();
 
-        $startDate = \Carbon\Carbon::parse($validated['start_date']);
-        $endDate = \Carbon\Carbon::parse($validated['end_date']);
+        $startDate = Carbon::parse($validated['start_date']);
+        $endDate = Carbon::parse($validated['end_date']);
         $days = $startDate->diffInDays($endDate) + 1;
 
         $employee = Employee::where('tenant_id', app('tenant.id'))

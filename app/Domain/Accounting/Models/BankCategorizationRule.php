@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Accounting\Models;
 
+use App\Domain\AccountsPayable\Models\Vendor;
 use App\Domain\Shared\Traits\BelongsToTenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -45,7 +46,7 @@ class BankCategorizationRule extends Model
 
     public function vendor(): BelongsTo
     {
-        return $this->belongsTo(\App\Domain\AccountsPayable\Models\Vendor::class);
+        return $this->belongsTo(Vendor::class);
     }
 
     public function createdByUser(): BelongsTo

@@ -7,7 +7,6 @@ namespace App\Domain\Banking\Services;
 use App\Domain\Accounting\Enums\ReconciliationStatus;
 use App\Domain\Accounting\Models\BankReconciliation;
 use App\Domain\Accounting\Models\BankStatementLine;
-use App\Domain\Banking\Enums\BankCode;
 use App\Domain\Banking\Models\BankConnection;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;

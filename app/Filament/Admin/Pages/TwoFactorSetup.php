@@ -10,6 +10,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Schema;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Session;
 
 /**
@@ -43,7 +44,7 @@ class TwoFactorSetup extends Page
     /** @var array<int, string>|null */
     public ?array $recoveryCodes = null;
 
-    public function getTitle(): string|\Illuminate\Contracts\Support\Htmlable
+    public function getTitle(): string|Htmlable
     {
         return 'Two-Factor Authentication';
     }
@@ -176,5 +177,4 @@ class TwoFactorSetup extends Page
 
         return $result;
     }
-
 }

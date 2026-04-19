@@ -8,7 +8,6 @@ use App\Domain\Accounting\Models\Account;
 use App\Domain\Accounting\Models\JournalEntry;
 use App\Domain\Accounting\Models\JournalEntryLine;
 use App\Domain\AccountsPayable\Models\BillPayment;
-use App\Domain\AccountsPayable\Models\Vendor;
 use App\Domain\Billing\Models\Invoice;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -293,9 +292,9 @@ class AnomalyDetectionService
                 // Using raw for DB compatibility — detect driver
                 $driver = DB::getDriverName();
                 if ($driver === 'pgsql') {
-                    $q->whereRaw("EXTRACT(DOW FROM date) IN (5, 6)");
+                    $q->whereRaw('EXTRACT(DOW FROM date) IN (5, 6)');
                 } else {
-                    $q->whereRaw("DAYOFWEEK(date) IN (6, 7)");
+                    $q->whereRaw('DAYOFWEEK(date) IN (6, 7)');
                 }
             })
             ->select('id', 'entry_number', 'date', 'description', 'total_debit');

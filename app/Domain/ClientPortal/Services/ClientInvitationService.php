@@ -26,8 +26,9 @@ class ClientInvitationService
      * tests / inspectors can grab it — in production the email is the only
      * channel that ever sees it.
      *
-     * @throws ValidationException
      * @return array{user: User, invite_token: string, invite_url: string}
+     *
+     * @throws ValidationException
      */
     public function inviteClientUser(Client $client, string $email, string $name): array
     {
@@ -91,8 +92,9 @@ class ClientInvitationService
      * Accept a portal invite. Verifies the token, sets the user's password,
      * marks the token used, and returns a fresh Sanctum token.
      *
-     * @throws ValidationException
      * @return array{user: User, token: string}
+     *
+     * @throws ValidationException
      */
     public function acceptInvite(string $plaintext, string $password): array
     {

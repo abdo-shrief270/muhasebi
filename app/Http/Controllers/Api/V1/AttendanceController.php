@@ -105,7 +105,7 @@ class AttendanceController extends Controller
             return $results;
         });
 
-        return $this->created($created, 'تم تسجيل ' . count($created) . ' سجل حضور بنجاح.');
+        return $this->created($created, 'تم تسجيل '.count($created).' سجل حضور بنجاح.');
     }
 
     public function summary(Request $request, Employee $employee): JsonResponse

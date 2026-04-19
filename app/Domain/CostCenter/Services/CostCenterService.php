@@ -6,6 +6,7 @@ namespace App\Domain\CostCenter\Services;
 
 use App\Domain\Accounting\Enums\AccountType;
 use App\Domain\Accounting\Enums\JournalEntryStatus;
+use App\Domain\CostCenter\Enums\CostCenterType;
 use App\Domain\CostCenter\Models\CostCenter;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,7 @@ class CostCenterService
         return CostCenter::query()
             ->withCount('children')
             ->search($filters['search'] ?? null)
-            ->when(isset($filters['type']), fn ($q) => $q->ofType(\App\Domain\CostCenter\Enums\CostCenterType::from($filters['type'])))
+            ->when(isset($filters['type']), fn ($q) => $q->ofType(CostCenterType::from($filters['type'])))
             ->when(isset($filters['is_active']), fn ($q) => $q->where('is_active', $filters['is_active']))
             ->orderBy($filters['sort_by'] ?? 'code', $filters['sort_dir'] ?? 'asc')
             ->paginate($filters['per_page'] ?? 15);

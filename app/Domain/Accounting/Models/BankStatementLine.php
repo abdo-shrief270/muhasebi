@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Accounting\Models;
 
 use App\Domain\AccountsPayable\Models\Bill;
+use App\Domain\AccountsPayable\Models\Vendor;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Shared\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -70,7 +71,7 @@ class BankStatementLine extends Model
 
     public function suggestedVendor(): BelongsTo
     {
-        return $this->belongsTo(\App\Domain\AccountsPayable\Models\Vendor::class, 'suggested_vendor_id');
+        return $this->belongsTo(Vendor::class, 'suggested_vendor_id');
     }
 
     public function categoryRule(): BelongsTo

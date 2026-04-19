@@ -7,9 +7,9 @@ use App\Domain\Engagement\Enums\EngagementStatus;
 use App\Domain\Engagement\Enums\EngagementType;
 use App\Domain\Engagement\Enums\WorkingPaperStatus;
 use App\Domain\Engagement\Models\Engagement;
-use App\Domain\Engagement\Models\EngagementDeliverable;
 use App\Domain\Engagement\Models\WorkingPaper;
 use App\Domain\Engagement\Services\EngagementService;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
     $this->tenant = createTenant();
@@ -184,7 +184,7 @@ describe('Working paper review segregation', function (): void {
 
         // Current user (admin) is the assigned preparer — should fail
         expect(fn () => $service->reviewWorkingPaper($workingPaper))
-            ->toThrow(\Illuminate\Validation\ValidationException::class);
+            ->toThrow(ValidationException::class);
     });
 
     it('allows review by a different user than the preparer', function (): void {

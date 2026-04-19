@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Domain\Currency\Models\FxRevaluation;
-use App\Domain\Currency\Models\FxRevaluationLine;
 
 test('gain calculation: balance 1000 USD, old rate 15.50, new rate 16.00 produces gain of 500 EGP', function () {
     // foreign_balance = 1000 USD
@@ -112,7 +111,7 @@ test('FxRevaluation model has correct status helpers', function () {
 });
 
 test('FxRevaluation default attributes are set correctly', function () {
-    $reval = new FxRevaluation();
+    $reval = new FxRevaluation;
 
     expect($reval->functional_currency)->toBe('EGP');
     expect($reval->status)->toBe('draft');

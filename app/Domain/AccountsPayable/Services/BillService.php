@@ -302,7 +302,7 @@ class BillService
             ->withoutGlobalScopes()
             ->where('tenant_id', app('tenant.id'))
             ->lockForUpdate()
-            ->max(DB::raw("CAST(SUBSTRING(bill_number FROM 6) AS INTEGER)"));
+            ->max(DB::raw('CAST(SUBSTRING(bill_number FROM 6) AS INTEGER)'));
 
         $nextNumber = ($lastNumber ?? 0) + 1;
 
@@ -334,5 +334,4 @@ class BillService
             $bill->lines()->save($line);
         }
     }
-
 }

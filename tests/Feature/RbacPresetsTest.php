@@ -1,6 +1,8 @@
 <?php
 
 declare(strict_types=1);
+use App\Domain\Shared\Enums\UserRole;
+use App\Models\User;
 
 describe('GET /api/v1/rbac/role-presets', function (): void {
 
@@ -28,9 +30,9 @@ describe('GET /api/v1/rbac/role-presets', function (): void {
 
     it('rejects users without manage_team permission', function (): void {
         $tenant = createTenant();
-        $user = \App\Models\User::factory()->create([
+        $user = User::factory()->create([
             'tenant_id' => $tenant->id,
-            'role' => \App\Domain\Shared\Enums\UserRole::Auditor,
+            'role' => UserRole::Auditor,
         ]);
         actingAsUser($user);
 

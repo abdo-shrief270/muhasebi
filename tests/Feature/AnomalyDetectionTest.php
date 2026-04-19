@@ -5,8 +5,7 @@ declare(strict_types=1);
 use App\Domain\Accounting\Models\Account;
 use App\Domain\Accounting\Models\JournalEntry;
 use App\Domain\Accounting\Models\JournalEntryLine;
-use App\Domain\AccountsPayable\Models\BillPayment;
-use App\Domain\AccountsPayable\Models\Vendor;
+use App\Domain\Accounting\Services\AnomalyDetectionService;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Client\Models\Client;
 
@@ -185,7 +184,7 @@ describe('Round Number Bias Detection', function (): void {
             ]);
         }
 
-        $service = app(\App\Domain\Accounting\Services\AnomalyDetectionService::class);
+        $service = app(AnomalyDetectionService::class);
         $results = $service->roundNumberBias();
 
         // 4/5 = 80%, threshold is >80%, so exactly 80% should NOT be flagged
@@ -250,7 +249,7 @@ describe('Dormant Account Activity Detection', function (): void {
             'credit' => 0,
         ]);
 
-        $service = app(\App\Domain\Accounting\Services\AnomalyDetectionService::class);
+        $service = app(AnomalyDetectionService::class);
         $results = $service->dormantAccountActivity();
 
         expect($results)->not->toBeEmpty();

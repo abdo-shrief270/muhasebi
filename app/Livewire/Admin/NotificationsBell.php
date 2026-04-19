@@ -6,9 +6,9 @@ namespace App\Livewire\Admin;
 
 use App\Domain\Notification\Models\Notification;
 use Illuminate\Contracts\Database\Eloquent\Builder;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
-use Livewire\Attributes\On;
 use Livewire\Component;
 
 class NotificationsBell extends Component
@@ -20,7 +20,7 @@ class NotificationsBell extends Component
         $this->open = ! $this->open;
     }
 
-    public function markAsRead(string $id): RedirectResponse|null
+    public function markAsRead(string $id): ?RedirectResponse
     {
         /** @var Notification|null $notification */
         $notification = $this->baseQuery()->whereKey($id)->first();
@@ -60,7 +60,7 @@ class NotificationsBell extends Component
             ->get();
     }
 
-    public function render(): \Illuminate\Contracts\View\View
+    public function render(): View
     {
         return view('livewire.admin.notifications-bell', [
             'unreadCount' => $this->unreadCount,

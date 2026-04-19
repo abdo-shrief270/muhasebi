@@ -55,6 +55,7 @@ class User extends Authenticatable implements FilamentUser
      * We apply BelongsToTenant manually for tenant-level users only.
      */
     use BelongsToTenant;
+
     use HasApiTokens;
     use HasFactory;
     use HasRoles;

@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 use App\Domain\Client\Models\Client;
 use App\Domain\ClientPortal\Models\Message;
+use App\Domain\ClientPortal\Models\PortalInviteToken;
+use App\Domain\ClientPortal\Services\ClientInvitationService;
 use App\Domain\Shared\Enums\UserRole;
+use App\Mail\ClientPortalInviteMail;
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 
 beforeEach(function (): void {
     $this->tenant = createTenant();
@@ -75,7 +80,7 @@ describe('POST /api/v1/clients/{client}/invite-portal', function (): void {
     });
 
     it('dispatches ClientPortalInviteMail with the magic-link URL', function (): void {
-        \Illuminate\Support\Facades\Mail::fake();
+        Mail::fake();
 
         $this->withHeader('X-Tenant', $this->tenant->slug)
             ->postJson("/api/v1/clients/{$this->client->id}/invite-portal", [
@@ -84,7 +89,7 @@ describe('POST /api/v1/clients/{client}/invite-portal', function (): void {
             ])
             ->assertCreated();
 
-        \Illuminate\Support\Facades\Mail::assertQueued(\App\Mail\ClientPortalInviteMail::class, function ($mail) {
+        Mail::assertQueued(ClientPortalInviteMail::class, function ($mail) {
             return $mail->hasTo('mailed@example.com')
                 && str_contains($mail->actionUrl, '/portal/accept-invite?token=');
         });
@@ -100,15 +105,15 @@ describe('POST /api/v1/portal/accept-invite', function (): void {
                 'name' => 'Newbie',
             ])->assertCreated();
 
-        $url = app(\App\Domain\ClientPortal\Services\ClientInvitationService::class);
-        $plaintext = \App\Domain\ClientPortal\Models\PortalInviteToken::query()
+        $url = app(ClientInvitationService::class);
+        $plaintext = PortalInviteToken::query()
             ->where('user_id', User::query()->where('email', 'newbie@example.com')->value('id'))
             ->value('token_hash');
 
         // Re-issue an invite via the service directly so we can capture the
         // plaintext token that the controller-path doesn't expose.
-        \App\Domain\ClientPortal\Models\PortalInviteToken::query()->delete();
-        \App\Models\User::where('email', 'newbie@example.com')->delete();
+        PortalInviteToken::query()->delete();
+        User::where('email', 'newbie@example.com')->delete();
 
         $client2 = Client::factory()->create(['tenant_id' => $this->tenant->id]);
         app()->instance('tenant.id', $this->tenant->id);
@@ -125,13 +130,13 @@ describe('POST /api/v1/portal/accept-invite', function (): void {
             ->assertJsonPath('data.user.role', 'client')
             ->assertJsonStructure(['data' => ['token']]);
 
-        expect(\Illuminate\Support\Facades\Hash::check('NewPassword123!', $invite['user']->fresh()->password))
+        expect(Hash::check('NewPassword123!', $invite['user']->fresh()->password))
             ->toBeTrue();
 
         $this->assertDatabaseHas('portal_invite_tokens', [
             'user_id' => $invite['user']->id,
         ]);
-        expect(\App\Domain\ClientPortal\Models\PortalInviteToken::query()->first()->used_at)
+        expect(PortalInviteToken::query()->first()->used_at)
             ->not->toBeNull();
     });
 
@@ -146,7 +151,7 @@ describe('POST /api/v1/portal/accept-invite', function (): void {
     it('rejects a used token', function (): void {
         $client2 = Client::factory()->create(['tenant_id' => $this->tenant->id]);
         app()->instance('tenant.id', $this->tenant->id);
-        $invite = app(\App\Domain\ClientPortal\Services\ClientInvitationService::class)
+        $invite = app(ClientInvitationService::class)
             ->inviteClientUser($client2, 'one-shot@example.com', 'One Shot');
 
         // First use succeeds
@@ -167,10 +172,10 @@ describe('POST /api/v1/portal/accept-invite', function (): void {
     it('rejects an expired token', function (): void {
         $client2 = Client::factory()->create(['tenant_id' => $this->tenant->id]);
         app()->instance('tenant.id', $this->tenant->id);
-        $invite = app(\App\Domain\ClientPortal\Services\ClientInvitationService::class)
+        $invite = app(ClientInvitationService::class)
             ->inviteClientUser($client2, 'stale@example.com', 'Stale');
 
-        \App\Domain\ClientPortal\Models\PortalInviteToken::query()
+        PortalInviteToken::query()
             ->where('user_id', $invite['user']->id)
             ->update(['expires_at' => now()->subMinute()]);
 

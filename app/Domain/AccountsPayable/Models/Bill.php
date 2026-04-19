@@ -6,6 +6,7 @@ namespace App\Domain\AccountsPayable\Models;
 
 use App\Domain\Accounting\Models\JournalEntry;
 use App\Domain\AccountsPayable\Enums\BillStatus;
+use App\Domain\Client\Models\Client;
 use App\Domain\Shared\Traits\BelongsToTenant;
 use App\Domain\Tenant\Models\Tenant;
 use App\Models\User;
@@ -80,7 +81,7 @@ class Bill extends Model
 
     public function vendor(): BelongsTo
     {
-        return $this->belongsTo(\App\Domain\Client\Models\Client::class, 'vendor_id');
+        return $this->belongsTo(Client::class, 'vendor_id');
     }
 
     public function lines(): HasMany

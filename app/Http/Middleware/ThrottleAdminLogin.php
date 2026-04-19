@@ -25,9 +25,7 @@ class ThrottleAdminLogin
 
     private const DECAY_SECONDS = 60;
 
-    public function __construct(private readonly RateLimiter $limiter)
-    {
-    }
+    public function __construct(private readonly RateLimiter $limiter) {}
 
     public function handle(Request $request, Closure $next): Response
     {

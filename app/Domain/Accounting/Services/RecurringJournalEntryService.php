@@ -6,7 +6,6 @@ namespace App\Domain\Accounting\Services;
 
 use App\Domain\Accounting\Models\RecurringJournalEntry;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 

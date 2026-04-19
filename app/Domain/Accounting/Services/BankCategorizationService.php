@@ -8,7 +8,7 @@ use App\Domain\Accounting\Models\BankCategorizationRule;
 use App\Domain\Accounting\Models\BankReconciliation;
 use App\Domain\Accounting\Models\BankStatementLine;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
 
 class BankCategorizationService
 {
@@ -55,7 +55,7 @@ class BankCategorizationService
     /**
      * Try to match a statement line against categorization rules.
      *
-     * @param  \Illuminate\Support\Collection<int, BankCategorizationRule>  $rules
+     * @param  Collection<int, BankCategorizationRule>  $rules
      */
     private function tryRuleMatch(BankStatementLine $line, $rules): bool
     {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\FixedAssets\Services;
 
+use App\Domain\Accounting\Models\Account;
 use App\Domain\Accounting\Services\JournalEntryService;
 use App\Domain\FixedAssets\Enums\AssetStatus;
 use App\Domain\FixedAssets\Enums\DepreciationMethod;
@@ -351,7 +352,7 @@ class AssetDisposalService
     {
         $code = config('accounting.default_accounts.cash');
 
-        $account = \App\Domain\Accounting\Models\Account::query()
+        $account = Account::query()
             ->forTenant((int) app('tenant.id'))
             ->where('code', $code)
             ->first();

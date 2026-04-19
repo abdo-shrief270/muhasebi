@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Cache;
 final class PlanFeatureCache
 {
     private const CACHE_TTL = 600; // 10 minutes
+
     private const CACHE_TAG = 'plans';
 
     /**

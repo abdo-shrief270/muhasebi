@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 use App\Domain\Accounting\Models\JournalEntry;
 use App\Domain\Audit\Services\AuditComplianceService;
+use App\Domain\Shared\Enums\UserRole;
+use App\Models\User;
 use Spatie\Activitylog\Models\Activity;
+use Spatie\Permission\Models\Role;
 
 beforeEach(function (): void {
     $this->tenant = createTenant();
@@ -155,11 +158,11 @@ describe('API Endpoints', function (): void {
     it('requires view_audit permission', function (): void {
         // Ensure the Spatie role exists in this test DB — seeders don't
         // run by default under RefreshDatabase.
-        \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'accountant', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'accountant', 'guard_name' => 'web']);
 
-        $accountant = \App\Models\User::factory()->create([
+        $accountant = User::factory()->create([
             'tenant_id' => $this->tenant->id,
-            'role' => \App\Domain\Shared\Enums\UserRole::Accountant,
+            'role' => UserRole::Accountant,
         ]);
         // Accountant role does not include view_audit
         $accountant->assignRole('accountant');

@@ -8,9 +8,11 @@ use App\Domain\Payroll\Enums\LeaveStatus;
 use App\Domain\Payroll\Enums\LoanStatus;
 use App\Domain\Payroll\Enums\SalaryComponentType;
 use App\Domain\Payroll\Models\AttendanceRecord;
+use App\Domain\Payroll\Models\Employee;
 use App\Domain\Payroll\Models\EmployeeLoan;
 use App\Domain\Payroll\Models\EmployeeSalaryDetail;
 use App\Domain\Payroll\Models\LeaveBalance;
+use App\Domain\Payroll\Models\LeaveType;
 
 // ──────────────────────────────────────
 // Enum Labels
@@ -152,10 +154,10 @@ test('leave balance calculates available days correctly', function (): void {
 
 test('leave request approval deducts from balance', function (): void {
     $tenant = createTenant();
-    $employee = \App\Domain\Payroll\Models\Employee::factory()->create([
+    $employee = Employee::factory()->create([
         'tenant_id' => $tenant->id,
     ]);
-    $leaveType = \App\Domain\Payroll\Models\LeaveType::factory()->create([
+    $leaveType = LeaveType::factory()->create([
         'tenant_id' => $tenant->id,
     ]);
 
@@ -197,7 +199,7 @@ test('attendance calculates hours worked and overtime', function (): void {
 
 test('attendance summary counts statuses correctly', function (): void {
     $tenant = createTenant();
-    $employee = \App\Domain\Payroll\Models\Employee::factory()->create([
+    $employee = Employee::factory()->create([
         'tenant_id' => $tenant->id,
     ]);
 
@@ -240,7 +242,7 @@ test('attendance summary counts statuses correctly', function (): void {
     $summary = AttendanceRecord::withoutGlobalScopes()
         ->where('employee_id', $employee->id)
         ->whereBetween('date', ['2026-03-01', '2026-03-31'])
-        ->selectRaw("status, count(*) as count")
+        ->selectRaw('status, count(*) as count')
         ->groupBy('status')
         ->pluck('count', 'status');
 

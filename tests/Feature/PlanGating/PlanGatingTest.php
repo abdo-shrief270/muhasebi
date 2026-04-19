@@ -14,7 +14,6 @@ use Illuminate\Support\Facades\Cache;
  * plan doesn't include the feature, and that admin FeatureFlag overrides bypass
  * the check.
  */
-
 beforeEach(function (): void {
     Cache::flush();
     // Seed plans + roles — required by permission middleware that runs after feature middleware.
@@ -66,7 +65,7 @@ it('blocks access when tenant has no subscription', function (): void {
     $tenant = createTenant();
     // createTenant() auto-provisions a trial subscription; strip it so we
     // exercise the no-subscription path.
-    \App\Domain\Subscription\Models\Subscription::where('tenant_id', $tenant->id)->delete();
+    Subscription::where('tenant_id', $tenant->id)->delete();
 
     $admin = createAdminUser($tenant);
     actingAsUser($admin);

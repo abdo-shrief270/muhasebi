@@ -455,5 +455,4 @@ class InvoiceService
             $invoice->lines()->save($line);
         }
     }
-
 }

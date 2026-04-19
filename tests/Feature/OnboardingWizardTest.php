@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use App\Domain\Accounting\Models\Account;
-use App\Domain\Onboarding\Models\CoaTemplate;
 use App\Domain\Onboarding\Models\OnboardingProgress;
+use App\Domain\Onboarding\Services\OnboardingService;
 use Database\Seeders\CoaTemplateSeeder;
 
 beforeEach(function (): void {
@@ -127,7 +127,7 @@ describe('POST /api/v1/onboarding-wizard/import-balances', function (): void {
             ]);
 
         // Set up a fiscal year so journal entries can be created
-        app(\App\Domain\Onboarding\Services\OnboardingService::class)->setupFiscalYear($this->tenant->id);
+        app(OnboardingService::class)->setupFiscalYear($this->tenant->id);
 
         $response = $this->withHeader('X-Tenant', $this->tenant->slug)
             ->postJson('/api/v1/onboarding-wizard/import-balances', [

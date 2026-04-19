@@ -6,6 +6,7 @@ namespace App\Domain\Audit\Services;
 
 use App\Domain\Accounting\Models\JournalEntry;
 use App\Models\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Spatie\Activitylog\Models\Activity;
 
@@ -168,8 +169,8 @@ class AuditComplianceService
         // 1. Large journal entries (amount > threshold)
         $largeEntries = (clone $jeQuery)
             ->where(function ($q) use ($threshold) {
-                $q->whereRaw("CAST(total_debit AS NUMERIC) > ?", [$threshold])
-                    ->orWhereRaw("CAST(total_credit AS NUMERIC) > ?", [$threshold]);
+                $q->whereRaw('CAST(total_debit AS NUMERIC) > ?', [$threshold])
+                    ->orWhereRaw('CAST(total_credit AS NUMERIC) > ?', [$threshold]);
             })
             ->get(['id', 'entry_number', 'date', 'total_debit', 'total_credit', 'created_by', 'status']);
 
@@ -476,9 +477,9 @@ class AuditComplianceService
     // ──────────────────────────────────────
 
     /**
-     * @return \Illuminate\Support\Collection<int, int>
+     * @return Collection<int, int>
      */
-    private function tenantUserIds(): \Illuminate\Support\Collection
+    private function tenantUserIds(): Collection
     {
         $tenantId = (int) app('tenant.id');
 

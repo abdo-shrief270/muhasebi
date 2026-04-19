@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Domain\Accounting\Enums\AccountType;
 use App\Domain\Accounting\Enums\CostCenterType;
 use App\Domain\Accounting\Models\Account;
 use App\Domain\Accounting\Models\CostCenter;

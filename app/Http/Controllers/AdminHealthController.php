@@ -74,18 +74,19 @@ class AdminHealthController extends Controller
     /** @return array<string, mixed> */
     private function checkQueue(): array
     {
-        $repoClass = '\\Laravel\\Horizon\\Contracts\\MasterSupervisorRepository';
+        $repoContract = '\\Laravel\\Horizon\\Contracts\\MasterSupervisorRepository';
 
-        if (! class_exists($repoClass)) {
+        if (! interface_exists($repoContract)) {
             return ['status' => 'skipped', 'message' => 'horizon not installed'];
         }
 
         try {
-            $supervisors = app($repoClass)->all();
+            $supervisors = app($repoContract)->all();
 
             return [
                 'status' => count($supervisors) > 0 ? 'ok' : 'degraded',
                 'supervisors' => count($supervisors),
+                'message' => count($supervisors) > 0 ? null : 'horizon not running',
             ];
         } catch (Throwable $e) {
             return ['status' => 'degraded', 'message' => 'horizon not booted'];

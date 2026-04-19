@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Domain\Accounting\Models\BankCategorizationRule;
-use App\Domain\Accounting\Models\BankReconciliation;
 use App\Domain\Accounting\Models\BankStatementLine;
 use App\Domain\Accounting\Services\BankCategorizationService;
 
@@ -136,7 +135,7 @@ test('apply suggestion requires a suggested_account_id', function () {
     ]);
 
     expect(fn () => $service->applySuggestion($line))
-        ->toThrow(\InvalidArgumentException::class, 'No suggestion available');
+        ->toThrow(InvalidArgumentException::class, 'No suggestion available');
 });
 
 test('BankCategorizationRule matches helper handles all match types correctly', function () {

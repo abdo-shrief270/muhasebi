@@ -166,7 +166,7 @@ class ECommerceService
     {
         $eventType = $payload['event'] ?? $payload['topic'] ?? $payload['type'] ?? null;
 
-        Log::info("E-commerce webhook received", [
+        Log::info('E-commerce webhook received', [
             'platform' => $platform,
             'channel_id' => $channel?->id,
             'event' => $eventType,
@@ -284,7 +284,7 @@ class ECommerceService
     private function handleOrderCreated(string $platform, array $payload): array
     {
         // TODO: Parse payload per platform, create ECommerceOrder
-        Log::info("E-commerce order.created webhook placeholder", compact('platform'));
+        Log::info('E-commerce order.created webhook placeholder', compact('platform'));
 
         return ['handled' => true, 'event' => 'order.created'];
     }
@@ -297,7 +297,7 @@ class ECommerceService
      */
     private function handleOrderUpdated(string $platform, array $payload): array
     {
-        Log::info("E-commerce order.updated webhook placeholder", compact('platform'));
+        Log::info('E-commerce order.updated webhook placeholder', compact('platform'));
 
         return ['handled' => true, 'event' => 'order.updated'];
     }
@@ -310,7 +310,7 @@ class ECommerceService
      */
     private function handleOrderCancelled(string $platform, array $payload): array
     {
-        Log::info("E-commerce order.cancelled webhook placeholder", compact('platform'));
+        Log::info('E-commerce order.cancelled webhook placeholder', compact('platform'));
 
         return ['handled' => true, 'event' => 'order.cancelled'];
     }

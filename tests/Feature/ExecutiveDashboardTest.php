@@ -7,8 +7,9 @@ use App\Domain\Accounting\Models\FiscalPeriod;
 use App\Domain\Accounting\Models\FiscalYear;
 use App\Domain\Accounting\Models\JournalEntry;
 use App\Domain\Accounting\Models\JournalEntryLine;
-use App\Domain\Billing\Models\Invoice;
 use App\Domain\AccountsPayable\Models\Bill;
+use App\Domain\AccountsPayable\Models\Vendor;
+use App\Domain\Billing\Models\Invoice;
 use App\Domain\Client\Models\Client;
 
 beforeEach(function (): void {
@@ -263,7 +264,7 @@ describe('GET /api/v1/dashboard/cash-flow', function (): void {
 
         // AP due within 30 days: 15000
         // vendor_id FKs to vendors.id (not clients.id) — use a real Vendor.
-        $vendor = \App\Domain\AccountsPayable\Models\Vendor::factory()->create(['tenant_id' => $this->tenant->id]);
+        $vendor = Vendor::factory()->create(['tenant_id' => $this->tenant->id]);
         Bill::create([
             'tenant_id' => $this->tenant->id,
             'vendor_id' => $vendor->id,

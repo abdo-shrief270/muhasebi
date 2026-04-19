@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Domain\Accounting\Models\Account;
 use App\Domain\Banking\Enums\BankCode;
 use App\Domain\Banking\Models\BankConnection;
-use App\Domain\Banking\Services\BankConnectionService;
 use Illuminate\Http\UploadedFile;
 
 beforeEach(function (): void {

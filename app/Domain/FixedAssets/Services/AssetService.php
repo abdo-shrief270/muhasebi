@@ -161,7 +161,7 @@ class AssetService
 
             if (! empty($attemptedFinancial)) {
                 throw ValidationException::withMessages([
-                    'depreciation' => ['Cannot update financial fields after depreciation has been recorded. Fields: ' . implode(', ', array_keys($attemptedFinancial))],
+                    'depreciation' => ['Cannot update financial fields after depreciation has been recorded. Fields: '.implode(', ', array_keys($attemptedFinancial))],
                 ]);
             }
         }

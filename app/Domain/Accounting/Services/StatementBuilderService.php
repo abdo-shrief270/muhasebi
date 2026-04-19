@@ -9,6 +9,8 @@ use App\Domain\Accounting\Enums\JournalEntryStatus;
 use App\Domain\Accounting\Enums\NormalBalance;
 use App\Domain\Accounting\Models\Account;
 use App\Domain\Accounting\Models\StatementTemplate;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class StatementBuilderService
@@ -19,7 +21,7 @@ class StatementBuilderService
 
     /**
      * @param  array<string, mixed>  $filters
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     * @return LengthAwarePaginator
      */
     public function list(array $filters = [])
     {
@@ -571,7 +573,7 @@ class StatementBuilderService
      * Get account balances for specific account IDs and period.
      *
      * @param  array<int>  $accountIds
-     * @return \Illuminate\Support\Collection
+     * @return Collection
      */
     private function getAccountBalances(array $accountIds, string $from, string $to)
     {

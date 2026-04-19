@@ -392,5 +392,4 @@ class PaymentService
 
         return $this->glPostingService->resolveAccount($code, $tenantId);
     }
-
 }

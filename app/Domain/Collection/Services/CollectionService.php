@@ -243,7 +243,7 @@ class CollectionService
             ]);
         }
 
-        return DB::transaction(function () use ($invoice, $amount, $reason, $balanceDue): CollectionAction {
+        return DB::transaction(function () use ($invoice, $amount, $reason): CollectionAction {
             $tenantId = (int) app('tenant.id');
 
             // Resolve GL accounts
@@ -477,7 +477,7 @@ class CollectionService
             ->when(isset($filters['client_id']), fn ($q) => $q->forClient((int) $filters['client_id']))
             ->select('action_type')
             ->selectRaw('COUNT(*) as total')
-            ->selectRaw("SUM(CASE WHEN outcome IN (?, ?, ?) THEN 1 ELSE 0 END) as successful", [
+            ->selectRaw('SUM(CASE WHEN outcome IN (?, ?, ?) THEN 1 ELSE 0 END) as successful', [
                 CollectionOutcome::PaymentCommitment->value,
                 CollectionOutcome::PartialPayment->value,
                 CollectionOutcome::PaymentReceived->value,
@@ -507,5 +507,4 @@ class CollectionService
             'success_rate_by_type' => $successRateByType,
         ];
     }
-
 }

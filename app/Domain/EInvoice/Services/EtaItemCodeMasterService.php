@@ -8,6 +8,7 @@ use App\Domain\Billing\Models\InvoiceLine;
 use App\Domain\EInvoice\Models\EtaItemCode;
 use App\Domain\EInvoice\Models\EtaItemCodeMapping;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class EtaItemCodeMasterService
@@ -457,7 +458,7 @@ class EtaItemCodeMasterService
     /**
      * Get invoice lines that have no matching ETA item code.
      */
-    private function getUnassignedLines(int $tenantId): \Illuminate\Support\Collection
+    private function getUnassignedLines(int $tenantId): Collection
     {
         $etaDescriptions = EtaItemCode::query()
             ->where('tenant_id', $tenantId)
@@ -546,7 +547,7 @@ class EtaItemCodeMasterService
         // Calculate word overlap
         $inputWords = array_filter(explode(' ', $normalized), fn ($w) => mb_strlen($w) >= 3);
         $codeWords = array_filter(
-            explode(' ', $codeDesc . ' ' . $codeDescAr),
+            explode(' ', $codeDesc.' '.$codeDescAr),
             fn ($w) => mb_strlen($w) >= 3,
         );
 

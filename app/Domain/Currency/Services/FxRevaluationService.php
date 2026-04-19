@@ -141,7 +141,7 @@ class FxRevaluationService
 
             if (! $fxGainAccount || ! $fxLossAccount) {
                 throw ValidationException::withMessages([
-                    'accounts' => ['FX gain/loss accounts not found. Please configure account codes ' . $fxGainCode . ' and ' . $fxLossCode . '.'],
+                    'accounts' => ['FX gain/loss accounts not found. Please configure account codes '.$fxGainCode.' and '.$fxLossCode.'.'],
                 ]);
             }
 
@@ -157,14 +157,14 @@ class FxRevaluationService
                         'debit' => $gainLoss,
                         'credit' => '0.00',
                         'currency' => 'EGP',
-                        'description' => 'FX revaluation gain — ' . $line->currency,
+                        'description' => 'FX revaluation gain — '.$line->currency,
                     ];
                     $journalLines[] = [
                         'account_id' => $fxGainAccount->id,
                         'debit' => '0.00',
                         'credit' => $gainLoss,
                         'currency' => 'EGP',
-                        'description' => 'FX revaluation gain — ' . $line->currency,
+                        'description' => 'FX revaluation gain — '.$line->currency,
                     ];
                 } elseif (bccomp($gainLoss, '0.00', 2) < 0) {
                     // Loss: DEBIT fx_loss account, CREDIT the revalued account
@@ -174,14 +174,14 @@ class FxRevaluationService
                         'debit' => $absLoss,
                         'credit' => '0.00',
                         'currency' => 'EGP',
-                        'description' => 'FX revaluation loss — ' . $line->currency,
+                        'description' => 'FX revaluation loss — '.$line->currency,
                     ];
                     $journalLines[] = [
                         'account_id' => $line->account_id,
                         'debit' => '0.00',
                         'credit' => $absLoss,
                         'currency' => 'EGP',
-                        'description' => 'FX revaluation loss — ' . $line->currency,
+                        'description' => 'FX revaluation loss — '.$line->currency,
                     ];
                 }
             }
@@ -194,8 +194,8 @@ class FxRevaluationService
 
             $journalEntry = $this->journalEntryService->create([
                 'date' => $reval->revaluation_date->toDateString(),
-                'description' => 'FX Revaluation — ' . $reval->revaluation_date->toDateString(),
-                'reference' => 'FX-REVAL-' . $reval->id,
+                'description' => 'FX Revaluation — '.$reval->revaluation_date->toDateString(),
+                'reference' => 'FX-REVAL-'.$reval->id,
                 'lines' => $journalLines,
             ]);
 

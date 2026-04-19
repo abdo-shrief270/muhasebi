@@ -34,64 +34,64 @@ class ExecutiveDashboardService
     public function financialOverview(array $filters): array
     {
         $tenantId = app('tenant.id');
-        $cacheKey = "dashboard:{$tenantId}:financial_overview:" . md5(json_encode($filters));
+        $cacheKey = "dashboard:{$tenantId}:financial_overview:".md5(json_encode($filters));
 
         return Cache::remember($cacheKey, 3600, function () use ($filters) {
-        $toDate = $filters['to'] ?? date('Y-m-d');
-        $year = substr($toDate, 0, 4);
-        $fromDate = $filters['from'] ?? "{$year}-01-01";
+            $toDate = $filters['to'] ?? date('Y-m-d');
+            $year = substr($toDate, 0, 4);
+            $fromDate = $filters['from'] ?? "{$year}-01-01";
 
-        // Revenue & Expenses YTD from GL
-        $revenueYtd = $this->sumByAccountType(AccountType::Revenue, $fromDate, $toDate);
-        $expensesYtd = $this->sumByAccountType(AccountType::Expense, $fromDate, $toDate);
-        $netProfitYtd = bcsub($revenueYtd, $expensesYtd, 2);
+            // Revenue & Expenses YTD from GL
+            $revenueYtd = $this->sumByAccountType(AccountType::Revenue, $fromDate, $toDate);
+            $expensesYtd = $this->sumByAccountType(AccountType::Expense, $fromDate, $toDate);
+            $netProfitYtd = bcsub($revenueYtd, $expensesYtd, 2);
 
-        // Cash balance: sum of cash + bank accounts
-        $cashBalance = $this->getCashBalance($toDate);
+            // Cash balance: sum of cash + bank accounts
+            $cashBalance = $this->getCashBalance($toDate);
 
-        // AR outstanding (invoices not fully paid)
-        $arOutstanding = $this->getArOutstanding();
+            // AR outstanding (invoices not fully paid)
+            $arOutstanding = $this->getArOutstanding();
 
-        // AP outstanding (bills not fully paid)
-        $apOutstanding = $this->getApOutstanding();
+            // AP outstanding (bills not fully paid)
+            $apOutstanding = $this->getApOutstanding();
 
-        // Revenue vs last year
-        $prevYear = (string) ((int) $year - 1);
-        $prevFromDate = "{$prevYear}-01-01";
-        $prevToDate = $prevYear . substr($toDate, 4);
-        $prevRevenue = $this->sumByAccountType(AccountType::Revenue, $prevFromDate, $prevToDate);
-        $revenueChange = bcsub($revenueYtd, $prevRevenue, 2);
-        $revenueChangePercent = bccomp($prevRevenue, '0', 2) !== 0
-            ? bcmul(bcdiv($revenueChange, $prevRevenue, 4), '100', 2)
-            : '0.00';
+            // Revenue vs last year
+            $prevYear = (string) ((int) $year - 1);
+            $prevFromDate = "{$prevYear}-01-01";
+            $prevToDate = $prevYear.substr($toDate, 4);
+            $prevRevenue = $this->sumByAccountType(AccountType::Revenue, $prevFromDate, $prevToDate);
+            $revenueChange = bcsub($revenueYtd, $prevRevenue, 2);
+            $revenueChangePercent = bccomp($prevRevenue, '0', 2) !== 0
+                ? bcmul(bcdiv($revenueChange, $prevRevenue, 4), '100', 2)
+                : '0.00';
 
-        // Expense vs budget
-        $budgetAmount = $this->getTotalBudget($fromDate, $toDate);
-        $budgetVariance = bcsub($budgetAmount, $expensesYtd, 2);
-        $budgetVariancePercent = bccomp($budgetAmount, '0', 2) !== 0
-            ? bcmul(bcdiv($budgetVariance, $budgetAmount, 4), '100', 2)
-            : '0.00';
+            // Expense vs budget
+            $budgetAmount = $this->getTotalBudget($fromDate, $toDate);
+            $budgetVariance = bcsub($budgetAmount, $expensesYtd, 2);
+            $budgetVariancePercent = bccomp($budgetAmount, '0', 2) !== 0
+                ? bcmul(bcdiv($budgetVariance, $budgetAmount, 4), '100', 2)
+                : '0.00';
 
-        return [
-            'revenue_ytd' => $revenueYtd,
-            'expenses_ytd' => $expensesYtd,
-            'net_profit_ytd' => $netProfitYtd,
-            'cash_balance' => $cashBalance,
-            'ar_outstanding' => $arOutstanding,
-            'ap_outstanding' => $apOutstanding,
-            'revenue_vs_last_year' => [
-                'current' => $revenueYtd,
-                'previous' => $prevRevenue,
-                'change' => $revenueChange,
-                'change_percent' => $revenueChangePercent,
-            ],
-            'expense_vs_budget' => [
-                'actual' => $expensesYtd,
-                'budget' => $budgetAmount,
-                'variance' => $budgetVariance,
-                'variance_percent' => $budgetVariancePercent,
-            ],
-        ];
+            return [
+                'revenue_ytd' => $revenueYtd,
+                'expenses_ytd' => $expensesYtd,
+                'net_profit_ytd' => $netProfitYtd,
+                'cash_balance' => $cashBalance,
+                'ar_outstanding' => $arOutstanding,
+                'ap_outstanding' => $apOutstanding,
+                'revenue_vs_last_year' => [
+                    'current' => $revenueYtd,
+                    'previous' => $prevRevenue,
+                    'change' => $revenueChange,
+                    'change_percent' => $revenueChangePercent,
+                ],
+                'expense_vs_budget' => [
+                    'actual' => $expensesYtd,
+                    'budget' => $budgetAmount,
+                    'variance' => $budgetVariance,
+                    'variance_percent' => $budgetVariancePercent,
+                ],
+            ];
         });
     }
 
@@ -110,18 +110,18 @@ class ExecutiveDashboardService
     public function revenueAnalysis(array $filters): array
     {
         $tenantId = app('tenant.id');
-        $cacheKey = "dashboard:{$tenantId}:revenue_analysis:" . md5(json_encode($filters));
+        $cacheKey = "dashboard:{$tenantId}:revenue_analysis:".md5(json_encode($filters));
 
         return Cache::remember($cacheKey, 3600, function () use ($filters) {
-        $toDate = $filters['to'] ?? date('Y-m-d');
-        $fromDate = $filters['from'] ?? date('Y-m-d', strtotime('-12 months', strtotime($toDate)));
+            $toDate = $filters['to'] ?? date('Y-m-d');
+            $fromDate = $filters['from'] ?? date('Y-m-d', strtotime('-12 months', strtotime($toDate)));
 
-        return [
-            'by_month' => $this->revenueByMonth($fromDate, $toDate),
-            'by_client' => $this->revenueByClient($fromDate, $toDate),
-            'by_account' => $this->revenueByAccount($fromDate, $toDate),
-            'growth_rates' => $this->revenueGrowthRates($fromDate, $toDate),
-        ];
+            return [
+                'by_month' => $this->revenueByMonth($fromDate, $toDate),
+                'by_client' => $this->revenueByClient($fromDate, $toDate),
+                'by_account' => $this->revenueByAccount($fromDate, $toDate),
+                'growth_rates' => $this->revenueGrowthRates($fromDate, $toDate),
+            ];
         });
     }
 
@@ -142,33 +142,33 @@ class ExecutiveDashboardService
     public function cashFlowForecast(array $filters): array
     {
         $tenantId = app('tenant.id');
-        $cacheKey = "dashboard:{$tenantId}:cash_flow_forecast:" . md5(json_encode($filters));
+        $cacheKey = "dashboard:{$tenantId}:cash_flow_forecast:".md5(json_encode($filters));
 
         return Cache::remember($cacheKey, 3600, function () use ($filters) {
-        $asOfDate = $filters['to'] ?? date('Y-m-d');
+            $asOfDate = $filters['to'] ?? date('Y-m-d');
 
-        $currentCash = $this->getCashBalance($asOfDate);
+            $currentCash = $this->getCashBalance($asOfDate);
 
-        // Expected inflows from AR aging weighted by collection probability
-        $arAging = $this->getArAging($asOfDate);
-        $expectedInflows = $this->calculateWeightedInflows($arAging);
+            // Expected inflows from AR aging weighted by collection probability
+            $arAging = $this->getArAging($asOfDate);
+            $expectedInflows = $this->calculateWeightedInflows($arAging);
 
-        // Expected outflows from AP aging
-        $expectedOutflows = $this->getExpectedOutflows($asOfDate);
+            // Expected outflows from AP aging
+            $expectedOutflows = $this->getExpectedOutflows($asOfDate);
 
-        // Project cash position for 30/60/90 days
-        $projected30 = bcadd($currentCash, bcsub($expectedInflows['30_days'], $expectedOutflows['30_days'], 2), 2);
-        $projected60 = bcadd($currentCash, bcsub($expectedInflows['60_days'], $expectedOutflows['60_days'], 2), 2);
-        $projected90 = bcadd($currentCash, bcsub($expectedInflows['90_days'], $expectedOutflows['90_days'], 2), 2);
+            // Project cash position for 30/60/90 days
+            $projected30 = bcadd($currentCash, bcsub($expectedInflows['30_days'], $expectedOutflows['30_days'], 2), 2);
+            $projected60 = bcadd($currentCash, bcsub($expectedInflows['60_days'], $expectedOutflows['60_days'], 2), 2);
+            $projected90 = bcadd($currentCash, bcsub($expectedInflows['90_days'], $expectedOutflows['90_days'], 2), 2);
 
-        return [
-            'current_cash_position' => $currentCash,
-            'expected_inflows' => $expectedInflows['total'],
-            'expected_outflows' => $expectedOutflows['total'],
-            'projected_30_days' => $projected30,
-            'projected_60_days' => $projected60,
-            'projected_90_days' => $projected90,
-        ];
+            return [
+                'current_cash_position' => $currentCash,
+                'expected_inflows' => $expectedInflows['total'],
+                'expected_outflows' => $expectedOutflows['total'],
+                'projected_30_days' => $projected30,
+                'projected_60_days' => $projected60,
+                'projected_90_days' => $projected90,
+            ];
         });
     }
 
@@ -188,48 +188,48 @@ class ExecutiveDashboardService
     public function profitabilityMetrics(array $filters): array
     {
         $tenantId = app('tenant.id');
-        $cacheKey = "dashboard:{$tenantId}:profitability_metrics:" . md5(json_encode($filters));
+        $cacheKey = "dashboard:{$tenantId}:profitability_metrics:".md5(json_encode($filters));
 
         return Cache::remember($cacheKey, 3600, function () use ($filters) {
-        $toDate = $filters['to'] ?? date('Y-m-d');
-        $year = substr($toDate, 0, 4);
-        $fromDate = $filters['from'] ?? "{$year}-01-01";
+            $toDate = $filters['to'] ?? date('Y-m-d');
+            $year = substr($toDate, 0, 4);
+            $fromDate = $filters['from'] ?? "{$year}-01-01";
 
-        $revenue = $this->sumByAccountType(AccountType::Revenue, $fromDate, $toDate);
-        $expenses = $this->sumByAccountType(AccountType::Expense, $fromDate, $toDate);
+            $revenue = $this->sumByAccountType(AccountType::Revenue, $fromDate, $toDate);
+            $expenses = $this->sumByAccountType(AccountType::Expense, $fromDate, $toDate);
 
-        // COGS: expense accounts starting with '51' (Cost of Goods Sold / Cost of Sales)
-        $cogs = $this->sumByAccountPrefix('51', $fromDate, $toDate, true);
+            // COGS: expense accounts starting with '51' (Cost of Goods Sold / Cost of Sales)
+            $cogs = $this->sumByAccountPrefix('51', $fromDate, $toDate, true);
 
-        $grossProfit = bcsub($revenue, $cogs, 2);
-        $grossMarginPercent = bccomp($revenue, '0', 2) !== 0
-            ? bcmul(bcdiv($grossProfit, $revenue, 4), '100', 2)
-            : '0.00';
+            $grossProfit = bcsub($revenue, $cogs, 2);
+            $grossMarginPercent = bccomp($revenue, '0', 2) !== 0
+                ? bcmul(bcdiv($grossProfit, $revenue, 4), '100', 2)
+                : '0.00';
 
-        $netMarginPercent = bccomp($revenue, '0', 2) !== 0
-            ? bcmul(bcdiv(bcsub($revenue, $expenses, 2), $revenue, 4), '100', 2)
-            : '0.00';
+            $netMarginPercent = bccomp($revenue, '0', 2) !== 0
+                ? bcmul(bcdiv(bcsub($revenue, $expenses, 2), $revenue, 4), '100', 2)
+                : '0.00';
 
-        $operatingExpenseRatio = bccomp($revenue, '0', 2) !== 0
-            ? bcmul(bcdiv($expenses, $revenue, 4), '100', 2)
-            : '0.00';
+            $operatingExpenseRatio = bccomp($revenue, '0', 2) !== 0
+                ? bcmul(bcdiv($expenses, $revenue, 4), '100', 2)
+                : '0.00';
 
-        // Revenue per client (average)
-        $activeClients = $this->getActiveClientCount();
-        $revenuePerClient = $activeClients > 0
-            ? bcdiv($revenue, (string) $activeClients, 2)
-            : '0.00';
+            // Revenue per client (average)
+            $activeClients = $this->getActiveClientCount();
+            $revenuePerClient = $activeClients > 0
+                ? bcdiv($revenue, (string) $activeClients, 2)
+                : '0.00';
 
-        // Top 5 most profitable clients
-        $topClients = $this->getTopProfitableClients($fromDate, $toDate, 5);
+            // Top 5 most profitable clients
+            $topClients = $this->getTopProfitableClients($fromDate, $toDate, 5);
 
-        return [
-            'gross_margin_percent' => $grossMarginPercent,
-            'net_margin_percent' => $netMarginPercent,
-            'operating_expense_ratio' => $operatingExpenseRatio,
-            'revenue_per_client' => $revenuePerClient,
-            'top_profitable_clients' => $topClients,
-        ];
+            return [
+                'gross_margin_percent' => $grossMarginPercent,
+                'net_margin_percent' => $netMarginPercent,
+                'operating_expense_ratio' => $operatingExpenseRatio,
+                'revenue_per_client' => $revenuePerClient,
+                'top_profitable_clients' => $topClients,
+            ];
         });
     }
 
@@ -249,60 +249,60 @@ class ExecutiveDashboardService
     public function kpiDashboard(array $filters): array
     {
         $tenantId = app('tenant.id');
-        $cacheKey = "dashboard:{$tenantId}:kpi_dashboard:" . md5(json_encode($filters));
+        $cacheKey = "dashboard:{$tenantId}:kpi_dashboard:".md5(json_encode($filters));
 
         return Cache::remember($cacheKey, 3600, function () use ($filters) {
-        $toDate = $filters['to'] ?? date('Y-m-d');
-        $year = substr($toDate, 0, 4);
-        $fromDate = $filters['from'] ?? "{$year}-01-01";
+            $toDate = $filters['to'] ?? date('Y-m-d');
+            $year = substr($toDate, 0, 4);
+            $fromDate = $filters['from'] ?? "{$year}-01-01";
 
-        // Inclusive day count: from 2026-01-01 to 2026-03-31 is 90 days.
-        $periodDays = max(1, ((int) ((strtotime($toDate) - strtotime($fromDate)) / 86400)) + 1);
+            // Inclusive day count: from 2026-01-01 to 2026-03-31 is 90 days.
+            $periodDays = max(1, ((int) ((strtotime($toDate) - strtotime($fromDate)) / 86400)) + 1);
 
-        // DSO = (AR * Period Days) / Credit Sales
-        // Multiply first so bcmath scale-2 truncation doesn't eat a penny on
-        // clean inputs (e.g. 100000/300000 * 90 = 30.00, not 29.99).
-        $arBalance = $this->getAccountTypeBalance(AccountType::Asset, '1121', $toDate);
-        $creditSales = $this->sumByAccountType(AccountType::Revenue, $fromDate, $toDate);
-        $dso = bccomp($creditSales, '0', 2) !== 0
-            ? bcdiv(bcmul($arBalance, (string) $periodDays, 2), $creditSales, 2)
-            : '0.00';
+            // DSO = (AR * Period Days) / Credit Sales
+            // Multiply first so bcmath scale-2 truncation doesn't eat a penny on
+            // clean inputs (e.g. 100000/300000 * 90 = 30.00, not 29.99).
+            $arBalance = $this->getAccountTypeBalance(AccountType::Asset, '1121', $toDate);
+            $creditSales = $this->sumByAccountType(AccountType::Revenue, $fromDate, $toDate);
+            $dso = bccomp($creditSales, '0', 2) !== 0
+                ? bcdiv(bcmul($arBalance, (string) $periodDays, 2), $creditSales, 2)
+                : '0.00';
 
-        // DPO = (AP * Period Days) / Cost of Sales (same ordering as DSO).
-        $apBalance = $this->getAccountTypeBalance(AccountType::Liability, '2111', $toDate);
-        $costOfSales = $this->sumByAccountPrefix('51', $fromDate, $toDate, true);
-        $dpo = bccomp($costOfSales, '0', 2) !== 0
-            ? bcdiv(bcmul($apBalance, (string) $periodDays, 2), $costOfSales, 2)
-            : '0.00';
+            // DPO = (AP * Period Days) / Cost of Sales (same ordering as DSO).
+            $apBalance = $this->getAccountTypeBalance(AccountType::Liability, '2111', $toDate);
+            $costOfSales = $this->sumByAccountPrefix('51', $fromDate, $toDate, true);
+            $dpo = bccomp($costOfSales, '0', 2) !== 0
+                ? bcdiv(bcmul($apBalance, (string) $periodDays, 2), $costOfSales, 2)
+                : '0.00';
 
-        // Current ratio = Current Assets / Current Liabilities
-        $currentAssets = $this->sumCurrentAssets($toDate);
-        $currentLiabilities = $this->sumCurrentLiabilities($toDate);
-        $currentRatio = bccomp($currentLiabilities, '0', 2) !== 0
-            ? bcdiv($currentAssets, $currentLiabilities, 2)
-            : '0.00';
+            // Current ratio = Current Assets / Current Liabilities
+            $currentAssets = $this->sumCurrentAssets($toDate);
+            $currentLiabilities = $this->sumCurrentLiabilities($toDate);
+            $currentRatio = bccomp($currentLiabilities, '0', 2) !== 0
+                ? bcdiv($currentAssets, $currentLiabilities, 2)
+                : '0.00';
 
-        // Quick ratio = (Current Assets - Inventory) / Current Liabilities
-        $inventory = $this->getInventoryBalance($toDate);
-        $quickAssets = bcsub($currentAssets, $inventory, 2);
-        $quickRatio = bccomp($currentLiabilities, '0', 2) !== 0
-            ? bcdiv($quickAssets, $currentLiabilities, 2)
-            : '0.00';
+            // Quick ratio = (Current Assets - Inventory) / Current Liabilities
+            $inventory = $this->getInventoryBalance($toDate);
+            $quickAssets = bcsub($currentAssets, $inventory, 2);
+            $quickRatio = bccomp($currentLiabilities, '0', 2) !== 0
+                ? bcdiv($quickAssets, $currentLiabilities, 2)
+                : '0.00';
 
-        // Collection rate = (Payments Received / Total Invoiced) * 100
-        $totalInvoiced = $this->getTotalInvoiced($fromDate, $toDate);
-        $paymentsReceived = $this->getPaymentsReceived($fromDate, $toDate);
-        $collectionRate = bccomp($totalInvoiced, '0', 2) !== 0
-            ? bcmul(bcdiv($paymentsReceived, $totalInvoiced, 4), '100', 2)
-            : '0.00';
+            // Collection rate = (Payments Received / Total Invoiced) * 100
+            $totalInvoiced = $this->getTotalInvoiced($fromDate, $toDate);
+            $paymentsReceived = $this->getPaymentsReceived($fromDate, $toDate);
+            $collectionRate = bccomp($totalInvoiced, '0', 2) !== 0
+                ? bcmul(bcdiv($paymentsReceived, $totalInvoiced, 4), '100', 2)
+                : '0.00';
 
-        return [
-            'dso' => $dso,
-            'dpo' => $dpo,
-            'current_ratio' => $currentRatio,
-            'quick_ratio' => $quickRatio,
-            'collection_rate' => $collectionRate,
-        ];
+            return [
+                'dso' => $dso,
+                'dpo' => $dpo,
+                'current_ratio' => $currentRatio,
+                'quick_ratio' => $quickRatio,
+                'collection_rate' => $collectionRate,
+            ];
         });
     }
 
@@ -405,7 +405,7 @@ class ExecutiveDashboardService
             ->join('accounts', 'journal_entry_lines.account_id', '=', 'accounts.id')
             ->where('journal_entries.status', JournalEntryStatus::Posted->value)
             ->whereNull('journal_entries.deleted_at')
-            ->where('accounts.code', 'like', $prefix . '%')
+            ->where('accounts.code', 'like', $prefix.'%')
             ->where('journal_entries.date', '>=', $fromDate)
             ->where('journal_entries.date', '<=', $toDate);
 
@@ -901,7 +901,7 @@ class ExecutiveDashboardService
     private function sumBalanceByPrefix(string $prefix, string $asOfDate, bool $isDebitNormal): string
     {
         $accountIds = Account::query()
-            ->where('code', 'like', $prefix . '%')
+            ->where('code', 'like', $prefix.'%')
             ->when(app('tenant.id'), fn ($q) => $q->where('tenant_id', app('tenant.id')))
             ->pluck('id')
             ->toArray();

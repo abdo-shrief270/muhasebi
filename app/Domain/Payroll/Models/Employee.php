@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
@@ -67,7 +68,7 @@ class Employee extends Model
         return $this->hasMany(PayrollItem::class);
     }
 
-    public function insuranceRecord(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function insuranceRecord(): HasOne
     {
         return $this->hasOne(EmployeeInsuranceRecord::class);
     }

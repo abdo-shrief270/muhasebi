@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Accounting\Models;
 
+use App\Domain\Accounting\Enums\AccountType;
 use App\Domain\Accounting\Enums\CostCenterType;
 use App\Domain\Shared\Traits\BelongsToTenant;
 use App\Domain\Tenant\Models\Tenant;
@@ -169,10 +170,10 @@ class CostCenter extends Model
         $expenses = '0';
 
         foreach ($lines as $line) {
-            if ($line->account && $line->account->type === \App\Domain\Accounting\Enums\AccountType::Revenue) {
+            if ($line->account && $line->account->type === AccountType::Revenue) {
                 $revenue = bcadd($revenue, bcsub((string) $line->credit, (string) $line->debit, 2), 2);
             }
-            if ($line->account && $line->account->type === \App\Domain\Accounting\Enums\AccountType::Expense) {
+            if ($line->account && $line->account->type === AccountType::Expense) {
                 $expenses = bcadd($expenses, bcsub((string) $line->debit, (string) $line->credit, 2), 2);
             }
         }
@@ -196,7 +197,7 @@ class CostCenter extends Model
         $actual = '0';
 
         foreach ($lines as $line) {
-            if ($line->account && $line->account->type === \App\Domain\Accounting\Enums\AccountType::Expense) {
+            if ($line->account && $line->account->type === AccountType::Expense) {
                 $actual = bcadd($actual, bcsub((string) $line->debit, (string) $line->credit, 2), 2);
             }
         }

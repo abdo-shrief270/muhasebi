@@ -11,6 +11,7 @@ use App\Domain\Accounting\Models\JournalEntry;
 use App\Domain\Accounting\Services\JournalEntryService;
 use App\Domain\Onboarding\Models\CoaTemplate;
 use App\Domain\Onboarding\Models\OnboardingProgress;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -282,9 +283,9 @@ class OnboardingWizardService
     /**
      * List available COA templates.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, CoaTemplate>
+     * @return Collection<int, CoaTemplate>
      */
-    public function getTemplates(): \Illuminate\Database\Eloquent\Collection
+    public function getTemplates(): Collection
     {
         return CoaTemplate::query()
             ->select(['id', 'name_ar', 'name_en', 'industry', 'is_default'])

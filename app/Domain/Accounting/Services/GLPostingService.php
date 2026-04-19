@@ -17,7 +17,7 @@ class GLPostingService
     /**
      * Post a journal entry to the General Ledger.
      *
-     * @param array{date: string, description: string, description_ar?: string, reference?: string, lines: array<int, array{account_id: int, debit: float|string, credit: float|string, currency?: string, description?: string}>} $data
+     * @param  array{date: string, description: string, description_ar?: string, reference?: string, lines: array<int, array{account_id: int, debit: float|string, credit: float|string, currency?: string, description?: string}>}  $data
      */
     public function post(array $data): JournalEntry
     {

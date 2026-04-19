@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Domain\Notification\Models\AlertHistory;
 use App\Domain\Notification\Models\AlertRule;
-use App\Domain\Notification\Services\AlertEngineService;
 
 // ──────────────────────────────────────
 // Metric Calculations

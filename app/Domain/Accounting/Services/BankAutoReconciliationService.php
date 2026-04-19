@@ -11,6 +11,7 @@ use App\Domain\AccountsPayable\Services\BillPaymentService;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Services\PaymentService;
 use App\Domain\Client\Models\Client;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class BankAutoReconciliationService
@@ -73,10 +74,10 @@ class BankAutoReconciliationService
     /**
      * Match a single line. Returns confidence score or null if no match.
      *
-     * @param  \Illuminate\Support\Collection  $invoices  Pre-loaded invoices
-     * @param  \Illuminate\Support\Collection  $bills     Pre-loaded bills
+     * @param  Collection  $invoices  Pre-loaded invoices
+     * @param  Collection  $bills  Pre-loaded bills
      */
-    private function matchLine(BankStatementLine $line, \Illuminate\Support\Collection $invoices, \Illuminate\Support\Collection $bills): ?float
+    private function matchLine(BankStatementLine $line, Collection $invoices, Collection $bills): ?float
     {
         $amount = abs((float) $line->amount);
         $amountStr = (string) $amount;
@@ -93,9 +94,9 @@ class BankAutoReconciliationService
     /**
      * Try matching a deposit line against invoices (exact, tolerance, description).
      *
-     * @param  \Illuminate\Support\Collection  $invoices  Pre-loaded invoices
+     * @param  Collection  $invoices  Pre-loaded invoices
      */
-    private function matchAgainstInvoices(BankStatementLine $line, string $amount, \Illuminate\Support\Collection $invoices): ?float
+    private function matchAgainstInvoices(BankStatementLine $line, string $amount, Collection $invoices): ?float
     {
 
         // Pass 1: Exact amount + reference match (confidence 100)
@@ -156,9 +157,9 @@ class BankAutoReconciliationService
     /**
      * Try matching a withdrawal line against bills (exact, tolerance, description).
      *
-     * @param  \Illuminate\Support\Collection  $bills  Pre-loaded bills
+     * @param  Collection  $bills  Pre-loaded bills
      */
-    private function matchAgainstBills(BankStatementLine $line, string $amount, \Illuminate\Support\Collection $bills): ?float
+    private function matchAgainstBills(BankStatementLine $line, string $amount, Collection $bills): ?float
     {
 
         // Pass 1: Exact amount + reference match (confidence 100)

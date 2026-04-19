@@ -41,7 +41,7 @@ class LoanController extends Controller
     public function recordInstallment(Request $request, EmployeeLoan $loan): JsonResponse
     {
         $request->validate([
-            'amount' => ['required', 'numeric', 'min:0.01', 'max:' . $loan->remaining_balance],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:'.$loan->remaining_balance],
         ]);
 
         $amount = (float) $request->validated('amount');

@@ -10,12 +10,14 @@ use App\Domain\Workflow\Models\ApprovalAction;
 use App\Domain\Workflow\Models\ApprovalRequest;
 use App\Domain\Workflow\Models\ApprovalStep;
 use App\Domain\Workflow\Models\ApprovalWorkflow;
+use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Models\Role;
 
 class ApprovalWorkflowService
 {
@@ -247,11 +249,11 @@ class ApprovalWorkflowService
      */
     public function listPending(int $userId): Collection
     {
-        $user = \App\Models\User::findOrFail($userId);
+        $user = User::findOrFail($userId);
         $roleNames = $user->getRoleNames()->toArray();
 
         // Get role IDs from Spatie
-        $roleIds = \Spatie\Permission\Models\Role::query()
+        $roleIds = Role::query()
             ->whereIn('name', $roleNames)
             ->pluck('id')
             ->toArray();

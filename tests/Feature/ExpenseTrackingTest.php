@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Domain\Expenses\Enums\ExpensePaymentMethod;
 use App\Domain\Expenses\Enums\ExpenseStatus;
 use App\Domain\Expenses\Models\Expense;
-use App\Domain\Expenses\Models\ExpenseCategory;
 use App\Domain\Expenses\Models\ExpenseReport;
 
 // ──────────────────────────────────────────────────

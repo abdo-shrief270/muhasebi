@@ -6,6 +6,7 @@ namespace App\Console\Commands;
 
 use App\Domain\FixedAssets\Services\DepreciationService;
 use App\Domain\Tenant\Models\Tenant;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 
 class RunDepreciationCommand extends Command
@@ -17,7 +18,7 @@ class RunDepreciationCommand extends Command
     public function handle(DepreciationService $service): int
     {
         $periodEnd = $this->option('month')
-            ? \Carbon\Carbon::parse($this->option('month'))->endOfMonth()->toDateString()
+            ? Carbon::parse($this->option('month'))->endOfMonth()->toDateString()
             : now()->endOfMonth()->toDateString();
 
         $this->info("Running depreciation through {$periodEnd}...");

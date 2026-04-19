@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Domain\Shared\Models\FeatureFlag;
 use App\Domain\Tenant\Models\Tenant;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 
 describe('Registration', function (): void {
 
@@ -276,17 +278,17 @@ describe('Me (Profile)', function (): void {
         $user = User::factory()->admin()->create(['tenant_id' => $tenant->id]);
         actingAsUser($user);
 
-        \App\Domain\Shared\Models\FeatureFlag::create([
+        FeatureFlag::create([
             'key' => 'custom_reports',
             'name' => 'Custom Reports',
             'is_enabled_globally' => true,
         ]);
-        \App\Domain\Shared\Models\FeatureFlag::create([
+        FeatureFlag::create([
             'key' => 'experimental_ai',
             'name' => 'Experimental AI',
             'is_enabled_globally' => false,
         ]);
-        \Illuminate\Support\Facades\Cache::flush();
+        Cache::flush();
 
         $response = $this->getJson('/api/v1/me');
 

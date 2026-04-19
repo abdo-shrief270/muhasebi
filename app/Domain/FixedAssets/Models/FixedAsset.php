@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\FixedAssets\Models;
 
-use App\Domain\AccountsPayable\Models\Vendor;
 use App\Domain\Accounting\Models\JournalEntry;
+use App\Domain\AccountsPayable\Models\Vendor;
 use App\Domain\FixedAssets\Enums\AssetStatus;
 use App\Domain\FixedAssets\Enums\DepreciationMethod;
 use App\Domain\Shared\Traits\BelongsToTenant;

@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Domain\Accounting\Models\BankReconciliation;
 use App\Domain\Accounting\Models\BankStatementLine;
-use App\Domain\Accounting\Services\BankAutoReconciliationService;
 
 test('exact match: same amount + reference gives confidence 100', function () {
     // When a bank statement line has the exact same amount as an invoice

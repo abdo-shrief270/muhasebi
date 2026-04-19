@@ -341,12 +341,12 @@ class AlertEngineService
         ];
 
         $messageAr = "تنبيه: {$rule->name_ar} — القيمة الحالية ({$metricValue}) "
-            . ($operatorLabels[$rule->operator] ?? $rule->operator)
-            . " الحد ({$rule->threshold})";
+            .($operatorLabels[$rule->operator] ?? $rule->operator)
+            ." الحد ({$rule->threshold})";
 
-        $messageEn = "Alert: " . ($rule->name_en ?? $rule->name_ar) . " — current value ({$metricValue}) is "
-            . ($operatorLabelsEn[$rule->operator] ?? $rule->operator)
-            . " threshold ({$rule->threshold})";
+        $messageEn = 'Alert: '.($rule->name_en ?? $rule->name_ar)." — current value ({$metricValue}) is "
+            .($operatorLabelsEn[$rule->operator] ?? $rule->operator)
+            ." threshold ({$rule->threshold})";
 
         // Resolve recipient user IDs
         $recipientIds = $this->resolveRecipients($rule);

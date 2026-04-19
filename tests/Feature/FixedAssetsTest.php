@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domain\Accounting\Services\JournalEntryService;
 use App\Domain\FixedAssets\Enums\AssetStatus;
 use App\Domain\FixedAssets\Enums\DepreciationMethod;
 use App\Domain\FixedAssets\Enums\DisposalType;
@@ -61,7 +62,7 @@ test('straight line depreciation calculates correctly', function () {
         'accumulated_depreciation' => '0.00',
     ]);
 
-    $service = new DepreciationService(app(\App\Domain\Accounting\Services\JournalEntryService::class));
+    $service = new DepreciationService(app(JournalEntryService::class));
     $monthly = $service->calculateMonthly($asset);
 
     expect($monthly)->toBe('1800.00');
@@ -77,7 +78,7 @@ test('straight line depreciation with zero salvage', function () {
         'accumulated_depreciation' => '0.00',
     ]);
 
-    $service = new DepreciationService(app(\App\Domain\Accounting\Services\JournalEntryService::class));
+    $service = new DepreciationService(app(JournalEntryService::class));
     $monthly = $service->calculateMonthly($asset);
 
     // 60000 / 36 = 1666.66 (bcdiv truncates, does not round)
@@ -98,7 +99,7 @@ test('declining balance depreciation calculates correctly', function () {
         'accumulated_depreciation' => '0.00',
     ]);
 
-    $service = new DepreciationService(app(\App\Domain\Accounting\Services\JournalEntryService::class));
+    $service = new DepreciationService(app(JournalEntryService::class));
     $monthly = $service->calculateMonthly($asset);
 
     expect($monthly)->toBe('3333.33');
@@ -115,7 +116,7 @@ test('declining balance does not depreciate below salvage value', function () {
         'accumulated_depreciation' => '89000.00',
     ]);
 
-    $service = new DepreciationService(app(\App\Domain\Accounting\Services\JournalEntryService::class));
+    $service = new DepreciationService(app(JournalEntryService::class));
     $monthly = $service->calculateMonthly($asset);
 
     // Max depreciable = 11000 - 10000 = 1000
@@ -136,7 +137,7 @@ test('depreciation schedule generates correct number of entries', function () {
         'depreciation_start_date' => '2026-01-01',
     ]);
 
-    $service = new DepreciationService(app(\App\Domain\Accounting\Services\JournalEntryService::class));
+    $service = new DepreciationService(app(JournalEntryService::class));
     $schedule = $service->schedule($asset);
 
     expect($schedule)->toHaveCount(12);
@@ -199,7 +200,7 @@ test('zero useful life returns zero depreciation', function () {
         'accumulated_depreciation' => '0.00',
     ]);
 
-    $service = new DepreciationService(app(\App\Domain\Accounting\Services\JournalEntryService::class));
+    $service = new DepreciationService(app(JournalEntryService::class));
     $monthly = $service->calculateMonthly($asset);
 
     expect($monthly)->toBe('0.00');
@@ -230,7 +231,7 @@ test('depreciation schedule for straight line has decreasing book values', funct
         'depreciation_start_date' => '2026-01-01',
     ]);
 
-    $service = new DepreciationService(app(\App\Domain\Accounting\Services\JournalEntryService::class));
+    $service = new DepreciationService(app(JournalEntryService::class));
     $schedule = $service->schedule($asset);
 
     expect($schedule)->toHaveCount(24);

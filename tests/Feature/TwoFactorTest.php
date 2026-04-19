@@ -3,13 +3,14 @@
 declare(strict_types=1);
 
 use App\Domain\Auth\Services\TwoFactorService;
+use App\Models\User;
 
 describe('Two-Factor Authentication', function (): void {
 
     it('enables 2FA and returns secret and recovery codes', function (): void {
         // superAdmin() factory state defaults two_factor_enabled=true; override
         // it here so we're testing the first-time enable flow.
-        $user = \App\Models\User::factory()->superAdmin()->create(['two_factor_enabled' => false]);
+        $user = User::factory()->superAdmin()->create(['two_factor_enabled' => false]);
         actingAsUser($user);
 
         $response = $this->postJson('/api/v1/2fa/enable');
@@ -22,7 +23,7 @@ describe('Two-Factor Authentication', function (): void {
     });
 
     it('returns 2FA status', function (): void {
-        $user = \App\Models\User::factory()->superAdmin()->create(['two_factor_enabled' => false]);
+        $user = User::factory()->superAdmin()->create(['two_factor_enabled' => false]);
         actingAsUser($user);
 
         $response = $this->getJson('/api/v1/2fa/status');
@@ -32,7 +33,7 @@ describe('Two-Factor Authentication', function (): void {
     });
 
     it('prevents enabling 2FA twice', function (): void {
-        $user = \App\Models\User::factory()->superAdmin()->create(['two_factor_enabled' => false]);
+        $user = User::factory()->superAdmin()->create(['two_factor_enabled' => false]);
         actingAsUser($user);
 
         $this->postJson('/api/v1/2fa/enable')->assertOk();
