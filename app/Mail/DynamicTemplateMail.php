@@ -35,11 +35,12 @@ class DynamicTemplateMail extends Mailable implements ShouldQueue
 
     public function __construct(
         public readonly string $templateKey,
-        public readonly string $locale = 'ar',
+        string $locale = 'ar',
         public readonly array $data = [],
         public readonly ?string $fallbackView = null,
     ) {
         $this->onQueue('emails');
+        $this->locale($locale);
 
         $this->template = EmailTemplate::findByKey($templateKey);
 

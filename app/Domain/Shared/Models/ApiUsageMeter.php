@@ -28,9 +28,10 @@ class ApiUsageMeter extends Model
     }
 
     /**
-     * Increment a specific meter for a tenant today.
+     * Increment a specific meter column for a tenant on today's row.
+     * Named distinctly from Eloquent's instance `increment()` to avoid LSP collision.
      */
-    public static function increment(int $tenantId, string $column, int $amount = 1): void
+    public static function incrementFor(int $tenantId, string $column, int $amount = 1): void
     {
         $meter = static::firstOrCreate(
             ['tenant_id' => $tenantId, 'date' => now()->toDateString()],

@@ -26,7 +26,7 @@ class FlushUsageBuffersCommand extends Command
                 $remaining = (int) Cache::get($key, 0);
 
                 if ($remaining > 0) {
-                    ApiUsageMeter::increment($tenant->id, 'api_calls', $remaining);
+                    ApiUsageMeter::incrementFor($tenant->id, 'api_calls', $remaining);
                     Cache::forget($key);
                     $flushed++;
                 }

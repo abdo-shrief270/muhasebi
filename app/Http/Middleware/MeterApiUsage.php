@@ -49,7 +49,7 @@ class MeterApiUsage
         // Flush to DB every BUFFER_SIZE calls
         if ($count % self::BUFFER_SIZE === 0) {
             try {
-                ApiUsageMeter::increment($tenantId, 'api_calls', self::BUFFER_SIZE);
+                ApiUsageMeter::incrementFor($tenantId, 'api_calls', self::BUFFER_SIZE);
                 Cache::decrement($key, self::BUFFER_SIZE);
             } catch (\Throwable $e) {
                 // Don't break the request if metering fails
