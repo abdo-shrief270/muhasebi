@@ -58,15 +58,15 @@ Known gap: the actual event-processing logic in `ECommerceService::webhookHandle
 - [x] Regression test in `AuthTest.php` asserts the map structure + merge semantics with one globally-enabled and one globally-disabled flag
 - [x] Docs updated in `docs/features/01-authentication.md` — noted that `features` is included on `tenant`
 
-### Permissions missing from backend (§10.1)
-Frontend references these; backend doesn't define them. Decide per slug:
+### ~~Permissions missing from backend~~ ✅ Done
+Added `manage_engagements`, `manage_approvals`, `manage_alerts` to `config/permissions.php`. The routes already referenced these slugs (`routes/api.php:661,883,896`) but the slugs weren't defined anywhere, so `CheckPermission` middleware was denying non-super-admins. Now they seed correctly.
 
-- [ ] `manage_engagements` — module exists, permission missing. **Add to `config/permissions.php`.**
-- [ ] `manage_approvals` — add for fine-grained approval RBAC (today it's role-based).
-- [ ] `manage_alerts` — add for alert management.
-- [ ] `manage_reports` — currently redundant with `view_reports`. Only add if report templates/schedules become user-editable. Otherwise tell frontend to drop.
+- [x] `manage_engagements` → admin + accountant
+- [x] `manage_approvals` → admin + accountant
+- [x] `manage_alerts` → admin only (alerts are a platform-ops concern, not day-to-day accounting)
+- [x] `manage_reports` → **not added.** Reports are read-only for tenant users today; `view_reports` covers the existing behavior. When report templates/schedules become user-editable, re-evaluate. Frontend should drop `manage_reports` from `app/core/rbac/permissions.ts`.
 
-Then seed into role presets (at least `tenant_admin` gets all of them).
+Seeder is config-driven — `php artisan db:seed --class=PermissionSeeder --force` on deploy picks them up. Existing tenants with pre-assigned roles need a re-sync: run the seeder on the production DB once.
 
 ### Role-to-permission preset endpoint (§10.2)
 Frontend would like to show "Apply Accountant preset" buttons in team management.

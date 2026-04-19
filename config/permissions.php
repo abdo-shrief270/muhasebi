@@ -42,6 +42,9 @@ return [
         'manage_inventory',
         'manage_integrations',
         'view_audit',
+        'manage_engagements',
+        'manage_approvals',
+        'manage_alerts',
     ],
 
     'accountant' => [
@@ -66,6 +69,8 @@ return [
         'manage_tax',
         'manage_inventory',
         'manage_integrations',
+        'manage_engagements',
+        'manage_approvals',
     ],
 
     'auditor' => [
