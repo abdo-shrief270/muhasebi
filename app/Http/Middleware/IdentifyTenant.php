@@ -68,6 +68,16 @@ class IdentifyTenant
             return $this->findByIdOrSlug((string) $value);
         }
 
+        // Priority 4: Authenticated user's own tenant. Every tenant user has
+        // exactly one tenant (no cross-tenant membership), so when no explicit
+        // tenant is supplied, fall back to the caller's home tenant. Keeps
+        // the frontend API surface simple — X-Tenant is only needed for
+        // super-admin impersonation or cross-tenant admin operations.
+        $user = $request->user();
+        if ($user && $user->tenant_id) {
+            return Tenant::query()->find($user->tenant_id);
+        }
+
         return null;
     }
 

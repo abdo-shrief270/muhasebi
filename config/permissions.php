@@ -45,6 +45,7 @@ return [
         'manage_engagements',
         'manage_approvals',
         'manage_alerts',
+        'manage_reports',
     ],
 
     'accountant' => [
@@ -71,6 +72,7 @@ return [
         'manage_integrations',
         'manage_engagements',
         'manage_approvals',
+        'manage_reports',
     ],
 
     'auditor' => [

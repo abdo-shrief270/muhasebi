@@ -86,18 +86,21 @@ Changes shipped in response to the frontend integration questionnaire (`OPEN-QUE
 
 ---
 
-### 5. Three new permission slugs
-`2187701`
+### 5. Four new permission slugs
+`2187701`, plus a follow-up adding `manage_reports`
 
 **What:** Added to `config/permissions.php`:
 - `manage_engagements` → admin + accountant
 - `manage_approvals` → admin + accountant
 - `manage_alerts` → admin only
+- `manage_reports` → admin + accountant
 
-**Why:** The routes already gated on these slugs but they weren't defined anywhere, so `CheckPermission` middleware was denying every non-super-admin. Now it seeds into the Spatie DB correctly.
+**Why:** The routes already gated on these slugs but they weren't defined anywhere, so `CheckPermission` middleware was denying every non-super-admin. Now they seed into the Spatie DB correctly.
+
+`manage_reports` was initially flagged for removal on the assumption that reports are read-only, but `ScheduledReport` CRUD (create, toggle, delete) is user-editable and legitimately needs a write permission.
 
 **Frontend action:**
-- `manage_reports` was **not** added (redundant with `view_reports`). Remove it from `app/core/rbac/permissions.ts`.
+- Keep `manage_reports`, `manage_engagements`, `manage_approvals`, `manage_alerts` in `app/core/rbac/permissions.ts`.
 - Deploy note: existing tenants need a one-time `php artisan db:seed --class=PermissionSeeder --force` to get the new Spatie permission rows.
 
 ---
@@ -154,7 +157,20 @@ Changes shipped in response to the frontend integration questionnaire (`OPEN-QUE
 
 ---
 
-### 9. Messaging throttle raised + named
+### 9. IdentifyTenant now falls back to authenticated user's tenant
+`e078338` (follow-up from suite-healing pass)
+
+**What:** The tenant-identification middleware previously resolved from `X-Tenant` header → subdomain → route param, then 404'd. It now falls back to `$request->user()->tenant_id` when none of those match.
+
+**Why:** Every authenticated tenant-scoped endpoint required `X-Tenant`. The OPEN-QUESTIONS.md answer claimed a user-based fallback existed but that was wrong — it was absent. This closes the gap.
+
+**Frontend action:**
+- Sending `X-Tenant` is still **accepted and still takes precedence** — no change required for code that already sets it.
+- Code paths that skip the header now work automatically (single-tenant users). This is a behavior-compatible addition.
+
+---
+
+### 10. Messaging throttle raised + named
 `995772b`
 
 **What:** WhatsApp / SMS endpoints were `throttle:10,1`. Now use a named `messaging` limiter at 30/min per user.

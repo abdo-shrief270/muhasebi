@@ -218,15 +218,17 @@ The frontend currently **generates a UUID per mutation** on these routes. If the
 
 **Confirm:** this is consistent across every endpoint in modules 03–27? The frontend has dropped `X-Tenant` entirely.
 
-> 🔁 **Docs are simplifying — `X-Tenant` IS accepted.** `IdentifyTenant` middleware (`app/Http/Middleware/IdentifyTenant.php:16-85`) resolves in priority order:
+> 🔁 **Docs are simplifying — `X-Tenant` IS accepted.** `IdentifyTenant` middleware (`app/Http/Middleware/IdentifyTenant.php`) resolves in priority order:
 > 1. `X-Tenant` header (numeric id OR slug)
-> 2. Subdomain on host
+> 2. Subdomain on host (≥3 parts)
 > 3. Route parameter `{tenant}`
-> 4. Authenticated user's `tenant_id`
+> 4. Authenticated user's own `tenant_id` (fallback added during this review — previously 404'd without X-Tenant)
 >
-> **Important guard (line 36):** if the user is not a super-admin and the resolved tenant doesn't match their own `tenant_id`, the request is rejected with 403. So the header cannot be used to cross tenants for regular users — only super-admins can override via header.
+> **Important guard:** if the user is not a super-admin and the resolved tenant doesn't match their own `tenant_id`, the request is rejected with 403. So the header cannot be used to cross tenants for regular users — only super-admins can override via header.
 >
 > **Frontend action:** keeping `X-Tenant` dropped is fine for the app — user's `tenant_id` resolves correctly as step 4. **Don't set `X-Tenant`** on regular app user requests; if you did and the header resolved to a different tenant than the user's, the request would 403. Only useful inside the super-admin panel, which has its own flow.
+>
+> ⚠ **Historical note:** before the 2026-04-19 release the middleware had no priority-4 fallback. If you're running an older backend, keep sending `X-Tenant` on every authenticated request until the fix is deployed.
 
 ### 6.2 Cross-tenant users
 **Confirm:** can a single user belong to multiple tenants (e.g. an accountant serving several firms)? If yes, how do they switch tenants? There's no such UI today.
