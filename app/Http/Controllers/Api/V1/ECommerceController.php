@@ -118,10 +118,16 @@ class ECommerceController extends Controller
 
         $result = $this->service->bulkConvert($data['order_ids']);
 
+        // Align with docs/21-documents.md bulk-upload semantics: 201 when
+        // every order converts cleanly, 206 Partial Content when at least
+        // one failed. Frontend can treat 206 as "show the per-order errors
+        // list" without inspecting the body.
+        $status = empty($result['errors']) ? 201 : 206;
+
         return response()->json([
             'data' => $result,
             'message' => "Converted {$result['converted']} orders.",
-        ]);
+        ], $status);
     }
 
     // ── Dashboard ──

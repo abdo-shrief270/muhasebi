@@ -89,12 +89,11 @@ Response shape:
 
 ## P2 — Consistency / polish
 
-### Canonical bulk-response pattern (§4.1)
-Two patterns coexist:
-- Documents bulk: 201 / 206 + per-file results
-- E-commerce bulk-convert: 200 + `{ converted, errors }` counts
+### ~~Canonical bulk-response pattern~~ ✅ Done
+`POST /api/v1/ecommerce/bulk-convert` now returns **201 Created** when every order converts cleanly and **206 Partial Content** when at least one fails — matching the document bulk-upload semantics. Body shape is unchanged (`{data: {converted, errors}}`), so any frontend that already reads counts keeps working; new code can branch on status alone.
 
-- [ ] Align e-commerce bulk-convert on the 201/206 pattern for consistency. Non-breaking if frontend already handles both.
+- [x] Controller patched in `ECommerceController::bulkConvert`
+- [x] Regression test added for the 201 happy path
 
 ### Magic-link invite for portal users (§2.1)
 Today portal users are created with `Hash::make(Str::random(16))` and must use the password-reset flow to sign in — poor UX for an invited client.

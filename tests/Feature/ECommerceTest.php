@@ -253,6 +253,43 @@ describe('GET /api/v1/ecommerce/dashboard', function (): void {
 
 });
 
+// ── Bulk Convert Status Codes ──
+
+describe('POST /api/v1/ecommerce/bulk-convert', function (): void {
+
+    it('returns 201 when every order converts cleanly', function (): void {
+        $channel = ECommerceChannel::create([
+            'tenant_id' => $this->tenant->id,
+            'platform' => 'shopify',
+            'name' => 'Shop',
+        ]);
+
+        $orders = collect(range(1, 2))->map(fn ($i) => ECommerceOrder::create([
+            'tenant_id' => $this->tenant->id,
+            'channel_id' => $channel->id,
+            'external_order_id' => "EXT-{$i}",
+            'order_number' => "ORD-{$i}",
+            'status' => 'pending',
+            'customer_email' => "c{$i}@example.com",
+            'total' => 500,
+            'currency' => 'EGP',
+            'tax_amount' => 70,
+            'shipping_amount' => 0,
+            'items' => [['name' => 'X', 'quantity' => 1, 'unit_price' => 500, 'vat_rate' => 14]],
+        ]));
+
+        $response = $this->withHeader('X-Tenant', $this->tenant->slug)
+            ->postJson('/api/v1/ecommerce/bulk-convert', [
+                'order_ids' => $orders->pluck('id')->all(),
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.converted', 2)
+            ->assertJsonPath('data.errors', []);
+    });
+
+});
+
 // ── Webhook Signature Verification ──
 
 /**
