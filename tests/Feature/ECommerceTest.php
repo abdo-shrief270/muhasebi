@@ -252,3 +252,191 @@ describe('GET /api/v1/ecommerce/dashboard', function (): void {
     });
 
 });
+
+// ── Webhook Signature Verification ──
+
+/**
+ * Post a raw-body JSON webhook and return the response. json_encode is used
+ * so the caller can compute an HMAC over the same bytes the server sees.
+ */
+function ecommerceWebhookCall($testCase, string $platform, int $channelId, array $payload, array $headers = [])
+{
+    $raw = json_encode($payload);
+
+    return $testCase->call(
+        'POST',
+        "/api/v1/webhooks/ecommerce/{$platform}/{$channelId}",
+        [],
+        [],
+        [],
+        array_merge(
+            ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
+            collect($headers)->mapWithKeys(fn ($v, $k) => ['HTTP_'.strtoupper(str_replace('-', '_', $k)) => $v])->all()
+        ),
+        $raw,
+    );
+}
+
+describe('POST /api/v1/webhooks/ecommerce/{platform}/{channel}', function (): void {
+
+    it('accepts Shopify webhook with valid base64 HMAC signature', function (): void {
+        $secret = 'shopify-secret-xyz';
+        $channel = ECommerceChannel::create([
+            'tenant_id' => $this->tenant->id,
+            'platform' => 'shopify',
+            'name' => 'Shopify',
+            'webhook_secret' => $secret,
+        ]);
+
+        $payload = ['topic' => 'orders/create', 'id' => 12345];
+        $raw = json_encode($payload);
+        $sig = base64_encode(hash_hmac('sha256', $raw, $secret, true));
+
+        ecommerceWebhookCall($this, 'shopify', $channel->id, $payload, ['X-Shopify-Hmac-Sha256' => $sig])
+            ->assertOk()
+            ->assertJsonPath('handled', true);
+    });
+
+    it('accepts WooCommerce webhook with valid base64 HMAC', function (): void {
+        $secret = 'wc-secret';
+        $channel = ECommerceChannel::create([
+            'tenant_id' => $this->tenant->id,
+            'platform' => 'woocommerce',
+            'name' => 'Woo',
+            'webhook_secret' => $secret,
+        ]);
+
+        $payload = ['event' => 'order.updated'];
+        $raw = json_encode($payload);
+        $sig = base64_encode(hash_hmac('sha256', $raw, $secret, true));
+
+        ecommerceWebhookCall($this, 'woocommerce', $channel->id, $payload, ['X-WC-Webhook-Signature' => $sig])
+            ->assertOk()
+            ->assertJsonPath('handled', true);
+    });
+
+    it('accepts Salla webhook with valid hex HMAC', function (): void {
+        $secret = 'salla-secret';
+        $channel = ECommerceChannel::create([
+            'tenant_id' => $this->tenant->id,
+            'platform' => 'salla',
+            'name' => 'Salla Store',
+            'webhook_secret' => $secret,
+        ]);
+
+        $payload = ['event' => 'order.created'];
+        $raw = json_encode($payload);
+        $sig = hash_hmac('sha256', $raw, $secret);
+
+        ecommerceWebhookCall($this, 'salla', $channel->id, $payload, ['X-Salla-Signature' => $sig])
+            ->assertOk()
+            ->assertJsonPath('handled', true);
+    });
+
+    it('accepts Zid webhook with valid hex HMAC', function (): void {
+        $secret = 'zid-secret';
+        $channel = ECommerceChannel::create([
+            'tenant_id' => $this->tenant->id,
+            'platform' => 'zid',
+            'name' => 'Zid Store',
+            'webhook_secret' => $secret,
+        ]);
+
+        $payload = ['event' => 'order.cancelled'];
+        $raw = json_encode($payload);
+        $sig = hash_hmac('sha256', $raw, $secret);
+
+        ecommerceWebhookCall($this, 'zid', $channel->id, $payload, ['X-Zid-Signature' => $sig])
+            ->assertOk()
+            ->assertJsonPath('handled', true);
+    });
+
+    it('rejects webhook with wrong signature', function (): void {
+        $channel = ECommerceChannel::create([
+            'tenant_id' => $this->tenant->id,
+            'platform' => 'shopify',
+            'name' => 'Shopify',
+            'webhook_secret' => 'the-real-secret',
+        ]);
+
+        $payload = ['topic' => 'orders/create'];
+        $wrongSig = base64_encode(hash_hmac('sha256', json_encode($payload), 'wrong-secret', true));
+
+        ecommerceWebhookCall($this, 'shopify', $channel->id, $payload, ['X-Shopify-Hmac-Sha256' => $wrongSig])
+            ->assertStatus(401)
+            ->assertJsonPath('error', 'invalid_signature');
+    });
+
+    it('rejects webhook with no signature header', function (): void {
+        $channel = ECommerceChannel::create([
+            'tenant_id' => $this->tenant->id,
+            'platform' => 'shopify',
+            'name' => 'Shopify',
+            'webhook_secret' => 'secret',
+        ]);
+
+        ecommerceWebhookCall($this, 'shopify', $channel->id, ['topic' => 'orders/create'])
+            ->assertStatus(401)
+            ->assertJsonPath('error', 'invalid_signature');
+    });
+
+    it('rejects webhook when channel has no webhook_secret configured', function (): void {
+        $channel = ECommerceChannel::create([
+            'tenant_id' => $this->tenant->id,
+            'platform' => 'shopify',
+            'name' => 'Shopify',
+            'webhook_secret' => null,
+        ]);
+
+        ecommerceWebhookCall($this, 'shopify', $channel->id, ['topic' => 'orders/create'], ['X-Shopify-Hmac-Sha256' => 'anything'])
+            ->assertStatus(401)
+            ->assertJsonPath('error', 'webhook_secret_not_configured');
+    });
+
+    it('rejects webhook for nonexistent channel', function (): void {
+        ecommerceWebhookCall($this, 'shopify', 99999, ['topic' => 'orders/create'], ['X-Shopify-Hmac-Sha256' => 'anything'])
+            ->assertStatus(401)
+            ->assertJsonPath('error', 'invalid_channel');
+    });
+
+    it('rejects webhook when URL platform does not match channel platform', function (): void {
+        $channel = ECommerceChannel::create([
+            'tenant_id' => $this->tenant->id,
+            'platform' => 'shopify',
+            'name' => 'Shopify',
+            'webhook_secret' => 'secret',
+        ]);
+
+        ecommerceWebhookCall($this, 'salla', $channel->id, ['event' => 'order.created'], ['X-Salla-Signature' => 'x'])
+            ->assertStatus(401)
+            ->assertJsonPath('error', 'invalid_channel');
+    });
+
+    it('rejects webhook for inactive channel', function (): void {
+        $channel = ECommerceChannel::create([
+            'tenant_id' => $this->tenant->id,
+            'platform' => 'shopify',
+            'name' => 'Shopify',
+            'webhook_secret' => 'secret',
+            'is_active' => false,
+        ]);
+
+        ecommerceWebhookCall($this, 'shopify', $channel->id, ['topic' => 'orders/create'], ['X-Shopify-Hmac-Sha256' => 'anything'])
+            ->assertStatus(401)
+            ->assertJsonPath('error', 'invalid_channel');
+    });
+
+    it('rejects custom platform webhook — use authenticated endpoint instead', function (): void {
+        $channel = ECommerceChannel::create([
+            'tenant_id' => $this->tenant->id,
+            'platform' => 'custom',
+            'name' => 'Custom',
+            'webhook_secret' => 'any',
+        ]);
+
+        ecommerceWebhookCall($this, 'custom', $channel->id, ['event' => 'order.created'], ['X-Signature' => 'any'])
+            ->assertStatus(401)
+            ->assertJsonPath('error', 'invalid_signature');
+    });
+
+});

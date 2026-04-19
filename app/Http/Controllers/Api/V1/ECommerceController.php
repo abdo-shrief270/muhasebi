@@ -131,11 +131,12 @@ class ECommerceController extends Controller
         return response()->json($this->service->dashboard());
     }
 
-    // ── Webhook (public, no auth) ──
+    // ── Webhook (public, signature-verified by VerifyEcommerceWebhookSignature) ──
 
-    public function webhook(Request $request, string $platform): JsonResponse
+    public function webhook(Request $request, string $platform, int $channel): JsonResponse
     {
-        $result = $this->service->webhookHandler($platform, $request->all());
+        $verifiedChannel = $request->attributes->get('ecommerce_channel');
+        $result = $this->service->webhookHandler($platform, $request->all(), $verifiedChannel);
 
         return response()->json($result);
     }

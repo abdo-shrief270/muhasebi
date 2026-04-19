@@ -29,6 +29,7 @@ use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\SetTimezone;
 use App\Http\Middleware\ThrottleAdminLogin;
+use App\Http\Middleware\VerifyEcommerceWebhookSignature;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -83,6 +84,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.login.throttle' => ThrottleAdminLogin::class,
             'deprecated' => Deprecated::class,
             'impersonation.log' => LogImpersonatedApiRequests::class,
+            'ecommerce.verify' => VerifyEcommerceWebhookSignature::class,
         ]);
 
         $middleware->priority([

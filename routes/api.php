@@ -166,8 +166,13 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/{slug}', [BlogController::class, 'show'])->name('show');
     });
 
-    // E-commerce webhooks (public, verified by platform signature)
-    Route::post('/webhooks/ecommerce/{platform}', [ECommerceController::class, 'webhook'])->name('webhooks.ecommerce');
+    // E-commerce webhooks (public, verified by HMAC per platform against the
+    // channel's shared webhook_secret). The channel id in the URL identifies
+    // tenant + platform; configure each platform's webhook URL to include it.
+    Route::post('/webhooks/ecommerce/{platform}/{channel}', [ECommerceController::class, 'webhook'])
+        ->middleware('ecommerce.verify')
+        ->where('channel', '[0-9]+')
+        ->name('webhooks.ecommerce');
 
     // Payment gateway webhooks (no auth, verified by signature)
     Route::post('/webhooks/paymob', [WebhookController::class, 'paymob'])->name('webhooks.paymob');

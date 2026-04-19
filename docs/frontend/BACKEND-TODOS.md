@@ -30,14 +30,21 @@ Login response now includes `requires_2fa: bool`. True when user is admin/super-
 
 Option (b) — token scoping + per-session verification — deferred. Current model is "once 2FA enabled, always allowed" which is weaker than per-session verification but matches what the `Enforce2fa` middleware actually enforces. If per-session verification becomes a requirement (e.g. for SOC2), revisit this with a new ticket.
 
-### E-commerce webhook has no signature verification (§7.1)
-`POST /webhooks/ecommerce/{platform}` accepts anything. `ECommerceService::handleIncoming()` logs the event but performs no auth.
+### ~~E-commerce webhook has no signature verification~~ ✅ Done
+Route changed to `POST /webhooks/ecommerce/{platform}/{channel}` — channel id identifies tenant + webhook_secret. New `VerifyEcommerceWebhookSignature` middleware rejects unsigned / wrong-signature / inactive-channel requests with 401.
 
-- [ ] Add HMAC verification per platform:
-  - Shopify: `X-Shopify-Hmac-Sha256` header, base64-encoded HMAC-SHA256 of raw body with webhook secret
-  - WooCommerce: `X-WC-Webhook-Signature` header, base64 HMAC-SHA256 of raw body
-  - Salla / Zid: platform docs for their schemes
-- [ ] Store per-tenant webhook secrets in `ecommerce_channels` (or similar).
+- [x] Middleware at `app/Http/Middleware/VerifyEcommerceWebhookSignature.php` registered as `ecommerce.verify`
+- [x] Platform schemes wired:
+  - Shopify: `X-Shopify-Hmac-Sha256` base64 HMAC-SHA256
+  - WooCommerce: `X-WC-Webhook-Signature` base64 HMAC-SHA256
+  - Salla: `X-Salla-Signature` hex HMAC-SHA256
+  - Zid: `X-Zid-Signature` hex HMAC-SHA256
+  - Custom: always rejected (use an authenticated endpoint for self-hosted integrations)
+- [x] Webhook secret stored encrypted on `ECommerceChannel.webhook_secret` (was already there)
+- [x] 11 regression tests cover: valid-per-platform, wrong-sig, missing-sig, missing-secret, unknown-channel, platform-mismatch, inactive-channel, custom rejection
+- [x] Middleware binds `tenant.id` and exposes verified channel via `$request->attributes->get('ecommerce_channel')` for downstream handlers
+
+Known gap: the actual event-processing logic in `ECommerceService::webhookHandler` is still placeholders — signatures are now verified, but order records aren't yet created from webhook payloads. Separate ticket when real sync is implemented.
 
 ---
 

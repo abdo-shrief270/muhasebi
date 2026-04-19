@@ -155,21 +155,23 @@ class ECommerceService
     // ── Webhook ──
 
     /**
-     * Handle incoming webhook from an e-commerce platform.
+     * Handle incoming webhook from an e-commerce platform. Signature is
+     * verified upstream by VerifyEcommerceWebhookSignature — this method
+     * only dispatches based on event type.
      *
      * @param  array<string, mixed>  $payload
      * @return array{handled: bool, event: string|null}
      */
-    public function webhookHandler(string $platform, array $payload): array
+    public function webhookHandler(string $platform, array $payload, ?ECommerceChannel $channel = null): array
     {
         $eventType = $payload['event'] ?? $payload['topic'] ?? $payload['type'] ?? null;
 
         Log::info("E-commerce webhook received", [
             'platform' => $platform,
+            'channel_id' => $channel?->id,
             'event' => $eventType,
         ]);
 
-        // Dispatch by event type — placeholder for actual implementation
         return match ($eventType) {
             'order.created', 'orders/create' => $this->handleOrderCreated($platform, $payload),
             'order.updated', 'orders/updated' => $this->handleOrderUpdated($platform, $payload),
