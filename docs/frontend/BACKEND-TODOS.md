@@ -21,13 +21,14 @@ Extended `idempotent` middleware to all financial-write endpoints. Done-by commi
 - [x] Also extended to `journal-entries` (apiResource + reverse + post) since misposting is expensive to undo
 - [x] Regression test added at `tests/Feature/IdempotencyMiddlewareTest.php` (5 assertions: no-key pass-through, replay preserves status, bad-UUID 422, GET skipped, failed responses not cached)
 
-### 2FA flow does not match docs (§1.1)
-`POST /v1/login` does not return `requires_2fa`, and the issued token is full-access. Enforcement is downstream via `Enforce2fa` returning 403 `{code: "2fa_required"}`. This works for admins but:
+### ~~2FA flow does not match docs~~ ✅ Done (option a)
+Login response now includes `requires_2fa: bool`. True when user is admin/super-admin without 2FA enabled — exactly matches `Enforce2fa` middleware's gating condition, so the login flag and the downstream 403 stay in sync. Token remains full-access; non-admins bypass the flag entirely.
 
-- [ ] Pick a direction:
-  - (a) Add `requires_2fa` to the login response and keep the downstream 403 as belt-and-suspenders — minimal change, just update the controller.
-  - (b) Scope the login-issued token with `['2fa:pending']` ability and swap to an unrestricted token on `/2fa/verify` — more work, better security posture. Matches the docs literally.
-- [ ] Update `docs/features/01-authentication.md` to whatever gets shipped.
+- [x] `AuthController::login()` returns `data.requires_2fa`
+- [x] `docs/features/01-authentication.md` rewritten to describe actual behavior (flag semantics, no token scoping)
+- [x] 3 regression tests in `AuthTest.php` (admin w/o 2FA → true; admin w/ 2FA → false; non-admin → false)
+
+Option (b) — token scoping + per-session verification — deferred. Current model is "once 2FA enabled, always allowed" which is weaker than per-session verification but matches what the `Enforce2fa` middleware actually enforces. If per-session verification becomes a requirement (e.g. for SOC2), revisit this with a new ticket.
 
 ### E-commerce webhook has no signature verification (§7.1)
 `POST /webhooks/ecommerce/{platform}` accepts anything. `ECommerceService::handleIncoming()` logs the event but performs no auth.

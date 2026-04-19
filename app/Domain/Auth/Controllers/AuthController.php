@@ -50,18 +50,26 @@ class AuthController extends Controller
     public function login(LoginRequest $request): JsonResponse
     {
         $result = $this->authService->login($request->validated());
+        $user = $result['user'];
+
+        // True when the user is subject to 2FA enforcement (admin / super-admin)
+        // but hasn't enabled it yet. Frontend should redirect to /v1/2fa/enable.
+        // Matches the gating condition in Enforce2fa middleware so the contract
+        // and the downstream 403 stay in sync.
+        $requires2fa = ($user->isSuperAdmin() || $user->isAdmin()) && ! $user->two_factor_enabled;
 
         return response()->json([
             'message' => 'Login successful.',
             'data' => [
                 'user' => [
-                    'id' => $result['user']->id,
-                    'name' => $result['user']->name,
-                    'email' => $result['user']->email,
-                    'role' => $result['user']->role->value,
-                    'tenant_id' => $result['user']->tenant_id,
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role->value,
+                    'tenant_id' => $user->tenant_id,
                 ],
                 'token' => $result['token'],
+                'requires_2fa' => $requires2fa,
             ],
         ]);
     }

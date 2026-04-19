@@ -47,15 +47,18 @@
 **Response 200:**
 ```json
 {
+  "message": "Login successful.",
   "data": {
-    "user": { "id": 1, "name": "...", "email": "...", "role": "tenant_admin" },
-    "tenant": { "id": 1, "name": "...", "plan": "...", "features": ["..."] },
+    "user": { "id": 1, "name": "...", "email": "...", "role": "admin", "tenant_id": 1 },
     "token": "sanctum-token",
     "requires_2fa": false
   }
 }
 ```
-**Notes:** if user has 2FA enabled, `requires_2fa:true` is returned and token is scoped — call `/v1/2fa/verify` to fully authenticate.
+**Notes on `requires_2fa`:**
+- `true` when the user's role requires 2FA (admin / super-admin) AND they haven't enabled it yet. Frontend should redirect to the 2FA setup flow (`POST /v1/2fa/enable`, then `POST /v1/2fa/confirm`) before the user can reach any protected endpoint — the `Enforce2fa` middleware will otherwise return 403 with `code: "2fa_required"`.
+- `false` when the user is either not subject to 2FA enforcement (non-admin) or has already enabled 2FA.
+- The token issued is **full-access** — it is not scoped. Non-admin users can call any permitted endpoint immediately. Admin users without 2FA enabled will be blocked by the downstream middleware until they finish setup.
 
 ### `POST /v1/logout`
 **Purpose:** revoke the current access token.

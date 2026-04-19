@@ -177,6 +177,57 @@ describe('Login', function (): void {
         $user->refresh();
         expect($user->last_login_at)->not->toBeNull();
     });
+
+    it('returns requires_2fa=true for admin without 2FA enabled', function (): void {
+        $tenant = Tenant::factory()->create();
+        User::factory()->admin()->create([
+            'tenant_id' => $tenant->id,
+            'email' => 'admin-no-2fa@test.com',
+            'password' => bcrypt('password123'),
+            'two_factor_enabled' => false,
+        ]);
+
+        $response = $this->postJson('/api/v1/login', [
+            'email' => 'admin-no-2fa@test.com',
+            'password' => 'password123',
+        ]);
+
+        $response->assertOk()->assertJsonPath('data.requires_2fa', true);
+    });
+
+    it('returns requires_2fa=false for admin with 2FA already enabled', function (): void {
+        $tenant = Tenant::factory()->create();
+        User::factory()->admin()->create([
+            'tenant_id' => $tenant->id,
+            'email' => 'admin-2fa@test.com',
+            'password' => bcrypt('password123'),
+            'two_factor_enabled' => true,
+        ]);
+
+        $response = $this->postJson('/api/v1/login', [
+            'email' => 'admin-2fa@test.com',
+            'password' => 'password123',
+        ]);
+
+        $response->assertOk()->assertJsonPath('data.requires_2fa', false);
+    });
+
+    it('returns requires_2fa=false for non-admin users regardless of 2FA state', function (): void {
+        $tenant = Tenant::factory()->create();
+        User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'email' => 'user@test.com',
+            'password' => bcrypt('password123'),
+            'two_factor_enabled' => false,
+        ]);
+
+        $response = $this->postJson('/api/v1/login', [
+            'email' => 'user@test.com',
+            'password' => 'password123',
+        ]);
+
+        $response->assertOk()->assertJsonPath('data.requires_2fa', false);
+    });
 });
 
 describe('Logout', function (): void {
