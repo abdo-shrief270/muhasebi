@@ -97,6 +97,7 @@ use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\ScheduledReportController;
 use App\Http\Controllers\Api\V1\RssFeedController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
+use App\Http\Controllers\Api\V1\RbacController;
 use App\Http\Controllers\Api\V1\TeamController;
 use App\Http\Controllers\Api\V1\TimeBillingController;
 use App\Http\Controllers\Api\V1\TaxReturnController;
@@ -632,6 +633,11 @@ Route::prefix('v1')->group(function (): void {
                 Route::patch('{user}/toggle-active', [TeamController::class, 'toggleActive'])->name('toggle-active');
                 Route::delete('{user}', [TeamController::class, 'destroy'])->name('destroy');
                 Route::put('{user}/role', [TeamController::class, 'assignRole'])->name('assign-role');
+            });
+
+            // ── RBAC metadata (role → permission presets for team-management UI) ──
+            Route::middleware('permission:manage_team')->prefix('rbac')->name('rbac.')->group(function (): void {
+                Route::get('role-presets', [RbacController::class, 'rolePresets'])->name('role-presets');
             });
 
             // ── Timesheets (admin + accountant) ──

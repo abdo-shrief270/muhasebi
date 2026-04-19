@@ -68,21 +68,22 @@ Added `manage_engagements`, `manage_approvals`, `manage_alerts` to `config/permi
 
 Seeder is config-driven — `php artisan db:seed --class=PermissionSeeder --force` on deploy picks them up. Existing tenants with pre-assigned roles need a re-sync: run the seeder on the production DB once.
 
-### Role-to-permission preset endpoint (§10.2)
-Frontend would like to show "Apply Accountant preset" buttons in team management.
+### ~~Role-to-permission preset endpoint~~ ✅ Done
+`GET /v1/rbac/role-presets` returns the admin/accountant/auditor preset maps directly from `config('permissions')`, gated by `permission:manage_team`. Includes English + Arabic labels so the frontend can render a bilingual dropdown without a second translation fetch.
 
-- [ ] Add `GET /v1/rbac/role-presets` returning:
-  ```json
-  {
-    "data": [
-      { "role": "admin", "label": "Administrator", "permissions": [...] },
-      { "role": "accountant", "label": "Accountant", "permissions": [...] },
-      { "role": "auditor", "label": "Auditor", "permissions": [...] },
-      { "role": "limited", "label": "Limited Access", "permissions": [...] }
-    ]
-  }
-  ```
-  Source: `config('permissions.{role}')` arrays already in the codebase.
+Response shape:
+```json
+{
+  "data": [
+    { "role": "admin", "label": "Administrator", "label_ar": "مدير", "permissions": [...] },
+    { "role": "accountant", "label": "Accountant", "label_ar": "محاسب", "permissions": [...] },
+    { "role": "auditor", "label": "Auditor", "label_ar": "مراجع", "permissions": [...] }
+  ]
+}
+```
+
+- [x] `RbacController::rolePresets` + route at `api.php`
+- [x] 2 tests in `tests/Feature/RbacPresetsTest.php` (happy path + permission rejection)
 
 ---
 
