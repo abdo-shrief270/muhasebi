@@ -95,11 +95,18 @@ Response shape:
 - [x] Controller patched in `ECommerceController::bulkConvert`
 - [x] Regression test added for the 201 happy path
 
-### Magic-link invite for portal users (§2.1)
-Today portal users are created with `Hash::make(Str::random(16))` and must use the password-reset flow to sign in — poor UX for an invited client.
+### ~~Magic-link invite for portal users~~ ✅ Done
+New `portal_invite_tokens` table (hashed token + TTL). Invite creation returns `invite_url` carrying the plaintext token; `POST /v1/portal/accept-invite` exchanges it for a Sanctum token and sets the user's password in one step. Token is single-use (7-day TTL).
 
-- [ ] Add a signed, single-use invite-link token (e.g. `POST /v1/portal/accept-invite` that accepts the token and lets the user set their password in one step).
-- [ ] Include the signed URL in the welcome email from `ClientInvitationService::sendWelcome()`.
+- [x] Migration `2026_04_19_100000_create_portal_invite_tokens_table.php`
+- [x] `PortalInviteToken` model with SHA-256-hashed storage (plaintext never persisted)
+- [x] `ClientInvitationService::inviteClientUser` now returns `{user, invite_token, invite_url}`
+- [x] `ClientInvitationService::acceptInvite($token, $password)` validates → sets password → marks token used → issues Sanctum token
+- [x] `POST /api/v1/portal/accept-invite` (public, `throttle:10,1`) — payload `{token, password, password_confirmation}`
+- [x] 5 new regression tests (happy path, invalid token, replay rejection, expiry rejection, invite_url shape)
+- [x] `ClientController::invitePortalUser` response now includes top-level `invite_url` alongside `data`
+
+Note: the welcome email still uses the generic `WelcomeMail` and links to `/onboarding`. The magic-link URL is returned to the inviter (via the API response) for now — future polish would plumb it into a dedicated invite email template. Tracked separately if the product wants it.
 
 ### Messaging `throttle:10,1` may be too low (§5.2)
 10 sends/min per user is tight for an accounting firm with heavy reminder workflows.

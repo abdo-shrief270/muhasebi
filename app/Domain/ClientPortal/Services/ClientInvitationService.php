@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\ClientPortal\Services;
 
 use App\Domain\Client\Models\Client;
+use App\Domain\ClientPortal\Models\PortalInviteToken;
 use App\Domain\Notification\Services\NotificationService;
 use App\Domain\Shared\Enums\UserRole;
 use App\Domain\Tenant\Models\Tenant;
@@ -15,16 +16,23 @@ use Illuminate\Validation\ValidationException;
 
 class ClientInvitationService
 {
+    private const INVITE_TTL_DAYS = 7;
+
     public function __construct(
         private readonly NotificationService $notificationService,
     ) {}
 
     /**
-     * Invite a client to the portal by creating a user account linked to the Client entity.
+     * Invite a client to the portal. Creates a user linked to the Client,
+     * issues a signed invite token (7-day TTL), and sends a welcome email
+     * carrying the accept-invite URL. The token plaintext is returned so
+     * tests / inspectors can grab it — in production the email is the only
+     * channel that ever sees it.
      *
      * @throws ValidationException
+     * @return array{user: User, invite_token: string, invite_url: string}
      */
-    public function inviteClientUser(Client $client, string $email, string $name): User
+    public function inviteClientUser(Client $client, string $email, string $name): array
     {
         $tenantId = (int) app('tenant.id');
 
@@ -47,15 +55,70 @@ class ClientInvitationService
             'client_id' => $client->id,
             'name' => $name,
             'email' => $email,
-            'password' => Hash::make(Str::random(16)),
+            'password' => Hash::make(Str::random(32)),
             'role' => UserRole::Client,
             'locale' => 'ar',
             'is_active' => true,
         ]);
 
+        $plaintext = Str::random(64);
+        PortalInviteToken::query()->create([
+            'user_id' => $user->id,
+            'token_hash' => PortalInviteToken::hash($plaintext),
+            'expires_at' => now()->addDays(self::INVITE_TTL_DAYS),
+        ]);
+
+        $inviteUrl = rtrim((string) config('app.frontend_url', config('app.url')), '/')
+            .'/portal/accept-invite?token='.$plaintext;
+
         $tenant = Tenant::query()->find($tenantId);
         $this->notificationService->sendWelcome($user->id, $tenant?->name ?? 'محاسبي');
 
-        return $user;
+        return [
+            'user' => $user,
+            'invite_token' => $plaintext,
+            'invite_url' => $inviteUrl,
+        ];
+    }
+
+    /**
+     * Accept a portal invite. Verifies the token, sets the user's password,
+     * marks the token used, and returns a fresh Sanctum token.
+     *
+     * @throws ValidationException
+     * @return array{user: User, token: string}
+     */
+    public function acceptInvite(string $plaintext, string $password): array
+    {
+        $invite = PortalInviteToken::query()
+            ->where('token_hash', PortalInviteToken::hash($plaintext))
+            ->first();
+
+        if (! $invite || ! $invite->isValid()) {
+            throw ValidationException::withMessages([
+                'token' => [
+                    'Invite is invalid or has expired.',
+                    'الدعوة غير صالحة أو منتهية الصلاحية.',
+                ],
+            ]);
+        }
+
+        $user = User::withoutGlobalScopes()->find($invite->user_id);
+        if (! $user) {
+            throw ValidationException::withMessages([
+                'token' => ['Invite target user no longer exists.'],
+            ]);
+        }
+
+        $user->password = Hash::make($password);
+        $user->save();
+
+        $invite->used_at = now();
+        $invite->save();
+
+        return [
+            'user' => $user,
+            'token' => $user->createToken('portal-invite')->plainTextToken,
+        ];
     }
 }

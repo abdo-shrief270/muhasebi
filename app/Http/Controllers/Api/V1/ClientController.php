@@ -95,15 +95,18 @@ class ClientController extends Controller
 
     public function invitePortalUser(InviteClientUserRequest $request, Client $client): JsonResponse
     {
-        $user = $this->invitationService->inviteClientUser(
+        $result = $this->invitationService->inviteClientUser(
             $client,
             $request->validated('email'),
             $request->validated('name'),
         );
 
-        return (new TeamMemberResource($user))
-            ->response()
-            ->setStatusCode(Response::HTTP_CREATED);
+        $payload = (new TeamMemberResource($result['user']))->toArray($request);
+
+        return response()->json([
+            'data' => $payload,
+            'invite_url' => $result['invite_url'],
+        ], Response::HTTP_CREATED);
     }
 
     public function messages(Request $request, Client $client): AnonymousResourceCollection

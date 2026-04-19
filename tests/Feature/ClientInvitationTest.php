@@ -55,6 +55,115 @@ describe('POST /api/v1/clients/{client}/invite-portal', function (): void {
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['email', 'name']);
     });
+
+    it('returns an invite_url carrying the magic-link token', function (): void {
+        $response = $this->withHeader('X-Tenant', $this->tenant->slug)
+            ->postJson("/api/v1/clients/{$this->client->id}/invite-portal", [
+                'email' => 'linked@example.com',
+                'name' => 'Linked Client',
+            ]);
+
+        $response->assertCreated();
+        $url = $response->json('invite_url');
+        expect($url)->toBeString()
+            ->and($url)->toContain('/portal/accept-invite?token=');
+
+        $this->assertDatabaseHas('portal_invite_tokens', [
+            'user_id' => User::query()->where('email', 'linked@example.com')->value('id'),
+            'used_at' => null,
+        ]);
+    });
+});
+
+describe('POST /api/v1/portal/accept-invite', function (): void {
+
+    it('exchanges a valid token for a Sanctum token and sets the password', function (): void {
+        $this->withHeader('X-Tenant', $this->tenant->slug)
+            ->postJson("/api/v1/clients/{$this->client->id}/invite-portal", [
+                'email' => 'newbie@example.com',
+                'name' => 'Newbie',
+            ])->assertCreated();
+
+        $url = app(\App\Domain\ClientPortal\Services\ClientInvitationService::class);
+        $plaintext = \App\Domain\ClientPortal\Models\PortalInviteToken::query()
+            ->where('user_id', User::query()->where('email', 'newbie@example.com')->value('id'))
+            ->value('token_hash');
+
+        // Re-issue an invite via the service directly so we can capture the
+        // plaintext token that the controller-path doesn't expose.
+        \App\Domain\ClientPortal\Models\PortalInviteToken::query()->delete();
+        \App\Models\User::where('email', 'newbie@example.com')->delete();
+
+        $client2 = Client::factory()->create(['tenant_id' => $this->tenant->id]);
+        app()->instance('tenant.id', $this->tenant->id);
+        $invite = $url->inviteClientUser($client2, 'real@example.com', 'Real');
+
+        $response = $this->postJson('/api/v1/portal/accept-invite', [
+            'token' => $invite['invite_token'],
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.user.email', 'real@example.com')
+            ->assertJsonPath('data.user.role', 'client')
+            ->assertJsonStructure(['data' => ['token']]);
+
+        expect(\Illuminate\Support\Facades\Hash::check('NewPassword123!', $invite['user']->fresh()->password))
+            ->toBeTrue();
+
+        $this->assertDatabaseHas('portal_invite_tokens', [
+            'user_id' => $invite['user']->id,
+        ]);
+        expect(\App\Domain\ClientPortal\Models\PortalInviteToken::query()->first()->used_at)
+            ->not->toBeNull();
+    });
+
+    it('rejects an invalid token', function (): void {
+        $this->postJson('/api/v1/portal/accept-invite', [
+            'token' => 'not-a-real-token',
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
+        ])->assertUnprocessable()->assertJsonValidationErrors(['token']);
+    });
+
+    it('rejects a used token', function (): void {
+        $client2 = Client::factory()->create(['tenant_id' => $this->tenant->id]);
+        app()->instance('tenant.id', $this->tenant->id);
+        $invite = app(\App\Domain\ClientPortal\Services\ClientInvitationService::class)
+            ->inviteClientUser($client2, 'one-shot@example.com', 'One Shot');
+
+        // First use succeeds
+        $this->postJson('/api/v1/portal/accept-invite', [
+            'token' => $invite['invite_token'],
+            'password' => 'FirstPass123!',
+            'password_confirmation' => 'FirstPass123!',
+        ])->assertOk();
+
+        // Replay fails
+        $this->postJson('/api/v1/portal/accept-invite', [
+            'token' => $invite['invite_token'],
+            'password' => 'SecondPass123!',
+            'password_confirmation' => 'SecondPass123!',
+        ])->assertUnprocessable()->assertJsonValidationErrors(['token']);
+    });
+
+    it('rejects an expired token', function (): void {
+        $client2 = Client::factory()->create(['tenant_id' => $this->tenant->id]);
+        app()->instance('tenant.id', $this->tenant->id);
+        $invite = app(\App\Domain\ClientPortal\Services\ClientInvitationService::class)
+            ->inviteClientUser($client2, 'stale@example.com', 'Stale');
+
+        \App\Domain\ClientPortal\Models\PortalInviteToken::query()
+            ->where('user_id', $invite['user']->id)
+            ->update(['expires_at' => now()->subMinute()]);
+
+        $this->postJson('/api/v1/portal/accept-invite', [
+            'token' => $invite['invite_token'],
+            'password' => 'Whatever123!',
+            'password_confirmation' => 'Whatever123!',
+        ])->assertUnprocessable()->assertJsonValidationErrors(['token']);
+    });
 });
 
 describe('Firm-side messaging', function (): void {

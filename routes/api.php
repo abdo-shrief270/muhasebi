@@ -86,6 +86,7 @@ use App\Http\Controllers\Api\V1\PayrollController;
 use App\Http\Controllers\Api\V1\PayslipController;
 use App\Http\Controllers\Api\V1\SalaryComponentController;
 use App\Http\Controllers\Api\V1\PlanController;
+use App\Http\Controllers\Api\V1\Portal\ClientPortalAuthController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalDocumentController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalInvoiceController;
@@ -137,6 +138,11 @@ Route::prefix('v1')->group(function (): void {
     Route::post('/login', [AuthController::class, 'login'])
         ->middleware('throttle:5,1')
         ->name('auth.login');
+
+    // Portal invite acceptance (magic-link exchange for a Sanctum token)
+    Route::post('/portal/accept-invite', [ClientPortalAuthController::class, 'acceptInvite'])
+        ->middleware('throttle:10,1')
+        ->name('portal.accept-invite');
 
     // Public plans (pricing page)
     Route::get('/plans', [PlanController::class, 'index'])->name('plans.index');
