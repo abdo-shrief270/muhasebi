@@ -38,6 +38,7 @@ jobs:
           USER: ${{ secrets.PRODUCTION_USER }}
           PATH_APP: ${{ secrets.PRODUCTION_APP_PATH }}
         run: |
+          echo "HOST=$HOST"
           ssh -i ~/.ssh/deploy_key $USER@$HOST "PATH_APP='$PATH_APP' bash -s" << 'BACKUP'
             set -e
       
