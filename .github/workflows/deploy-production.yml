@@ -25,12 +25,13 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Setup SSH
+        env:
+          HOST: ${{ secrets.PRODUCTION_HOST }}
         run: |
           mkdir -p ~/.ssh
-          printf "%s" "${{ secrets.PRODUCTION_SSH_KEY }}" > ~/.ssh/deploy_key
+          printf '%s\n' "${{ secrets.PRODUCTION_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts
 
       - name: Pre-deploy Backup
         env:
@@ -38,103 +39,90 @@ jobs:
           USER: ${{ secrets.PRODUCTION_USER }}
           PATH_APP: ${{ secrets.PRODUCTION_APP_PATH }}
         run: |
-          echo "HOST=$HOST"
-          printf "HOST_RAW='%s'\n" "$HOST"
-          ssh -i ~/.ssh/deploy_key $USER@$HOST "PATH_APP='$PATH_APP' bash -s" << 'BACKUP'
+          ssh -i ~/.ssh/deploy_key "$USER@$HOST" "PATH_APP='$PATH_APP' bash -s" << 'BACKUP'
             set -e
-      
+
             if [ ! -d "$PATH_APP/current" ]; then
-              echo "⚠️ First deploy detected — skipping backup"
+              echo "First deploy detected — skipping backup"
               exit 0
             fi
-      
+
             cd "$PATH_APP/current"
             php artisan backup:database --filename=pre-deploy-$(date +%Y%m%d%H%M%S).sql
           BACKUP
-
-
 
       - name: Deploy with Zero Downtime
         env:
           HOST: ${{ secrets.PRODUCTION_HOST }}
           USER: ${{ secrets.PRODUCTION_USER }}
           PATH_APP: ${{ secrets.PRODUCTION_APP_PATH }}
+          REPO: ${{ github.repository }}
         run: |
-          ssh -i ~/.ssh/deploy_key $USER@$HOST "PATH_APP='$PATH_APP' bash -s" << 'DEPLOY'
+          ssh -i ~/.ssh/deploy_key "$USER@$HOST" \
+            "PATH_APP='$PATH_APP' REPO='$REPO' bash -s" << 'DEPLOY'
             set -e
-      
-            echo "🚀 Starting deploy..."
-      
+
+            echo "Starting deploy..."
+
+            # Make sure the remote trusts github.com for the git clone below
+            mkdir -p ~/.ssh
+            ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null
+
             mkdir -p "$PATH_APP"
             cd "$PATH_APP"
-      
+
             RELEASE=$(date +%Y%m%d%H%M%S)
             RELEASES_DIR="releases"
             SHARED_DIR="shared"
-      
-            mkdir -p $RELEASES_DIR $SHARED_DIR
-      
+
+            mkdir -p "$RELEASES_DIR" "$SHARED_DIR"
+
             # First-time shared setup
             if [ ! -f "$SHARED_DIR/.env" ]; then
-              echo "⚠️ Missing shared .env — creating empty one"
+              echo "Missing shared .env — creating empty one"
               touch "$SHARED_DIR/.env"
             fi
-      
-            if [ ! -d "$SHARED_DIR/storage" ]; then
-              mkdir -p "$SHARED_DIR/storage"
-            fi
-      
-            # Create new release
-            mkdir -p $RELEASES_DIR/$RELEASE
-      
-            echo "📦 Pulling code..."
-            git clone --depth=1 git@github.com:${GITHUB_REPOSITORY}.git $RELEASES_DIR/$RELEASE
-      
+            mkdir -p "$SHARED_DIR/storage"
+
+            # Pull code
+            echo "Pulling code..."
+            git clone --depth=1 "git@github.com:${REPO}.git" "$RELEASES_DIR/$RELEASE"
+
             # Link shared resources
-            ln -nfs "$PATH_APP/$SHARED_DIR/.env" $RELEASES_DIR/$RELEASE/.env
-            rm -rf $RELEASES_DIR/$RELEASE/storage
-            ln -nfs "$PATH_APP/$SHARED_DIR/storage" $RELEASES_DIR/$RELEASE/storage
-      
-            cd $RELEASES_DIR/$RELEASE
-      
-            echo "📦 Installing dependencies..."
+            ln -nfs "$PATH_APP/$SHARED_DIR/.env" "$RELEASES_DIR/$RELEASE/.env"
+            rm -rf "$RELEASES_DIR/$RELEASE/storage"
+            ln -nfs "$PATH_APP/$SHARED_DIR/storage" "$RELEASES_DIR/$RELEASE/storage"
+
+            cd "$RELEASES_DIR/$RELEASE"
+
+            echo "Installing dependencies..."
             export COMPOSER_ALLOW_SUPERUSER=1
             composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
-      
+
             npm ci
             npm run build
-      
-            echo "⚙️ Running Laravel optimizations..."
-            
-            # Atomic symlink swap
+
+            echo "Running migrations and caches on the new release..."
+            php artisan migrate --force --no-interaction
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+            php artisan event:cache
+
+            # Atomic symlink swap (single point of cutover)
+            echo "Switching release..."
             ln -nfs "$PATH_APP/$RELEASES_DIR/$RELEASE" "$PATH_APP/current"
-            
-            # Restart queue BEFORE migration
-            php "$PATH_APP/current/artisan" queue:restart || true
-            
-            # Run migrations safely AFTER switch
-            php "$PATH_APP/current/artisan" migrate --force --no-interaction --step
-            
-            # Cache rebuild
-            php "$PATH_APP/current/artisan" config:cache
-            php "$PATH_APP/current/artisan" route:cache
-            php "$PATH_APP/current/artisan" view:cache
-      
-            # Atomic switch
-            echo "🔁 Switching release..."
-            ln -nfs "$PATH_APP/$RELEASES_DIR/$RELEASE" "$PATH_APP/current"
-      
-            # Reload services
+
+            # Reload services and signal queue workers to pick up new code
             sudo systemctl reload php8.5-fpm || true
             php "$PATH_APP/current/artisan" queue:restart || true
-      
-            # Cleanup old releases
-            cd $RELEASES_DIR
-            ls -dt */ | tail -n +6 | xargs rm -rf || true
-      
-            echo "✅ Deploy complete: $RELEASE"
-          DEPLOY
 
+            # Cleanup old releases (keep last 5)
+            cd "$PATH_APP/$RELEASES_DIR"
+            ls -dt */ | tail -n +6 | xargs -r rm -rf
+
+            echo "Deploy complete: $RELEASE"
+          DEPLOY
 
       - name: Health Check
         id: health
@@ -159,14 +147,14 @@ jobs:
           USER: ${{ secrets.PRODUCTION_USER }}
           PATH_APP: ${{ secrets.PRODUCTION_APP_PATH }}
         run: |
-          ssh -i ~/.ssh/deploy_key $USER@$HOST bash -s << 'ROLLBACK'
+          ssh -i ~/.ssh/deploy_key "$USER@$HOST" "PATH_APP='$PATH_APP' bash -s" << 'ROLLBACK'
             set -e
-            cd $PATH_APP
+            cd "$PATH_APP"
             PREVIOUS=$(ls -dt releases/*/ | sed -n '2p' | tr -d '/')
             if [ -n "$PREVIOUS" ]; then
-              ln -nfs $PWD/releases/$PREVIOUS current
+              ln -nfs "$PATH_APP/releases/$PREVIOUS" "$PATH_APP/current"
               sudo systemctl reload php8.5-fpm
-              php current/artisan queue:restart
+              php "$PATH_APP/current/artisan" queue:restart
               echo "Rolled back to $PREVIOUS"
             else
               echo "No previous release to rollback to!"
