@@ -7,6 +7,7 @@ namespace App\Http\Middleware;
 use App\Domain\Tenant\Models\Tenant;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -74,6 +75,14 @@ class IdentifyTenant
         // the frontend API surface simple — X-Tenant is only needed for
         // super-admin impersonation or cross-tenant admin operations.
         $user = $request->user();
+        Log::info('User: '.$user);
+        Log::info('User tenant: '.$user->tenant_id);
+        Log::info('Request tenant: '.$request->header('X-Tenant'));
+        Log::info('Request tenant: '.$request->route('tenant'));
+        Log::info('Request tenant: '.$request->getHost());
+        Log::info('Request tenant: '.$request->getHttpHost());
+        Log::info('Request tenant: '.$request->getSchemeAndHttpHost());
+        Log::info('Request tenant: '.$request->getBaseUrl());
         if ($user && $user->tenant_id) {
             return Tenant::query()->find($user->tenant_id);
         }
