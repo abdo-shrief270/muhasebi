@@ -24,64 +24,75 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Setup SSH
+        env:
+          HOST: ${{ secrets.STAGING_HOST }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.STAGING_SSH_KEY }}" > ~/.ssh/deploy_key
+          printf '%s\n' "${{ secrets.STAGING_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.STAGING_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts
 
       - name: Deploy with Zero Downtime
         env:
           HOST: ${{ secrets.STAGING_HOST }}
           USER: ${{ secrets.STAGING_USER }}
           PATH_APP: ${{ secrets.STAGING_APP_PATH }}
+          REPO: ${{ github.repository }}
         run: |
-          ssh -i ~/.ssh/deploy_key $USER@$HOST bash -s << 'DEPLOY'
+          ssh -i ~/.ssh/deploy_key "$USER@$HOST" \
+            "PATH_APP='$PATH_APP' REPO='$REPO' bash -s" << 'DEPLOY'
             set -e
-            cd $PATH_APP
 
-            # Create new release directory
+            # Make sure the remote trusts github.com for the git clone below
+            mkdir -p ~/.ssh
+            ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null
+
+            mkdir -p "$PATH_APP"
+            cd "$PATH_APP"
+
             RELEASE=$(date +%Y%m%d%H%M%S)
             RELEASES_DIR="releases"
             SHARED_DIR="shared"
-            mkdir -p $RELEASES_DIR/$RELEASE
 
-            # Clone code to new release
-            git archive --remote=origin HEAD | tar -x -C $RELEASES_DIR/$RELEASE
+            mkdir -p "$RELEASES_DIR" "$SHARED_DIR"
+
+            # First-time shared setup
+            if [ ! -f "$SHARED_DIR/.env" ]; then
+              echo "Missing shared .env — creating empty one"
+              touch "$SHARED_DIR/.env"
+            fi
+            mkdir -p "$SHARED_DIR/storage"
+
+            # Pull code
+            git clone --depth=1 "git@github.com:${REPO}.git" "$RELEASES_DIR/$RELEASE"
 
             # Link shared resources
-            ln -nfs $PWD/$SHARED_DIR/.env $RELEASES_DIR/$RELEASE/.env
-            ln -nfs $PWD/$SHARED_DIR/storage $RELEASES_DIR/$RELEASE/storage
+            ln -nfs "$PATH_APP/$SHARED_DIR/.env" "$RELEASES_DIR/$RELEASE/.env"
+            rm -rf "$RELEASES_DIR/$RELEASE/storage"
+            ln -nfs "$PATH_APP/$SHARED_DIR/storage" "$RELEASES_DIR/$RELEASE/storage"
 
-            # Install dependencies
-            cd $RELEASES_DIR/$RELEASE
+            cd "$RELEASES_DIR/$RELEASE"
             export COMPOSER_ALLOW_SUPERUSER=1
             composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
             npm ci && npm run build
 
-            # Run migrations
             php artisan migrate --force
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
             php artisan event:cache
 
-            # Validate environment
             php artisan env:validate
 
-            # Swap symlink (atomic — zero downtime)
-            cd $PATH_APP
-            ln -nfs $PWD/$RELEASES_DIR/$RELEASE current
+            # Atomic symlink swap
+            ln -nfs "$PATH_APP/$RELEASES_DIR/$RELEASE" "$PATH_APP/current"
 
-            # Reload PHP-FPM (graceful — finishes existing requests)
-            sudo systemctl reload php8.5-fpm
-
-            # Restart queue workers (graceful)
-            php current/artisan queue:restart
+            sudo systemctl reload php8.5-fpm || true
+            php "$PATH_APP/current/artisan" queue:restart || true
 
             # Cleanup old releases (keep last 5)
-            cd $RELEASES_DIR
-            ls -dt */ | tail -n +6 | xargs rm -rf
+            cd "$PATH_APP/$RELEASES_DIR"
+            ls -dt */ | tail -n +6 | xargs -r rm -rf
 
             echo "Deployed release $RELEASE to staging"
           DEPLOY
