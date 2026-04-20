@@ -49,6 +49,13 @@ class IdentifyTenant
 
     private function resolveTenant(Request $request): ?Tenant
     {
+        Log::info('User tenant: '.$user->tenant_id);
+        Log::info('Request tenant: '.$request->header('X-Tenant'));
+        Log::info('Request tenant: '.$request->route('tenant'));
+        Log::info('Request tenant: '.$request->getHost());
+        Log::info('Request tenant: '.$request->getHttpHost());
+        Log::info('Request tenant: '.$request->getSchemeAndHttpHost());
+        Log::info('Request tenant: '.$request->getBaseUrl());
         // Priority 1: X-Tenant header (accepts ID or slug)
         if ($value = $request->header('X-Tenant')) {
             return $this->findByIdOrSlug($value);
@@ -76,13 +83,7 @@ class IdentifyTenant
         // super-admin impersonation or cross-tenant admin operations.
         $user = $request->user();
         Log::info('User: '.$user);
-        Log::info('User tenant: '.$user->tenant_id);
-        Log::info('Request tenant: '.$request->header('X-Tenant'));
-        Log::info('Request tenant: '.$request->route('tenant'));
-        Log::info('Request tenant: '.$request->getHost());
-        Log::info('Request tenant: '.$request->getHttpHost());
-        Log::info('Request tenant: '.$request->getSchemeAndHttpHost());
-        Log::info('Request tenant: '.$request->getBaseUrl());
+
         if ($user && $user->tenant_id) {
             return Tenant::query()->find($user->tenant_id);
         }
