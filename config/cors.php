@@ -34,6 +34,7 @@ return [
         'X-Request-Id',
         'Accept-Language',
         'X-Timezone',
+        'X-Client-Version',
     ],
 
     'exposed_headers' => [
