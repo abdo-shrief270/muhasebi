@@ -33,6 +33,7 @@ return [
         'X-Tenant',
         'X-Request-Id',
         'Accept-Language',
+        'X-Timezone',
     ],
 
     'exposed_headers' => [

@@ -101,7 +101,6 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-                'admin.2fa',
             ]);
     }
 }
