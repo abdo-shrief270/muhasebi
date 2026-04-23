@@ -8,6 +8,7 @@ use App\Domain\Payroll\Enums\PayrollStatus;
 use App\Domain\Payroll\Models\Employee;
 use App\Domain\Payroll\Models\PayrollItem;
 use App\Domain\Payroll\Models\PayrollRun;
+use App\Domain\Workflow\Services\ApprovalWorkflowService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,10 @@ use Illuminate\Validation\ValidationException;
 
 class PayrollService
 {
+    public function __construct(
+        private readonly ApprovalWorkflowService $approvals,
+    ) {}
+
     // ──────────────────────────────────────
     // Payroll Runs
     // ──────────────────────────────────────
@@ -162,6 +167,13 @@ class PayrollService
                     'Only approved payroll runs can be marked as paid.',
                     'يمكن تحديد مسير الرواتب المعتمد كمدفوع فقط.',
                 ],
+            ]);
+        }
+
+        // Gate by total_net — the cash that actually moves to employees.
+        if (! $this->approvals->isApproved('payroll_run', $run->id, (float) $run->total_net)) {
+            throw ValidationException::withMessages([
+                'approval' => ['This payroll run requires approval before it can be marked as paid.'],
             ]);
         }
 

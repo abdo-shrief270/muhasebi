@@ -96,6 +96,7 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
                 SetAdminLocale::class,
+                'admin.ip',
                 'admin.login.throttle',
                 'admin.audit',
             ])

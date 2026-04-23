@@ -2,10 +2,16 @@
 
 declare(strict_types=1);
 
+use App\Domain\Accounting\Models\Account;
+use App\Domain\Accounting\Models\FiscalPeriod;
+use App\Domain\Accounting\Models\FiscalYear;
 use App\Domain\AccountsPayable\Enums\BillStatus;
 use App\Domain\AccountsPayable\Enums\BillType;
+use App\Domain\AccountsPayable\Models\Bill;
 use App\Domain\AccountsPayable\Models\BillLine;
+use App\Domain\AccountsPayable\Models\BillPayment;
 use App\Domain\AccountsPayable\Models\Vendor;
+use App\Domain\AccountsPayable\Services\BillPaymentService;
 
 test('vendor can be created with required fields', function () {
     $tenant = createTenant();
@@ -64,4 +70,83 @@ test('bill line calculates totals correctly', function () {
     expect($line->vat_amount)->toBe('133.00');
     expect($line->wht_amount)->toBe('28.50');
     expect($line->total)->toBe('1054.50');
+});
+
+describe('BillPaymentService input normalization', function (): void {
+    beforeEach(function (): void {
+        $this->tenant = createTenant();
+        $this->admin = createAdminUser($this->tenant);
+        actingAsUser($this->admin);
+
+        // GL accounts required by record() — AP, cash, bank.
+        Account::factory()->liability()->create(['tenant_id' => $this->tenant->id, 'code' => '2111', 'name_ar' => 'الدائنون']);
+        Account::factory()->asset()->create(['tenant_id' => $this->tenant->id, 'code' => '1111', 'name_ar' => 'النقدية']);
+        Account::factory()->asset()->create(['tenant_id' => $this->tenant->id, 'code' => '1112', 'name_ar' => 'البنك']);
+
+        // Fiscal period covering today so the auto-generated JE can land.
+        $fy = FiscalYear::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'name' => (string) now()->year,
+            'start_date' => now()->startOfYear()->toDateString(),
+            'end_date' => now()->endOfYear()->toDateString(),
+        ]);
+        FiscalPeriod::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'fiscal_year_id' => $fy->id,
+            'name' => 'FY '.now()->year,
+            'period_number' => 1,
+            'start_date' => now()->startOfYear()->toDateString(),
+            'end_date' => now()->endOfYear()->toDateString(),
+        ]);
+
+        $this->vendor = Vendor::factory()->create(['tenant_id' => $this->tenant->id]);
+        $this->bill = Bill::factory()->approved()->create([
+            'tenant_id' => $this->tenant->id,
+            'vendor_id' => $this->vendor->id,
+            'total' => '1000.00',
+            'amount_paid' => '0.00',
+        ]);
+    });
+
+    it('accepts FormRequest-style keys (payment_method / payment_date / check_number)', function (): void {
+        $service = app(BillPaymentService::class);
+
+        $payment = $service->record($this->bill, [
+            'amount' => '500.00',
+            'payment_date' => now()->toDateString(),
+            'payment_method' => 'check',
+            'check_number' => 'CHK-42',
+            'reference' => 'REF-1',
+        ]);
+
+        expect($payment->amount)->toBe('500.00');
+        expect($payment->payment_method->value)->toBe('check');
+        expect($payment->check_number)->toBe('CHK-42');
+        expect($this->bill->fresh()->status)->toBe(BillStatus::PartiallyPaid);
+    });
+
+    it('accepts internal-caller keys (method / date)', function (): void {
+        $service = app(BillPaymentService::class);
+
+        $payment = $service->record($this->bill, [
+            'amount' => '1000.00',
+            'date' => now()->toDateString(),
+            'method' => 'bank_transfer',
+        ]);
+
+        expect($payment->payment_method->value)->toBe('bank_transfer');
+        expect($this->bill->fresh()->status)->toBe(BillStatus::Paid);
+    });
+
+    it('rejects input missing both method and payment_method', function (): void {
+        $service = app(BillPaymentService::class);
+
+        $attempt = fn () => $service->record($this->bill, [
+            'amount' => '500.00',
+            'date' => now()->toDateString(),
+        ]);
+
+        expect($attempt)->toThrow(Illuminate\Validation\ValidationException::class);
+        expect(BillPayment::query()->count())->toBe(0);
+    });
 });

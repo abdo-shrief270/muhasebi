@@ -2,7 +2,18 @@
 
 declare(strict_types=1);
 
+use App\Domain\AccountsPayable\Enums\BillStatus;
+use App\Domain\AccountsPayable\Enums\PaymentMethod;
+use App\Domain\AccountsPayable\Models\Bill;
+use App\Domain\AccountsPayable\Models\Vendor;
+use App\Domain\AccountsPayable\Services\BillPaymentService;
+use App\Domain\Workflow\Enums\ApprovalStatus;
+use App\Domain\Workflow\Enums\ApproverType;
+use App\Domain\Workflow\Models\ApprovalRequest;
+use App\Domain\Workflow\Models\ApprovalWorkflow;
+use App\Domain\Workflow\Services\ApprovalWorkflowService;
 use App\Models\User;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
     $this->tenant = createTenant();
@@ -306,5 +317,149 @@ describe('Pending list', function (): void {
 
         $pendingResponse->assertOk();
         expect($pendingResponse->json('data'))->toHaveCount(0);
+    });
+});
+
+describe('ApprovalWorkflowService::isApproved', function (): void {
+
+    it('returns true when no active workflow exists for the entity type', function (): void {
+        app()->instance('tenant.id', $this->tenant->id);
+        $service = app(ApprovalWorkflowService::class);
+
+        expect($service->isApproved('journal_entry', 999, 50000))->toBeTrue();
+    });
+
+    it('returns true when amount is below every step limit', function (): void {
+        app()->instance('tenant.id', $this->tenant->id);
+        $workflow = ApprovalWorkflow::create([
+            'tenant_id' => $this->tenant->id,
+            'name_ar' => 'اعتماد',
+            'entity_type' => 'journal_entry',
+            'is_active' => true,
+        ]);
+        $workflow->steps()->create([
+            'step_order' => 1,
+            'approver_type' => ApproverType::User,
+            'approver_id' => $this->admin->id,
+            'approval_limit' => 10000,
+        ]);
+
+        $service = app(ApprovalWorkflowService::class);
+        expect($service->isApproved('journal_entry', 1, 5000))->toBeTrue();
+    });
+
+    it('returns false when amount exceeds a step limit and no approved request exists', function (): void {
+        app()->instance('tenant.id', $this->tenant->id);
+        $workflow = ApprovalWorkflow::create([
+            'tenant_id' => $this->tenant->id,
+            'name_ar' => 'اعتماد',
+            'entity_type' => 'journal_entry',
+            'is_active' => true,
+        ]);
+        $workflow->steps()->create([
+            'step_order' => 1,
+            'approver_type' => ApproverType::User,
+            'approver_id' => $this->admin->id,
+            'approval_limit' => 10000,
+        ]);
+
+        $service = app(ApprovalWorkflowService::class);
+        expect($service->isApproved('journal_entry', 1, 50000))->toBeFalse();
+    });
+
+    it('returns false when a request exists but is still pending', function (): void {
+        app()->instance('tenant.id', $this->tenant->id);
+        $workflow = ApprovalWorkflow::create([
+            'tenant_id' => $this->tenant->id,
+            'name_ar' => 'اعتماد',
+            'entity_type' => 'journal_entry',
+            'is_active' => true,
+        ]);
+        $workflow->steps()->create([
+            'step_order' => 1,
+            'approver_type' => ApproverType::User,
+            'approver_id' => $this->admin->id,
+            'approval_limit' => 10000,
+        ]);
+        ApprovalRequest::create([
+            'tenant_id' => $this->tenant->id,
+            'workflow_id' => $workflow->id,
+            'entity_type' => 'journal_entry',
+            'entity_id' => 1,
+            'current_step' => 1,
+            'status' => ApprovalStatus::InProgress,
+            'requested_by' => $this->admin->id,
+        ]);
+
+        $service = app(ApprovalWorkflowService::class);
+        expect($service->isApproved('journal_entry', 1, 50000))->toBeFalse();
+    });
+
+    it('returns true when a matching approved request exists', function (): void {
+        app()->instance('tenant.id', $this->tenant->id);
+        $workflow = ApprovalWorkflow::create([
+            'tenant_id' => $this->tenant->id,
+            'name_ar' => 'اعتماد',
+            'entity_type' => 'journal_entry',
+            'is_active' => true,
+        ]);
+        $workflow->steps()->create([
+            'step_order' => 1,
+            'approver_type' => ApproverType::User,
+            'approver_id' => $this->admin->id,
+            'approval_limit' => 10000,
+        ]);
+        ApprovalRequest::create([
+            'tenant_id' => $this->tenant->id,
+            'workflow_id' => $workflow->id,
+            'entity_type' => 'journal_entry',
+            'entity_id' => 1,
+            'current_step' => 1,
+            'status' => ApprovalStatus::Approved,
+            'requested_by' => $this->admin->id,
+        ]);
+
+        $service = app(ApprovalWorkflowService::class);
+        expect($service->isApproved('journal_entry', 1, 50000))->toBeTrue();
+    });
+});
+
+describe('BillPayment approval gate', function (): void {
+
+    it('blocks BillPaymentService::record when amount exceeds workflow threshold', function (): void {
+        app()->instance('tenant.id', $this->tenant->id);
+
+        $vendor = Vendor::factory()->create(['tenant_id' => $this->tenant->id]);
+        $bill = Bill::factory()->approved()->create([
+            'tenant_id' => $this->tenant->id,
+            'vendor_id' => $vendor->id,
+            'total' => '50000.00',
+            'amount_paid' => '0.00',
+        ]);
+
+        $workflow = ApprovalWorkflow::create([
+            'tenant_id' => $this->tenant->id,
+            'name_ar' => 'اعتماد دفع',
+            'entity_type' => 'bill_payment',
+            'is_active' => true,
+        ]);
+        $workflow->steps()->create([
+            'step_order' => 1,
+            'approver_type' => ApproverType::User,
+            'approver_id' => $this->admin->id,
+            'approval_limit' => 10000,
+        ]);
+
+        $service = app(BillPaymentService::class);
+
+        $attempt = fn () => $service->record($bill, [
+            'amount' => '30000',
+            'date' => now()->toDateString(),
+            'method' => PaymentMethod::BankTransfer,
+        ]);
+
+        expect($attempt)->toThrow(ValidationException::class);
+        expect($bill->fresh()->amount_paid)->toBe('0.00');
+        expect($bill->fresh()->status)->toBe(BillStatus::Approved);
     });
 });

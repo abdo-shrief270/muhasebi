@@ -99,4 +99,34 @@ describe('Two-Factor Authentication', function (): void {
 
         $response->assertUnprocessable();
     });
+
+    it('stores recovery codes hashed, not in plaintext', function (): void {
+        $user = createSuperAdmin();
+        $result = TwoFactorService::enable($user);
+        $plaintextCodes = $result['recovery_codes'];
+
+        $stored = json_decode(decrypt($user->fresh()->two_factor_recovery_codes), true);
+
+        expect($stored)->toBeArray();
+        expect(count($stored))->toBe(count($plaintextCodes));
+        foreach ($stored as $entry) {
+            expect($entry)->toStartWith('$2y$');
+            expect($plaintextCodes)->not->toContain($entry);
+        }
+    });
+
+    it('rejects an invalid recovery code without consuming any', function (): void {
+        $user = createSuperAdmin();
+        $result = TwoFactorService::enable($user);
+        actingAsUser($user->fresh());
+
+        $storedBefore = $user->fresh()->two_factor_recovery_codes;
+
+        $response = $this->postJson('/api/v1/2fa/verify', [
+            'code' => 'not-a-real-recovery-code',
+        ]);
+
+        $response->assertUnprocessable();
+        expect($user->fresh()->two_factor_recovery_codes)->toBe($storedBefore);
+    });
 });

@@ -8,6 +8,10 @@ use App\Domain\Accounting\Models\FiscalPeriod;
 use App\Domain\Accounting\Models\FiscalYear;
 use App\Domain\Accounting\Models\JournalEntry;
 use App\Domain\Accounting\Models\JournalEntryLine;
+use App\Domain\Workflow\Enums\ApprovalStatus;
+use App\Domain\Workflow\Enums\ApproverType;
+use App\Domain\Workflow\Models\ApprovalRequest;
+use App\Domain\Workflow\Models\ApprovalWorkflow;
 
 beforeEach(function (): void {
     $this->tenant = createTenant();
@@ -22,13 +26,15 @@ beforeEach(function (): void {
         'end_date' => '2026-12-31',
     ]);
 
+    // Cover the whole fiscal year in a single period for tests — reversals
+    // post on today's date and need a fiscal period to land in.
     $this->fiscalPeriod = FiscalPeriod::factory()->create([
         'tenant_id' => $this->tenant->id,
         'fiscal_year_id' => $this->fiscalYear->id,
-        'name' => 'January 2026',
+        'name' => 'FY 2026',
         'period_number' => 1,
         'start_date' => '2026-01-01',
-        'end_date' => '2026-01-31',
+        'end_date' => '2026-12-31',
     ]);
 
     // Create leaf test accounts
@@ -564,5 +570,255 @@ describe('POST /api/v1/journal-entries/{journalEntry}/reverse', function (): voi
 
         $response->assertUnprocessable()
             ->assertJsonValidationErrors(['status']);
+    });
+});
+
+describe('Fiscal period lock enforcement', function (): void {
+
+    it('rejects creating an entry in a closed period', function (): void {
+        $this->fiscalPeriod->update(['is_closed' => true, 'closed_at' => now()]);
+
+        $data = [
+            'date' => '2026-01-15',
+            'description' => 'Test',
+            'lines' => [
+                ['account_id' => $this->cashAccount->id, 'debit' => 100, 'credit' => 0],
+                ['account_id' => $this->revenueAccount->id, 'debit' => 0, 'credit' => 100],
+            ],
+        ];
+
+        $response = $this->withHeader('X-Tenant', $this->tenant->slug)
+            ->postJson('/api/v1/journal-entries', $data);
+
+        expect($response->status())->toBe(423);
+        expect(JournalEntry::query()->count())->toBe(0);
+    });
+
+    it('rejects creating an entry in a locked period', function (): void {
+        $this->fiscalPeriod->update(['is_locked' => true, 'locked_at' => now()]);
+
+        $data = [
+            'date' => '2026-01-15',
+            'description' => 'Test',
+            'lines' => [
+                ['account_id' => $this->cashAccount->id, 'debit' => 100, 'credit' => 0],
+                ['account_id' => $this->revenueAccount->id, 'debit' => 0, 'credit' => 100],
+            ],
+        ];
+
+        $response = $this->withHeader('X-Tenant', $this->tenant->slug)
+            ->postJson('/api/v1/journal-entries', $data);
+
+        expect($response->status())->toBe(423);
+        expect(JournalEntry::query()->count())->toBe(0);
+    });
+
+    it('rejects posting a draft entry into a locked period', function (): void {
+        $entry = JournalEntry::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'fiscal_period_id' => $this->fiscalPeriod->id,
+            'status' => JournalEntryStatus::Draft,
+            'total_debit' => 100,
+            'total_credit' => 100,
+        ]);
+
+        JournalEntryLine::factory()->debit(100)->create([
+            'journal_entry_id' => $entry->id,
+            'account_id' => $this->cashAccount->id,
+        ]);
+        JournalEntryLine::factory()->credit(100)->create([
+            'journal_entry_id' => $entry->id,
+            'account_id' => $this->revenueAccount->id,
+        ]);
+
+        $this->fiscalPeriod->update(['is_locked' => true, 'locked_at' => now()]);
+
+        $response = $this->withHeader('X-Tenant', $this->tenant->slug)
+            ->postJson("/api/v1/journal-entries/{$entry->id}/post");
+
+        expect($response->status())->toBe(423);
+        expect($entry->fresh()->status)->toBe(JournalEntryStatus::Draft);
+    });
+
+    it('rejects deleting a draft entry in a locked period', function (): void {
+        $entry = JournalEntry::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'fiscal_period_id' => $this->fiscalPeriod->id,
+            'status' => JournalEntryStatus::Draft,
+        ]);
+
+        $this->fiscalPeriod->update(['is_locked' => true, 'locked_at' => now()]);
+
+        $response = $this->withHeader('X-Tenant', $this->tenant->slug)
+            ->deleteJson("/api/v1/journal-entries/{$entry->id}");
+
+        expect($response->status())->toBe(423);
+        expect(JournalEntry::query()->where('id', $entry->id)->exists())->toBeTrue();
+    });
+});
+
+describe('Approval workflow enforcement on JE post', function (): void {
+
+    it('allows posting when no workflow is configured', function (): void {
+        $entry = JournalEntry::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'fiscal_period_id' => $this->fiscalPeriod->id,
+            'status' => JournalEntryStatus::Draft,
+            'total_debit' => 50000,
+            'total_credit' => 50000,
+        ]);
+        JournalEntryLine::factory()->debit(50000)->create(['journal_entry_id' => $entry->id, 'account_id' => $this->cashAccount->id]);
+        JournalEntryLine::factory()->credit(50000)->create(['journal_entry_id' => $entry->id, 'account_id' => $this->revenueAccount->id]);
+
+        $response = $this->withHeader('X-Tenant', $this->tenant->slug)
+            ->postJson("/api/v1/journal-entries/{$entry->id}/post");
+
+        $response->assertOk()
+            ->assertJsonPath('data.status', 'posted');
+    });
+
+    it('allows posting when amount is below the workflow threshold', function (): void {
+        $workflow = ApprovalWorkflow::create([
+            'tenant_id' => $this->tenant->id,
+            'name_ar' => 'اعتماد قيد',
+            'entity_type' => 'journal_entry',
+            'is_active' => true,
+        ]);
+        $workflow->steps()->create([
+            'step_order' => 1,
+            'approver_type' => ApproverType::User,
+            'approver_id' => $this->admin->id,
+            'approval_limit' => 10000,
+        ]);
+
+        $entry = JournalEntry::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'fiscal_period_id' => $this->fiscalPeriod->id,
+            'status' => JournalEntryStatus::Draft,
+            'total_debit' => 500,
+            'total_credit' => 500,
+        ]);
+        JournalEntryLine::factory()->debit(500)->create(['journal_entry_id' => $entry->id, 'account_id' => $this->cashAccount->id]);
+        JournalEntryLine::factory()->credit(500)->create(['journal_entry_id' => $entry->id, 'account_id' => $this->revenueAccount->id]);
+
+        $response = $this->withHeader('X-Tenant', $this->tenant->slug)
+            ->postJson("/api/v1/journal-entries/{$entry->id}/post");
+
+        $response->assertOk()
+            ->assertJsonPath('data.status', 'posted');
+    });
+
+    it('blocks posting above threshold without an approved request', function (): void {
+        $workflow = ApprovalWorkflow::create([
+            'tenant_id' => $this->tenant->id,
+            'name_ar' => 'اعتماد قيد',
+            'entity_type' => 'journal_entry',
+            'is_active' => true,
+        ]);
+        $workflow->steps()->create([
+            'step_order' => 1,
+            'approver_type' => ApproverType::User,
+            'approver_id' => $this->admin->id,
+            'approval_limit' => 10000,
+        ]);
+
+        $entry = JournalEntry::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'fiscal_period_id' => $this->fiscalPeriod->id,
+            'status' => JournalEntryStatus::Draft,
+            'total_debit' => 50000,
+            'total_credit' => 50000,
+        ]);
+        JournalEntryLine::factory()->debit(50000)->create(['journal_entry_id' => $entry->id, 'account_id' => $this->cashAccount->id]);
+        JournalEntryLine::factory()->credit(50000)->create(['journal_entry_id' => $entry->id, 'account_id' => $this->revenueAccount->id]);
+
+        $response = $this->withHeader('X-Tenant', $this->tenant->slug)
+            ->postJson("/api/v1/journal-entries/{$entry->id}/post");
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['approval']);
+        expect($entry->fresh()->status)->toBe(JournalEntryStatus::Draft);
+    });
+
+    it('blocks posting when the approval request is still pending', function (): void {
+        $workflow = ApprovalWorkflow::create([
+            'tenant_id' => $this->tenant->id,
+            'name_ar' => 'اعتماد قيد',
+            'entity_type' => 'journal_entry',
+            'is_active' => true,
+        ]);
+        $workflow->steps()->create([
+            'step_order' => 1,
+            'approver_type' => ApproverType::User,
+            'approver_id' => $this->admin->id,
+            'approval_limit' => 10000,
+        ]);
+
+        $entry = JournalEntry::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'fiscal_period_id' => $this->fiscalPeriod->id,
+            'status' => JournalEntryStatus::Draft,
+            'total_debit' => 50000,
+            'total_credit' => 50000,
+        ]);
+        JournalEntryLine::factory()->debit(50000)->create(['journal_entry_id' => $entry->id, 'account_id' => $this->cashAccount->id]);
+        JournalEntryLine::factory()->credit(50000)->create(['journal_entry_id' => $entry->id, 'account_id' => $this->revenueAccount->id]);
+
+        ApprovalRequest::create([
+            'tenant_id' => $this->tenant->id,
+            'workflow_id' => $workflow->id,
+            'entity_type' => 'journal_entry',
+            'entity_id' => $entry->id,
+            'current_step' => 1,
+            'status' => ApprovalStatus::InProgress,
+            'requested_by' => $this->admin->id,
+        ]);
+
+        $response = $this->withHeader('X-Tenant', $this->tenant->slug)
+            ->postJson("/api/v1/journal-entries/{$entry->id}/post");
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['approval']);
+    });
+
+    it('allows posting once the approval request is approved', function (): void {
+        $workflow = ApprovalWorkflow::create([
+            'tenant_id' => $this->tenant->id,
+            'name_ar' => 'اعتماد قيد',
+            'entity_type' => 'journal_entry',
+            'is_active' => true,
+        ]);
+        $workflow->steps()->create([
+            'step_order' => 1,
+            'approver_type' => ApproverType::User,
+            'approver_id' => $this->admin->id,
+            'approval_limit' => 10000,
+        ]);
+
+        $entry = JournalEntry::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'fiscal_period_id' => $this->fiscalPeriod->id,
+            'status' => JournalEntryStatus::Draft,
+            'total_debit' => 50000,
+            'total_credit' => 50000,
+        ]);
+        JournalEntryLine::factory()->debit(50000)->create(['journal_entry_id' => $entry->id, 'account_id' => $this->cashAccount->id]);
+        JournalEntryLine::factory()->credit(50000)->create(['journal_entry_id' => $entry->id, 'account_id' => $this->revenueAccount->id]);
+
+        ApprovalRequest::create([
+            'tenant_id' => $this->tenant->id,
+            'workflow_id' => $workflow->id,
+            'entity_type' => 'journal_entry',
+            'entity_id' => $entry->id,
+            'current_step' => 1,
+            'status' => ApprovalStatus::Approved,
+            'requested_by' => $this->admin->id,
+        ]);
+
+        $response = $this->withHeader('X-Tenant', $this->tenant->slug)
+            ->postJson("/api/v1/journal-entries/{$entry->id}/post");
+
+        $response->assertOk()
+            ->assertJsonPath('data.status', 'posted');
     });
 });

@@ -6,6 +6,7 @@ namespace App\Domain\Auth\Services;
 
 use App\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
@@ -37,16 +38,19 @@ class TwoFactorService
     }
 
     /**
-     * Enable 2FA for a user.
+     * Enable 2FA for a user. The plaintext recovery codes are returned exactly
+     * once here so the user can save them — only bcrypt hashes are persisted,
+     * so a DB breach (even with APP_KEY) cannot reveal a working recovery code.
      */
     public static function enable(User $user): array
     {
         $secret = self::generateSecret();
         $recoveryCodes = self::generateRecoveryCodes();
+        $hashed = array_map(fn (string $code) => Hash::make($code), $recoveryCodes);
 
         $user->update([
             'two_factor_secret' => encrypt($secret),
-            'two_factor_recovery_codes' => encrypt(json_encode($recoveryCodes)),
+            'two_factor_recovery_codes' => encrypt(json_encode($hashed)),
             'two_factor_enabled' => true,
         ]);
 
@@ -95,6 +99,11 @@ class TwoFactorService
 
     /**
      * Verify and consume a recovery code.
+     *
+     * Codes are stored as bcrypt hashes, so this does a constant-time
+     * Hash::check per stored entry. On match, the hash is removed so each
+     * recovery code is single-use. Iterating every entry (even after match)
+     * keeps timing uniform.
      */
     private static function verifyRecoveryCode(User $user, string $code): bool
     {
@@ -102,22 +111,26 @@ class TwoFactorService
             return false;
         }
 
-        $codes = json_decode(decrypt($user->two_factor_recovery_codes), true);
+        $hashes = json_decode(decrypt($user->two_factor_recovery_codes), true);
 
-        if (! is_array($codes)) {
+        if (! is_array($hashes) || $hashes === []) {
             return false;
         }
 
-        $key = array_search($code, $codes, true);
+        $matchedIndex = null;
+        foreach ($hashes as $index => $hash) {
+            if (is_string($hash) && Hash::check($code, $hash) && $matchedIndex === null) {
+                $matchedIndex = $index;
+            }
+        }
 
-        if ($key === false) {
+        if ($matchedIndex === null) {
             return false;
         }
 
-        // Remove used code
-        unset($codes[$key]);
+        unset($hashes[$matchedIndex]);
         $user->update([
-            'two_factor_recovery_codes' => encrypt(json_encode(array_values($codes))),
+            'two_factor_recovery_codes' => encrypt(json_encode(array_values($hashes))),
         ]);
 
         return true;

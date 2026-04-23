@@ -11,6 +11,7 @@ use App\Domain\Billing\Enums\InvoiceType;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\InvoiceLine;
 use App\Domain\Billing\Models\InvoiceSettings;
+use App\Domain\Workflow\Services\ApprovalWorkflowService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +22,7 @@ class InvoiceService
     public function __construct(
         private readonly JournalEntryService $journalEntryService,
         private readonly GLPostingService $glPostingService,
+        private readonly ApprovalWorkflowService $approvals,
     ) {}
 
     /**
@@ -248,6 +250,12 @@ class InvoiceService
             ]);
         }
 
+        if (! $this->approvals->isApproved('invoice', $invoice->id, (float) $invoice->total)) {
+            throw ValidationException::withMessages([
+                'approval' => ['This invoice requires approval before it can be posted to the General Ledger.'],
+            ]);
+        }
+
         return DB::transaction(function () use ($invoice): Invoice {
             $invoice->load('lines');
             $settings = $this->getSettings();
@@ -435,10 +443,14 @@ class InvoiceService
      * Create invoice line records and calculate their totals.
      *
      * @param  array<int, array<string, mixed>>  $lines
+     *
+     * @throws ValidationException
      */
     private function createLines(Invoice $invoice, array $lines): void
     {
         foreach ($lines as $index => $lineData) {
+            $this->guardLineAmounts($lineData, $index);
+
             $line = new InvoiceLine([
                 'invoice_id' => $invoice->id,
                 'description' => $lineData['description'] ?? '',
@@ -453,6 +465,47 @@ class InvoiceService
             $line->calculateTotals();
 
             $invoice->lines()->save($line);
+        }
+    }
+
+    /**
+     * Reject negative or zero line inputs at the service boundary so internal
+     * callers (RecurringInvoiceService, ECommerceService, TimeBillingService,
+     * console jobs) can't bypass the FormRequest validation and persist
+     * malformed amounts. Credit notes express refunds via InvoiceType, not
+     * negative line values — line values themselves must always be non-negative.
+     *
+     * @param  array<string, mixed>  $lineData
+     *
+     * @throws ValidationException
+     */
+    private function guardLineAmounts(array $lineData, int $index): void
+    {
+        $errors = [];
+
+        $quantity = $lineData['quantity'] ?? null;
+        if ($quantity !== null && (! is_numeric($quantity) || (float) $quantity <= 0)) {
+            $errors["lines.{$index}.quantity"] = ['Line quantity must be a positive number.'];
+        }
+
+        foreach (['unit_price', 'discount_percent', 'vat_rate'] as $field) {
+            if (! array_key_exists($field, $lineData) || $lineData[$field] === null) {
+                continue;
+            }
+            $value = $lineData[$field];
+            if (! is_numeric($value) || (float) $value < 0) {
+                $errors["lines.{$index}.{$field}"] = ["Line {$field} must be zero or greater."];
+            }
+        }
+
+        foreach (['discount_percent', 'vat_rate'] as $field) {
+            if (isset($lineData[$field]) && is_numeric($lineData[$field]) && (float) $lineData[$field] > 100) {
+                $errors["lines.{$index}.{$field}"] = ["Line {$field} must not exceed 100."];
+            }
+        }
+
+        if ($errors) {
+            throw ValidationException::withMessages($errors);
         }
     }
 }

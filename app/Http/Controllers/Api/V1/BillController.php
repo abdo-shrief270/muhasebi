@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Domain\AP\Models\Bill;
-use App\Domain\AP\Services\BillService;
+use App\Domain\AccountsPayable\Models\Bill;
+use App\Domain\AccountsPayable\Services\BillService;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\AP\StoreBillRequest;
-use App\Http\Requests\AP\UpdateBillRequest;
+use App\Http\Requests\AccountsPayable\StoreBillRequest;
+use App\Http\Requests\AccountsPayable\UpdateBillRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

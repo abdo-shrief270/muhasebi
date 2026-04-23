@@ -10,6 +10,7 @@ use App\Domain\AccountsPayable\Enums\BillStatus;
 use App\Domain\AccountsPayable\Enums\PaymentMethod;
 use App\Domain\AccountsPayable\Models\Bill;
 use App\Domain\AccountsPayable\Models\BillPayment;
+use App\Domain\Workflow\Services\ApprovalWorkflowService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,7 @@ class BillPaymentService
     public function __construct(
         private readonly JournalEntryService $journalEntryService,
         private readonly GLPostingService $glPostingService,
+        private readonly ApprovalWorkflowService $approvals,
     ) {}
 
     /**
@@ -62,6 +64,19 @@ class BillPaymentService
             ]);
         }
 
+        // Normalize input keys. The public API (StoreBillPaymentRequest) sends
+        // `payment_method` / `payment_date`; internal callers
+        // (BankAutoReconciliationService, PaymentWorkflowService) send
+        // `method` / `date`. Accept either, then work off a single set of keys.
+        $data['method'] = $data['method'] ?? $data['payment_method'] ?? null;
+        $data['date'] = $data['date'] ?? $data['payment_date'] ?? null;
+
+        if (! $data['method']) {
+            throw ValidationException::withMessages([
+                'payment_method' => ['Payment method is required.'],
+            ]);
+        }
+
         $amount = (string) $data['amount'];
 
         if (bccomp($amount, '0', 2) <= 0) {
@@ -75,6 +90,16 @@ class BillPaymentService
         if (bccomp($amount, $balanceDue, 2) > 0) {
             throw ValidationException::withMessages([
                 'amount' => ["Payment amount ({$amount}) exceeds the balance due ({$balanceDue})."],
+            ]);
+        }
+
+        // Approval gate. Since the payment record doesn't exist yet, the
+        // ApprovalRequest is keyed by ('bill_payment', bill_id) — meaning
+        // "clear a payment against this bill". A tenant without a 'bill_payment'
+        // workflow passes straight through.
+        if (! $this->approvals->isApproved('bill_payment', $bill->id, (float) $amount)) {
+            throw ValidationException::withMessages([
+                'approval' => ['This bill payment requires approval before it can be recorded.'],
             ]);
         }
 
@@ -125,6 +150,7 @@ class BillPaymentService
                 'payment_date' => $data['date'] ?? now()->toDateString(),
                 'payment_method' => $method,
                 'reference' => $data['reference'] ?? null,
+                'check_number' => $data['check_number'] ?? null,
                 'notes' => $data['notes'] ?? null,
                 'journal_entry_id' => $journalEntry->id,
                 'created_by' => Auth::id(),

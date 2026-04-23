@@ -5,6 +5,10 @@ declare(strict_types=1);
 use App\Domain\Payroll\Enums\PayrollStatus;
 use App\Domain\Payroll\Models\Employee;
 use App\Domain\Payroll\Models\PayrollRun;
+use App\Domain\Workflow\Enums\ApprovalStatus;
+use App\Domain\Workflow\Enums\ApproverType;
+use App\Domain\Workflow\Models\ApprovalRequest;
+use App\Domain\Workflow\Models\ApprovalWorkflow;
 use App\Models\User;
 
 beforeEach(function (): void {
@@ -190,5 +194,70 @@ describe('Payroll Runs', function (): void {
         $this->withHeader('X-Tenant', $this->tenant->slug)
             ->deleteJson("/api/v1/payroll/{$run->id}")
             ->assertUnprocessable();
+    });
+});
+
+describe('Payroll run approval gate on markPaid', function (): void {
+
+    it('blocks markPaid when total_net exceeds workflow threshold without approval', function (): void {
+        $run = PayrollRun::factory()->approved()->create([
+            'tenant_id' => $this->tenant->id,
+            'total_net' => 500000,
+        ]);
+
+        $workflow = ApprovalWorkflow::create([
+            'tenant_id' => $this->tenant->id,
+            'name_ar' => 'اعتماد صرف الرواتب',
+            'entity_type' => 'payroll_run',
+            'is_active' => true,
+        ]);
+        $workflow->steps()->create([
+            'step_order' => 1,
+            'approver_type' => ApproverType::User,
+            'approver_id' => $this->admin->id,
+            'approval_limit' => 100000,
+        ]);
+
+        $response = $this->withHeader('X-Tenant', $this->tenant->slug)
+            ->postJson("/api/v1/payroll/{$run->id}/mark-paid");
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['approval']);
+        expect($run->fresh()->status)->toBe(PayrollStatus::Approved);
+    });
+
+    it('allows markPaid once an approved request exists', function (): void {
+        $run = PayrollRun::factory()->approved()->create([
+            'tenant_id' => $this->tenant->id,
+            'total_net' => 500000,
+        ]);
+
+        $workflow = ApprovalWorkflow::create([
+            'tenant_id' => $this->tenant->id,
+            'name_ar' => 'اعتماد صرف الرواتب',
+            'entity_type' => 'payroll_run',
+            'is_active' => true,
+        ]);
+        $workflow->steps()->create([
+            'step_order' => 1,
+            'approver_type' => ApproverType::User,
+            'approver_id' => $this->admin->id,
+            'approval_limit' => 100000,
+        ]);
+        ApprovalRequest::create([
+            'tenant_id' => $this->tenant->id,
+            'workflow_id' => $workflow->id,
+            'entity_type' => 'payroll_run',
+            'entity_id' => $run->id,
+            'current_step' => 1,
+            'status' => ApprovalStatus::Approved,
+            'requested_by' => $this->admin->id,
+        ]);
+
+        $response = $this->withHeader('X-Tenant', $this->tenant->slug)
+            ->postJson("/api/v1/payroll/{$run->id}/mark-paid");
+
+        $response->assertOk()
+            ->assertJsonPath('data.status', 'paid');
     });
 });

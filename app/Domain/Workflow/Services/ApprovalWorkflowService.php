@@ -115,6 +115,49 @@ class ApprovalWorkflowService
     // ──────────────────────────────────────
 
     /**
+     * Decide whether an entity is cleared to proceed past an approval gate.
+     *
+     * Returns true when:
+     *   - no active workflow exists for this entity type (no gate), OR
+     *   - an active workflow exists but the amount doesn't trigger any step
+     *     (e.g. all steps have approval_limit set and amount is below all of them), OR
+     *   - an ApprovalRequest for this entity exists with status=Approved.
+     *
+     * Returns false when a workflow applies and no approved request exists
+     * (including the case where a request is still pending/in_progress or rejected).
+     */
+    public function isApproved(string $entityType, int $entityId, ?float $amount = null): bool
+    {
+        $workflow = ApprovalWorkflow::query()
+            ->where('entity_type', $entityType)
+            ->where('is_active', true)
+            ->with('steps')
+            ->first();
+
+        if (! $workflow) {
+            return true;
+        }
+
+        // If every step has a limit that the amount doesn't meet, no step applies.
+        // A step with approval_limit=null always applies (unconditional gate).
+        if ($amount !== null) {
+            $applicable = $workflow->steps->contains(function (ApprovalStep $step) use ($amount): bool {
+                return $step->approval_limit === null || $amount > (float) $step->approval_limit;
+            });
+
+            if (! $applicable) {
+                return true;
+            }
+        }
+
+        return ApprovalRequest::query()
+            ->where('entity_type', $entityType)
+            ->where('entity_id', $entityId)
+            ->where('status', ApprovalStatus::Approved)
+            ->exists();
+    }
+
+    /**
      * Submit an entity for approval.
      * Finds the matching active workflow, creates an ApprovalRequest.
      */

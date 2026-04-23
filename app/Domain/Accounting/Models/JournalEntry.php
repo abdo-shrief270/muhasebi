@@ -84,6 +84,7 @@ class JournalEntry extends Model
         return $this->belongsTo(Tenant::class);
     }
 
+    /** @return BelongsTo<FiscalPeriod, $this> */
     public function fiscalPeriod(): BelongsTo
     {
         return $this->belongsTo(FiscalPeriod::class);

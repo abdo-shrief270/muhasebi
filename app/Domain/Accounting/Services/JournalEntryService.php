@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Domain\Accounting\Services;
 
 use App\Domain\Accounting\Enums\JournalEntryStatus;
+use App\Domain\Accounting\Exceptions\FiscalPeriodLockedException;
 use App\Domain\Accounting\Models\Account;
 use App\Domain\Accounting\Models\FiscalPeriod;
 use App\Domain\Accounting\Models\JournalEntry;
+use App\Domain\Workflow\Services\ApprovalWorkflowService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +18,11 @@ use Illuminate\Validation\ValidationException;
 
 class JournalEntryService
 {
+    public function __construct(
+        private readonly ApprovalWorkflowService $approvals,
+    ) {}
+
+
     /**
      * List journal entries with search, filter, and pagination.
      *
@@ -74,13 +81,13 @@ class JournalEntryService
                 $fiscalPeriodId = $period->id;
             }
 
-            // Validate fiscal period is open
+            // Validate fiscal period is open AND not locked.
             $fiscalPeriod = FiscalPeriod::query()->findOrFail($fiscalPeriodId);
 
-            if ($fiscalPeriod->is_closed) {
-                throw ValidationException::withMessages([
-                    'fiscal_period_id' => ['The fiscal period is closed.'],
-                ]);
+            if ($fiscalPeriod->is_closed || $fiscalPeriod->is_locked) {
+                throw new FiscalPeriodLockedException(
+                    "Cannot create entries in a closed/locked fiscal period ({$fiscalPeriod->name})."
+                );
             }
 
             $totalDebit = '0.00';
@@ -169,13 +176,20 @@ class JournalEntryService
                 $fiscalPeriodId = $period->id;
             }
 
-            // Validate fiscal period is open
+            // Validate fiscal period is open AND not locked (both the existing
+            // period we'd move out of AND the target period must be open).
             $fiscalPeriod = FiscalPeriod::query()->findOrFail($fiscalPeriodId);
 
-            if ($fiscalPeriod->is_closed) {
-                throw ValidationException::withMessages([
-                    'fiscal_period_id' => ['The fiscal period is closed.'],
-                ]);
+            if ($fiscalPeriod->is_closed || $fiscalPeriod->is_locked) {
+                throw new FiscalPeriodLockedException(
+                    "Cannot update entries in a closed/locked fiscal period ({$fiscalPeriod->name})."
+                );
+            }
+
+            if ($entry->fiscalPeriod && ($entry->fiscalPeriod->is_closed || $entry->fiscalPeriod->is_locked)) {
+                throw new FiscalPeriodLockedException(
+                    "Cannot modify entries that live in a closed/locked fiscal period ({$entry->fiscalPeriod->name})."
+                );
             }
 
             $totalDebit = '0.00';
@@ -232,6 +246,13 @@ class JournalEntryService
             ]);
         }
 
+        $entry->loadMissing('fiscalPeriod');
+        if ($entry->fiscalPeriod && ($entry->fiscalPeriod->is_closed || $entry->fiscalPeriod->is_locked)) {
+            throw new FiscalPeriodLockedException(
+                "Cannot delete entries in a closed/locked fiscal period ({$entry->fiscalPeriod->name})."
+            );
+        }
+
         $entry->delete();
     }
 
@@ -245,6 +266,20 @@ class JournalEntryService
         if (! $entry->status->canPost()) {
             throw ValidationException::withMessages([
                 'status' => ['Only draft journal entries can be posted.'],
+            ]);
+        }
+
+        $entry->loadMissing('fiscalPeriod');
+        if ($entry->fiscalPeriod && ($entry->fiscalPeriod->is_closed || $entry->fiscalPeriod->is_locked)) {
+            throw new FiscalPeriodLockedException(
+                "Cannot post entries in a closed/locked fiscal period ({$entry->fiscalPeriod->name})."
+            );
+        }
+
+        $gateAmount = max((float) $entry->total_debit, (float) $entry->total_credit);
+        if (! $this->approvals->isApproved('journal_entry', $entry->id, $gateAmount)) {
+            throw ValidationException::withMessages([
+                'approval' => ['This journal entry requires approval before it can be posted.'],
             ]);
         }
 
@@ -278,19 +313,40 @@ class JournalEntryService
             ]);
         }
 
-        return DB::transaction(function () use ($entry): JournalEntry {
-            $entry->load('lines');
+        $tenantId = (int) app('tenant.id');
+        $reversalDate = now()->toDateString();
 
-            $tenantId = (int) app('tenant.id');
+        // Reversing entry lands in the fiscal period containing today. If that
+        // period is locked/closed, the reversal can't be recorded — surface this
+        // immediately instead of silently producing an out-of-period entry or
+        // attaching it to the original (already-closed) period.
+        $reversalPeriod = FiscalPeriod::query()
+            ->containingDate($reversalDate)
+            ->first();
+
+        if (! $reversalPeriod) {
+            throw ValidationException::withMessages([
+                'date' => ["No fiscal period defined for the reversal date ({$reversalDate})."],
+            ]);
+        }
+
+        if ($reversalPeriod->is_closed || $reversalPeriod->is_locked) {
+            throw new FiscalPeriodLockedException(
+                "Cannot post reversal into a closed/locked fiscal period ({$reversalPeriod->name})."
+            );
+        }
+
+        return DB::transaction(function () use ($entry, $tenantId, $reversalDate, $reversalPeriod): JournalEntry {
+            $entry->load('lines');
 
             // Create the reversing entry
             $reversalEntry = JournalEntry::query()->create([
                 'entry_number' => $this->generateEntryNumber($tenantId),
-                'date' => now()->toDateString(),
+                'date' => $reversalDate,
                 'description' => "Reversal of {$entry->entry_number}: {$entry->description}",
                 'reference' => $entry->reference,
                 'status' => JournalEntryStatus::Posted,
-                'fiscal_period_id' => $entry->fiscal_period_id,
+                'fiscal_period_id' => $reversalPeriod->id,
                 'total_debit' => $entry->total_credit,
                 'total_credit' => $entry->total_debit,
                 'reversal_of_id' => $entry->id,

@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 use App\Domain\Accounting\Models\FiscalPeriod;
 use App\Domain\Accounting\Models\FiscalYear;
+use App\Domain\Workflow\Enums\ApprovalStatus;
+use App\Domain\Workflow\Enums\ApproverType;
+use App\Domain\Workflow\Models\ApprovalRequest;
+use App\Domain\Workflow\Models\ApprovalWorkflow;
 
 beforeEach(function (): void {
     $this->tenant = createTenant();
@@ -210,5 +214,74 @@ describe('POST /api/v1/fiscal-periods/{fiscalPeriod}/reopen', function (): void 
 
         $response->assertUnprocessable()
             ->assertJsonValidationErrors(['period']);
+    });
+});
+
+describe('Fiscal close approval gate', function (): void {
+
+    it('blocks closing a period when a fiscal_period workflow requires approval', function (): void {
+        $year = FiscalYear::factory()->create(['tenant_id' => $this->tenant->id]);
+        $period = FiscalPeriod::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'fiscal_year_id' => $year->id,
+            'period_number' => 1,
+        ]);
+
+        $workflow = ApprovalWorkflow::create([
+            'tenant_id' => $this->tenant->id,
+            'name_ar' => 'اعتماد إغلاق الفترة',
+            'entity_type' => 'fiscal_period',
+            'is_active' => true,
+        ]);
+        $workflow->steps()->create([
+            'step_order' => 1,
+            'approver_type' => ApproverType::User,
+            'approver_id' => $this->admin->id,
+            'approval_limit' => null,
+        ]);
+
+        $response = $this->withHeader('X-Tenant', $this->tenant->slug)
+            ->postJson("/api/v1/fiscal-periods/{$period->id}/close");
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['approval']);
+        expect($period->fresh()->is_closed)->toBeFalse();
+    });
+
+    it('allows closing once an approved request exists', function (): void {
+        $year = FiscalYear::factory()->create(['tenant_id' => $this->tenant->id]);
+        $period = FiscalPeriod::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'fiscal_year_id' => $year->id,
+            'period_number' => 1,
+        ]);
+
+        $workflow = ApprovalWorkflow::create([
+            'tenant_id' => $this->tenant->id,
+            'name_ar' => 'اعتماد إغلاق الفترة',
+            'entity_type' => 'fiscal_period',
+            'is_active' => true,
+        ]);
+        $workflow->steps()->create([
+            'step_order' => 1,
+            'approver_type' => ApproverType::User,
+            'approver_id' => $this->admin->id,
+            'approval_limit' => null,
+        ]);
+        ApprovalRequest::create([
+            'tenant_id' => $this->tenant->id,
+            'workflow_id' => $workflow->id,
+            'entity_type' => 'fiscal_period',
+            'entity_id' => $period->id,
+            'current_step' => 1,
+            'status' => ApprovalStatus::Approved,
+            'requested_by' => $this->admin->id,
+        ]);
+
+        $response = $this->withHeader('X-Tenant', $this->tenant->slug)
+            ->postJson("/api/v1/fiscal-periods/{$period->id}/close");
+
+        $response->assertOk();
+        expect($period->fresh()->is_closed)->toBeTrue();
     });
 });

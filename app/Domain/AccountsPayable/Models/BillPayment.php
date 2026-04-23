@@ -27,6 +27,7 @@ use Spatie\Activitylog\Support\LogOptions;
     'payment_date',
     'payment_method',
     'reference',
+    'check_number',
     'notes',
     'journal_entry_id',
     'created_by',

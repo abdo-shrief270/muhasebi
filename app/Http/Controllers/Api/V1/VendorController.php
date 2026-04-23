@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Domain\AP\Models\Vendor;
-use App\Domain\AP\Services\VendorService;
+use App\Domain\AccountsPayable\Models\Vendor;
+use App\Domain\AccountsPayable\Services\VendorService;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\AP\StoreVendorRequest;
-use App\Http\Requests\AP\UpdateVendorRequest;
+use App\Http\Requests\AccountsPayable\StoreVendorRequest;
+use App\Http\Requests\AccountsPayable\UpdateVendorRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -61,10 +61,11 @@ class VendorController extends Controller
 
     public function statement(Request $request, Vendor $vendor): JsonResponse
     {
-        $statement = $this->vendorService->statement($vendor, [
-            'from' => $request->query('from'),
-            'to' => $request->query('to'),
-        ]);
+        $statement = $this->vendorService->statement(
+            $vendor,
+            $request->query('from'),
+            $request->query('to'),
+        );
 
         return $this->success($statement);
     }

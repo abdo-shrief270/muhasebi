@@ -18,7 +18,7 @@ class ProcessScheduledReportsCommand extends Command
     {
         $totalProcessed = 0;
 
-        Tenant::query()->where('is_active', true)->each(function (Tenant $tenant) use ($service, &$totalProcessed): void {
+        Tenant::query()->accessible()->each(function (Tenant $tenant) use ($service, &$totalProcessed): void {
             app()->instance('tenant.id', $tenant->id);
 
             $count = $service->processDue();

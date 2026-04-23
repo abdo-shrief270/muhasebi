@@ -117,6 +117,22 @@ class BillService
     }
 
     /**
+     * Soft-delete a draft bill.
+     *
+     * @throws ValidationException
+     */
+    public function delete(Bill $bill): void
+    {
+        if (! $bill->status->canEdit()) {
+            throw ValidationException::withMessages([
+                'status' => ['Only draft bills can be deleted.'],
+            ]);
+        }
+
+        $bill->delete();
+    }
+
+    /**
      * Approve a draft bill and post to the General Ledger.
      *
      * @throws ValidationException

@@ -13,11 +13,15 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property BillStatus $status
+ */
 #[Table('bills')]
 #[Fillable([
     'tenant_id',
@@ -41,6 +45,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Bill extends Model
 {
     use BelongsToTenant;
+    use HasFactory;
     use SoftDeletes;
 
     /** @return array<string, string> */
@@ -121,6 +126,11 @@ class Bill extends Model
     public function balanceDue(): float
     {
         return (float) bcsub((string) $this->total, (string) $this->amount_paid, 2);
+    }
+
+    public function isFullyPaid(): bool
+    {
+        return bccomp((string) $this->amount_paid, (string) $this->total, 2) >= 0;
     }
 
     // ──────────────────────────────────────

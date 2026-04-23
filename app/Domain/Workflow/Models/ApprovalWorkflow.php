@@ -39,11 +39,13 @@ class ApprovalWorkflow extends Model
     // Relationships
     // ──────────────────────────────────────
 
+    /** @return HasMany<ApprovalStep, $this> */
     public function steps(): HasMany
     {
         return $this->hasMany(ApprovalStep::class, 'workflow_id')->orderBy('step_order');
     }
 
+    /** @return HasMany<ApprovalRequest, $this> */
     public function requests(): HasMany
     {
         return $this->hasMany(ApprovalRequest::class, 'workflow_id');

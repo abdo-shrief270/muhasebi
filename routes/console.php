@@ -101,3 +101,8 @@ Schedule::command('alerts:evaluate')->hourly()->withoutOverlapping(300);
 
 // Run monthly depreciation for all tenants (1st of each month at 4am)
 Schedule::command('assets:depreciate')->monthlyOn(1, '04:00')->withoutOverlapping(600);
+
+// Nightly GL invariant check across all tenants. Read-only safety net — logs
+// any debit/credit imbalance or line-sum mismatch. Runs after recurring-je
+// and scheduled payments have settled for the day.
+Schedule::command('gl:reconcile')->dailyAt('23:45')->withoutOverlapping(600);

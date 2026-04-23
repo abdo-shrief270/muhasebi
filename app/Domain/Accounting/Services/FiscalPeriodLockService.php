@@ -39,7 +39,7 @@ class FiscalPeriodLockService
             return;
         }
 
-        if ($period->is_locked || $period->status === 'closed') {
+        if ($period->is_locked || $period->is_closed) {
             throw new FiscalPeriodLockedException(
                 "Cannot modify entries in a closed fiscal period ({$period->start_date->format('Y/m')} — {$period->end_date->format('Y/m')})."
             );
@@ -67,7 +67,6 @@ class FiscalPeriodLockService
     {
         $period->update([
             'is_locked' => true,
-            'status' => 'closed',
             'locked_at' => now(),
             'locked_by' => auth()->id(),
         ]);
@@ -80,7 +79,6 @@ class FiscalPeriodLockService
     {
         $period->update([
             'is_locked' => false,
-            'status' => 'open',
             'locked_at' => null,
             'locked_by' => null,
         ]);

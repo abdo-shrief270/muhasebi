@@ -9,6 +9,7 @@ use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Models\InvestorTenantShare;
 use App\Domain\Investor\Models\ProfitDistribution;
 use App\Domain\Subscription\Models\SubscriptionPayment;
+use App\Support\Money;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -43,7 +44,7 @@ class ProfitDistributionService
      * Calculate distributions for a given month.
      * Auto-pulls revenue from SubscriptionPayment. Expenses provided per tenant.
      *
-     * @param  array<int, float>  $expensesPerTenant  [tenant_id => expenses_amount]
+     * @param  array<int, numeric-string|int|float>  $expensesPerTenant  [tenant_id => expenses_amount]
      * @return Collection<int, ProfitDistribution>
      *
      * @throws ValidationException
@@ -90,15 +91,16 @@ class ProfitDistributionService
                 $periodStart = sprintf('%04d-%02d-01', $year, $month);
                 $periodEnd = date('Y-m-t', strtotime($periodStart));
 
-                $tenantRevenue = (float) SubscriptionPayment::withoutGlobalScopes()
+                $tenantRevenue = Money::of(SubscriptionPayment::withoutGlobalScopes()
                     ->where('tenant_id', $tenantId)
                     ->where('status', 'completed')
                     ->whereBetween('paid_at', [$periodStart, $periodEnd.' 23:59:59'])
-                    ->sum('amount');
+                    ->sum('amount'));
 
-                $tenantExpenses = $expensesPerTenant[$tenantId] ?? 0.0;
-                $netProfit = round($tenantRevenue - $tenantExpenses, 2);
-                $investorShareAmount = round(max(0, $netProfit) * (float) $share->ownership_percentage / 100, 2);
+                $tenantExpenses = Money::of($expensesPerTenant[$tenantId] ?? 0);
+                $netProfit = Money::sub($tenantRevenue, $tenantExpenses);
+                $distributable = Money::max($netProfit, '0');
+                $investorShareAmount = Money::percent($distributable, $share->ownership_percentage);
 
                 $distribution = ProfitDistribution::query()->create([
                     'investor_id' => $investorId,
@@ -190,10 +192,10 @@ class ProfitDistributionService
             ->with('tenant')
             ->get();
 
-        $totalRevenue = (float) $distributions->sum('tenant_revenue');
-        $totalExpenses = (float) $distributions->sum('tenant_expenses');
-        $totalNetProfit = (float) $distributions->sum('net_profit');
-        $totalShare = (float) $distributions->sum('investor_share');
+        $totalRevenue = Money::sum($distributions->pluck('tenant_revenue'));
+        $totalExpenses = Money::sum($distributions->pluck('tenant_expenses'));
+        $totalNetProfit = Money::sum($distributions->pluck('net_profit'));
+        $totalShare = Money::sum($distributions->pluck('investor_share'));
 
         $pdf = Pdf::loadView('reports.investor-payslip', [
             'investor' => $investor,

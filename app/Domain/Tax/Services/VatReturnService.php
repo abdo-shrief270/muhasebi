@@ -14,6 +14,7 @@ use App\Domain\Billing\Models\InvoiceLine;
 use App\Domain\Tax\Enums\TaxReturnStatus;
 use App\Domain\Tax\Enums\TaxReturnType;
 use App\Domain\Tax\Models\TaxReturn;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 
 class VatReturnService
@@ -132,16 +133,14 @@ class VatReturnService
         $salesRow = $rows[InvoiceType::Standard->value] ?? $rows[InvoiceType::Standard] ?? null;
         $creditRow = $rows[InvoiceType::CreditNote->value] ?? $rows[InvoiceType::CreditNote] ?? null;
 
-        $salesVatTotal = (string) ($salesRow->total_vat ?? '0');
-        $creditVatTotal = (string) ($creditRow->total_vat ?? '0');
-
-        $netOutputVat = bcsub($salesVatTotal, $creditVatTotal, 2);
+        $salesVat = Money::of($salesRow->total_vat ?? 0);
+        $creditVat = Money::of($creditRow->total_vat ?? 0);
 
         return [
-            'total' => $netOutputVat,
-            'taxable_amount' => number_format((float) ($salesRow->taxable_amount ?? 0), 2, '.', ''),
-            'sales_vat' => number_format((float) ($salesRow->total_vat ?? 0), 2, '.', ''),
-            'credit_notes_vat' => number_format((float) ($creditRow->total_vat ?? 0), 2, '.', ''),
+            'total' => Money::sub($salesVat, $creditVat),
+            'taxable_amount' => Money::of($salesRow->taxable_amount ?? 0),
+            'sales_vat' => $salesVat,
+            'credit_notes_vat' => $creditVat,
             'invoice_count' => (int) ($salesRow->doc_count ?? 0),
             'credit_notes_count' => (int) ($creditRow->doc_count ?? 0),
         ];
@@ -170,8 +169,8 @@ class VatReturnService
             ->first();
 
         return [
-            'total' => number_format((float) ($result->total_vat ?? 0), 2, '.', ''),
-            'taxable_amount' => number_format((float) ($result->taxable_amount ?? 0), 2, '.', ''),
+            'total' => Money::of($result->total_vat ?? 0),
+            'taxable_amount' => Money::of($result->taxable_amount ?? 0),
             'bill_count' => (int) ($result->bill_count ?? 0),
         ];
     }
@@ -201,17 +200,17 @@ class VatReturnService
             ->get();
 
         $breakdown = $rows->map(fn ($row) => [
-            'rate' => number_format((float) $row->vat_rate, 2, '.', ''),
-            'rate_label' => $row->vat_rate == 0 ? 'معفى / Exempt' : "{$row->vat_rate}%",
-            'taxable_amount' => number_format((float) $row->taxable_amount, 2, '.', ''),
-            'vat_amount' => number_format((float) $row->vat_amount, 2, '.', ''),
+            'rate' => Money::of($row->vat_rate),
+            'rate_label' => Money::isZero($row->vat_rate) ? 'معفى / Exempt' : "{$row->vat_rate}%",
+            'taxable_amount' => Money::of($row->taxable_amount),
+            'vat_amount' => Money::of($row->vat_amount),
             'line_count' => $row->line_count,
         ])->toArray();
 
         // Exempt sales are the zero-rate rows limited to standard invoices
-        $zeroRateRow = $rows->first(fn ($row) => $row->vat_rate == 0);
+        $zeroRateRow = $rows->first(fn ($row) => Money::isZero($row->vat_rate));
         $exempt = [
-            'total' => number_format((float) ($zeroRateRow->exempt_standard_total ?? 0), 2, '.', ''),
+            'total' => Money::of($zeroRateRow->exempt_standard_total ?? 0),
             'line_count' => (int) ($zeroRateRow->exempt_standard_count ?? 0),
         ];
 

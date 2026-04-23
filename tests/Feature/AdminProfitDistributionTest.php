@@ -6,6 +6,7 @@ use App\Domain\Investor\Enums\DistributionStatus;
 use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Models\InvestorTenantShare;
 use App\Domain\Investor\Models\ProfitDistribution;
+use App\Domain\Subscription\Models\SubscriptionPayment;
 
 beforeEach(function (): void {
     $this->superAdmin = createSuperAdmin();
@@ -70,6 +71,102 @@ describe('POST /api/v1/admin/distributions/calculate', function (): void {
 
         $response->assertCreated()
             ->assertJsonPath('count', 1);
+    });
+});
+
+describe('Distribution monetary precision', function (): void {
+
+    it('produces shares summing to the distributable profit with fractional ownership', function (): void {
+        // Three investors splitting 33.33 / 33.33 / 33.34 of the same tenant's profit.
+        // With naive float arithmetic, the sum of shares can drift by 0.01.
+        $tenant = createTenant();
+
+        $investorA = Investor::factory()->create();
+        $investorB = Investor::factory()->create();
+        $investorC = Investor::factory()->create();
+
+        foreach ([[$investorA, '33.33'], [$investorB, '33.33'], [$investorC, '33.34']] as [$investor, $pct]) {
+            InvestorTenantShare::query()->create([
+                'investor_id' => $investor->id,
+                'tenant_id' => $tenant->id,
+                'ownership_percentage' => $pct,
+            ]);
+        }
+
+        // Revenue 1000.00, expenses 0, net profit 1000.00
+        SubscriptionPayment::factory()->completed()->create([
+            'tenant_id' => $tenant->id,
+            'amount' => '1000.00',
+            'paid_at' => '2026-04-10 12:00:00',
+        ]);
+
+        $response = $this->postJson('/api/v1/admin/distributions/calculate', [
+            'month' => 4,
+            'year' => 2026,
+        ]);
+
+        $response->assertCreated();
+
+        $distributions = ProfitDistribution::query()
+            ->withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenant->id)
+            ->where('month', 4)
+            ->where('year', 2026)
+            ->get();
+
+        expect($distributions)->toHaveCount(3);
+
+        $sum = $distributions->reduce(
+            fn (string $carry, ProfitDistribution $d) => bcadd($carry, (string) $d->investor_share, 2),
+            '0.00',
+        );
+
+        // Shares at 33.33/33.33/33.34 of 1000.00 sum exactly to 1000.00.
+        expect($sum)->toBe('1000.00');
+
+        // Each individual share is rounded correctly, not truncated.
+        $byInvestor = $distributions->keyBy('investor_id');
+        expect((string) $byInvestor[$investorA->id]->investor_share)->toBe('333.30');
+        expect((string) $byInvestor[$investorB->id]->investor_share)->toBe('333.30');
+        expect((string) $byInvestor[$investorC->id]->investor_share)->toBe('333.40');
+    });
+
+    it('treats losses as zero distributable profit', function (): void {
+        $tenant = createTenant();
+        $investor = Investor::factory()->create();
+
+        InvestorTenantShare::query()->create([
+            'investor_id' => $investor->id,
+            'tenant_id' => $tenant->id,
+            'ownership_percentage' => '50',
+        ]);
+
+        // Revenue 100, expenses 500 -> net profit -400 (a loss)
+        SubscriptionPayment::factory()->completed()->create([
+            'tenant_id' => $tenant->id,
+            'amount' => '100.00',
+            'paid_at' => '2026-05-10 12:00:00',
+        ]);
+
+        $response = $this->postJson('/api/v1/admin/distributions/calculate', [
+            'month' => 5,
+            'year' => 2026,
+            'expenses' => [
+                ['tenant_id' => $tenant->id, 'amount' => '500.00'],
+            ],
+        ]);
+
+        $response->assertCreated();
+
+        $dist = ProfitDistribution::query()
+            ->withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenant->id)
+            ->where('investor_id', $investor->id)
+            ->firstOrFail();
+
+        // Loss is recorded truthfully but the investor share is floored at zero.
+        expect((string) $dist->net_profit)->toBe('-400.00');
+        expect((string) $dist->investor_share)->toBe('0.00');
     });
 });
 

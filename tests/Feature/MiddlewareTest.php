@@ -82,6 +82,54 @@ describe('EnsureSuperAdmin Middleware', function (): void {
     });
 });
 
+describe('AdminIpWhitelist Middleware', function (): void {
+
+    it('allows all IPs when whitelist is empty', function (): void {
+        config(['auth.admin_ip_whitelist' => '']);
+        $superAdmin = createSuperAdmin();
+        actingAsUser($superAdmin);
+
+        Route::middleware(['auth:sanctum', 'admin.ip'])
+            ->get('/api/v1/test-ip-open', fn () => response()->json(['ok' => true]));
+
+        $this->getJson('/api/v1/test-ip-open')->assertOk();
+    });
+
+    it('denies requests from non-whitelisted IPs', function (): void {
+        config(['auth.admin_ip_whitelist' => '10.0.0.1,10.0.0.2']);
+        $superAdmin = createSuperAdmin();
+        actingAsUser($superAdmin);
+
+        Route::middleware(['auth:sanctum', 'admin.ip'])
+            ->get('/api/v1/test-ip-denied', fn () => response()->json(['ok' => true]));
+
+        $this->getJson('/api/v1/test-ip-denied')->assertForbidden();
+    });
+
+    it('allows requests from a whitelisted IP', function (): void {
+        config(['auth.admin_ip_whitelist' => '127.0.0.1']);
+        $superAdmin = createSuperAdmin();
+        actingAsUser($superAdmin);
+
+        Route::middleware(['auth:sanctum', 'admin.ip'])
+            ->get('/api/v1/test-ip-allowed', fn () => response()->json(['ok' => true]));
+
+        // Test client defaults to 127.0.0.1 for $request->ip()
+        $this->getJson('/api/v1/test-ip-allowed')->assertOk();
+    });
+
+    it('allows requests inside a CIDR range', function (): void {
+        config(['auth.admin_ip_whitelist' => '127.0.0.0/8']);
+        $superAdmin = createSuperAdmin();
+        actingAsUser($superAdmin);
+
+        Route::middleware(['auth:sanctum', 'admin.ip'])
+            ->get('/api/v1/test-ip-cidr', fn () => response()->json(['ok' => true]));
+
+        $this->getJson('/api/v1/test-ip-cidr')->assertOk();
+    });
+});
+
 describe('EnsureActiveUser Middleware', function (): void {
 
     it('allows active user', function (): void {

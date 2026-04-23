@@ -12,6 +12,10 @@ use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\InvoiceLine;
 use App\Domain\Billing\Models\InvoiceSettings;
 use App\Domain\Client\Models\Client;
+use App\Domain\Workflow\Enums\ApprovalStatus;
+use App\Domain\Workflow\Enums\ApproverType;
+use App\Domain\Workflow\Models\ApprovalRequest;
+use App\Domain\Workflow\Models\ApprovalWorkflow;
 
 beforeEach(function (): void {
     $this->tenant = createTenant();
@@ -72,13 +76,15 @@ beforeEach(function (): void {
         'end_date' => '2026-12-31',
     ]);
 
+    // Cover the whole fiscal year so reversals (which post on today's date)
+    // land in a valid open period.
     $this->fiscalPeriod = FiscalPeriod::factory()->create([
         'tenant_id' => $this->tenant->id,
         'fiscal_year_id' => $this->fiscalYear->id,
-        'name' => 'March 2026',
-        'period_number' => 3,
-        'start_date' => '2026-03-01',
-        'end_date' => '2026-03-31',
+        'name' => 'FY 2026',
+        'period_number' => 1,
+        'start_date' => '2026-01-01',
+        'end_date' => '2026-12-31',
     ]);
 });
 
@@ -334,5 +340,95 @@ describe('Payment GL posting', function (): void {
         $bankLine = $je->lines()->where('account_id', $this->bankAccount->id)->first();
         expect($bankLine)->not->toBeNull();
         expect((float) $bankLine->debit)->toBe(3000.00);
+    });
+});
+
+describe('Approval workflow enforcement on invoice postToGL', function (): void {
+
+    it('blocks posting to GL when amount exceeds workflow threshold', function (): void {
+        $workflow = ApprovalWorkflow::create([
+            'tenant_id' => $this->tenant->id,
+            'name_ar' => 'اعتماد قيد فاتورة',
+            'entity_type' => 'invoice',
+            'is_active' => true,
+        ]);
+        $workflow->steps()->create([
+            'step_order' => 1,
+            'approver_type' => ApproverType::User,
+            'approver_id' => $this->admin->id,
+            'approval_limit' => 10000,
+        ]);
+
+        $invoice = Invoice::factory()->sent()->create([
+            'tenant_id' => $this->tenant->id,
+            'client_id' => $this->client->id,
+            'date' => '2026-03-15',
+            'subtotal' => 50000.00,
+            'vat_amount' => 7000.00,
+            'total' => 57000.00,
+        ]);
+        InvoiceLine::factory()->create([
+            'invoice_id' => $invoice->id,
+            'quantity' => 1,
+            'unit_price' => 50000.00,
+            'line_total' => 50000.00,
+            'vat_amount' => 7000.00,
+            'total' => 57000.00,
+        ]);
+
+        $response = $this->withHeader('X-Tenant', $this->tenant->slug)
+            ->postJson("/api/v1/invoices/{$invoice->id}/post-to-gl");
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['approval']);
+        expect($invoice->fresh()->journal_entry_id)->toBeNull();
+    });
+
+    it('allows posting to GL once the approval is granted', function (): void {
+        $workflow = ApprovalWorkflow::create([
+            'tenant_id' => $this->tenant->id,
+            'name_ar' => 'اعتماد قيد فاتورة',
+            'entity_type' => 'invoice',
+            'is_active' => true,
+        ]);
+        $workflow->steps()->create([
+            'step_order' => 1,
+            'approver_type' => ApproverType::User,
+            'approver_id' => $this->admin->id,
+            'approval_limit' => 10000,
+        ]);
+
+        $invoice = Invoice::factory()->sent()->create([
+            'tenant_id' => $this->tenant->id,
+            'client_id' => $this->client->id,
+            'date' => '2026-03-15',
+            'subtotal' => 50000.00,
+            'vat_amount' => 7000.00,
+            'total' => 57000.00,
+        ]);
+        InvoiceLine::factory()->create([
+            'invoice_id' => $invoice->id,
+            'quantity' => 1,
+            'unit_price' => 50000.00,
+            'line_total' => 50000.00,
+            'vat_amount' => 7000.00,
+            'total' => 57000.00,
+        ]);
+
+        ApprovalRequest::create([
+            'tenant_id' => $this->tenant->id,
+            'workflow_id' => $workflow->id,
+            'entity_type' => 'invoice',
+            'entity_id' => $invoice->id,
+            'current_step' => 1,
+            'status' => ApprovalStatus::Approved,
+            'requested_by' => $this->admin->id,
+        ]);
+
+        $response = $this->withHeader('X-Tenant', $this->tenant->slug)
+            ->postJson("/api/v1/invoices/{$invoice->id}/post-to-gl");
+
+        $response->assertOk();
+        expect($invoice->fresh()->journal_entry_id)->not->toBeNull();
     });
 });

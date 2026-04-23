@@ -30,6 +30,9 @@ use Spatie\Activitylog\Support\LogOptions;
     'is_closed',
     'closed_at',
     'closed_by',
+    'is_locked',
+    'locked_at',
+    'locked_by',
 ])]
 class FiscalPeriod extends Model
 {
@@ -46,6 +49,8 @@ class FiscalPeriod extends Model
             'end_date' => 'date',
             'is_closed' => 'boolean',
             'closed_at' => 'datetime',
+            'is_locked' => 'boolean',
+            'locked_at' => 'datetime',
             'period_number' => 'integer',
         ];
     }

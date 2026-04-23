@@ -6,7 +6,9 @@ use App\Domain\Billing\Enums\InvoiceStatus;
 use App\Domain\Billing\Enums\InvoiceType;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\InvoiceLine;
+use App\Domain\Billing\Services\InvoiceService;
 use App\Domain\Client\Models\Client;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
     $this->tenant = createTenant();
@@ -433,5 +435,65 @@ describe('POST /api/v1/invoices/{invoice}/credit-note', function (): void {
         $creditNote = Invoice::query()->where('type', 'credit_note')->first();
         expect($creditNote)->not->toBeNull();
         expect($creditNote->original_invoice_id)->toBe($invoice->id);
+    });
+});
+
+describe('InvoiceService line guards', function (): void {
+
+    it('rejects negative unit_price at the service boundary', function (): void {
+        app()->instance('tenant', $this->tenant);
+        app()->instance('tenant.id', $this->tenant->id);
+
+        $service = app(InvoiceService::class);
+
+        $attempt = fn () => $service->create([
+            'client_id' => $this->client->id,
+            'date' => '2026-03-01',
+            'lines' => [
+                ['description' => 'bad', 'quantity' => 1, 'unit_price' => -100, 'vat_rate' => 14],
+            ],
+        ]);
+
+        expect($attempt)->toThrow(ValidationException::class);
+        expect(Invoice::query()->count())->toBe(0);
+    });
+
+    it('rejects zero or negative quantity at the service boundary', function (): void {
+        app()->instance('tenant', $this->tenant);
+        app()->instance('tenant.id', $this->tenant->id);
+
+        $service = app(InvoiceService::class);
+
+        foreach ([0, -1, -0.5] as $quantity) {
+            $attempt = fn () => $service->create([
+                'client_id' => $this->client->id,
+                'date' => '2026-03-01',
+                'lines' => [
+                    ['description' => 'bad', 'quantity' => $quantity, 'unit_price' => 100, 'vat_rate' => 14],
+                ],
+            ]);
+
+            expect($attempt)->toThrow(ValidationException::class);
+        }
+
+        expect(Invoice::query()->count())->toBe(0);
+    });
+
+    it('rejects discount_percent above 100 at the service boundary', function (): void {
+        app()->instance('tenant', $this->tenant);
+        app()->instance('tenant.id', $this->tenant->id);
+
+        $service = app(InvoiceService::class);
+
+        $attempt = fn () => $service->create([
+            'client_id' => $this->client->id,
+            'date' => '2026-03-01',
+            'lines' => [
+                ['description' => 'bad', 'quantity' => 1, 'unit_price' => 100, 'discount_percent' => 150, 'vat_rate' => 14],
+            ],
+        ]);
+
+        expect($attempt)->toThrow(ValidationException::class);
+        expect(Invoice::query()->count())->toBe(0);
     });
 });

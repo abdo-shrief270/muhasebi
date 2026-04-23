@@ -6,6 +6,7 @@ namespace App\Domain\Accounting\Services;
 
 use App\Domain\Accounting\Models\FiscalPeriod;
 use App\Domain\Accounting\Models\FiscalYear;
+use App\Domain\Workflow\Services\ApprovalWorkflowService;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
@@ -14,6 +15,10 @@ use Illuminate\Validation\ValidationException;
 
 class FiscalPeriodService
 {
+    public function __construct(
+        private readonly ApprovalWorkflowService $approvals,
+    ) {}
+
     /**
      * List fiscal years with period count, ordered by start_date desc.
      *
@@ -118,6 +123,16 @@ class FiscalPeriodService
         if ($unclosedPrevious) {
             throw ValidationException::withMessages([
                 'period' => ['All previous periods must be closed first.'],
+            ]);
+        }
+
+        // Closing a period is an irreversible-ish compliance action; gate it
+        // through the approval workflow. Amount is null because period close
+        // isn't keyed by a monetary threshold — the workflow applies to all
+        // closes when configured (any step with approval_limit=null).
+        if (! $this->approvals->isApproved('fiscal_period', $period->id, null)) {
+            throw ValidationException::withMessages([
+                'approval' => ['Closing this fiscal period requires approval.'],
             ]);
         }
 

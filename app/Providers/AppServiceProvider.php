@@ -72,6 +72,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -98,6 +99,7 @@ class AppServiceProvider extends ServiceProvider
         $this->registerPermissionGates();
         $this->configureRateLimiting();
         $this->registerModelObservers();
+        $this->configurePasswordPolicy();
 
         // Register N+1 query analyzer (works in all environments)
         QueryAnalyzer::register(threshold: 5);
@@ -219,6 +221,30 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Subscription::class, SuperAdminSubscriptionPolicy::class);
         Gate::policy(FeatureFlag::class, SuperAdminFeatureFlagPolicy::class);
         Gate::policy(User::class, SuperAdminUserPolicy::class);
+    }
+
+    /**
+     * One global password policy used by every password-setting endpoint via
+     * Password::defaults(). Production-strength in prod; min(8) in local/testing
+     * so existing test fixtures ("password", "password123", etc.) keep working
+     * without having to rewrite them. LoginRequest keeps its own min:8 since
+     * login is just a sanity check — it never validates the stored password
+     * against the current policy.
+     */
+    private function configurePasswordPolicy(): void
+    {
+        Password::defaults(function () {
+            if ($this->app->isProduction()) {
+                return Password::min(10)
+                    ->mixedCase()
+                    ->letters()
+                    ->numbers()
+                    ->symbols()
+                    ->uncompromised();
+            }
+
+            return Password::min(8);
+        });
     }
 
     private function registerPermissionGates(): void

@@ -39,8 +39,7 @@ class AdminProfitDistributionController extends Controller
     {
         $expensesPerTenant = collect($request->validated('expenses', []))
             ->pluck('amount', 'tenant_id')
-            ->map(fn ($v) => (float) $v)
-            ->toArray();
+            ->all();
 
         $distributions = $this->distributionService->calculate(
             month: $request->validated('month'),

@@ -8,6 +8,7 @@ use App\Domain\ClientPortal\Services\ClientInvitationService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rules\Password;
 
 class ClientPortalAuthController extends Controller
 {
@@ -24,7 +25,7 @@ class ClientPortalAuthController extends Controller
     {
         $data = $request->validate([
             'token' => ['required', 'string'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
         $result = $this->invitationService->acceptInvite($data['token'], $data['password']);
