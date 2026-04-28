@@ -38,6 +38,8 @@ return [
 
     'client' => [
         'deleted' => 'Client deleted successfully.',
+        'portal_user_revoked' => 'Portal access revoked.',
+        'portal_invite_resent' => 'Invite email resent.',
     ],
 
     'invoice' => [

@@ -340,6 +340,9 @@ Route::prefix('v1')->group(function (): void {
             });
             Route::middleware(['feature:client_portal', 'permission:invite_client_portal'])->group(function (): void {
                 Route::post('clients/{client}/invite-portal', [ClientController::class, 'invitePortalUser'])->name('clients.invite-portal');
+                Route::get('clients/{client}/portal-users', [ClientController::class, 'listPortalUsers'])->name('clients.portal-users.index');
+                Route::delete('clients/{client}/portal-users/{portalUser}', [ClientController::class, 'revokePortalUser'])->name('clients.portal-users.revoke');
+                Route::post('clients/{client}/portal-users/{portalUser}/resend-invite', [ClientController::class, 'resendPortalInvite'])->name('clients.portal-users.resend');
             });
 
             // ── Chart of Accounts (admin + accountant) ──

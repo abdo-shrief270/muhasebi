@@ -38,6 +38,8 @@ return [
 
     'client' => [
         'deleted' => 'تم حذف العميل بنجاح.',
+        'portal_user_revoked' => 'تم إلغاء صلاحية الوصول للبوابة.',
+        'portal_invite_resent' => 'تم إعادة إرسال بريد الدعوة.',
     ],
 
     'invoice' => [

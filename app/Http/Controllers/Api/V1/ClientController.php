@@ -109,6 +109,54 @@ class ClientController extends Controller
         ], Response::HTTP_CREATED);
     }
 
+    /**
+     * Portal users attached to this client + their pending-invite state.
+     * The SPA renders this in the Portal tab on the client detail page.
+     */
+    public function listPortalUsers(Client $client): JsonResponse
+    {
+        $rows = $this->invitationService->listPortalUsers($client);
+
+        $payload = array_map(fn (array $row): array => [
+            'id' => $row['user']->id,
+            'name' => $row['user']->name,
+            'email' => $row['user']->email,
+            'status' => $row['status'],
+            'last_login_at' => $row['user']->last_login_at?->toIso8601String(),
+            'invite_expires_at' => $row['invite_expires_at'],
+            'created_at' => $row['user']->created_at?->toIso8601String(),
+        ], $rows);
+
+        return response()->json(['data' => $payload]);
+    }
+
+    /**
+     * Revoke portal access for a single user. Burns invites + tokens +
+     * deactivates the user (soft delete preserves the audit trail).
+     */
+    public function revokePortalUser(Client $client, \App\Models\User $portalUser): JsonResponse
+    {
+        $this->invitationService->revokePortalUser($client, $portalUser);
+
+        return response()->json([
+            'message' => __('messages.client.portal_user_revoked'),
+        ]);
+    }
+
+    /**
+     * Reissue an invite email to a pending portal user. Useful when the
+     * original link expired or got lost in the inbox.
+     */
+    public function resendPortalInvite(Client $client, \App\Models\User $portalUser): JsonResponse
+    {
+        $result = $this->invitationService->resendInvite($client, $portalUser);
+
+        return response()->json([
+            'message' => __('messages.client.portal_invite_resent'),
+            'invite_url' => $result['invite_url'],
+        ]);
+    }
+
     public function messages(Request $request, Client $client): AnonymousResourceCollection
     {
         return MessageResource::collection(

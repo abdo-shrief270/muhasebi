@@ -121,8 +121,8 @@ describe('POST /api/v1/portal/accept-invite', function (): void {
 
         $response = $this->postJson('/api/v1/portal/accept-invite', [
             'token' => $invite['invite_token'],
-            'password' => 'NewPassword123!',
-            'password_confirmation' => 'NewPassword123!',
+            'password' => '563de2466eb3a6fa682f6b58.X9!a',
+            'password_confirmation' => '563de2466eb3a6fa682f6b58.X9!a',
         ]);
 
         $response->assertOk()
@@ -130,7 +130,7 @@ describe('POST /api/v1/portal/accept-invite', function (): void {
             ->assertJsonPath('data.user.role', 'client')
             ->assertJsonStructure(['data' => ['token']]);
 
-        expect(Hash::check('NewPassword123!', $invite['user']->fresh()->password))
+        expect(Hash::check('563de2466eb3a6fa682f6b58.X9!a', $invite['user']->fresh()->password))
             ->toBeTrue();
 
         $this->assertDatabaseHas('portal_invite_tokens', [
@@ -143,8 +143,8 @@ describe('POST /api/v1/portal/accept-invite', function (): void {
     it('rejects an invalid token', function (): void {
         $this->postJson('/api/v1/portal/accept-invite', [
             'token' => 'not-a-real-token',
-            'password' => 'NewPassword123!',
-            'password_confirmation' => 'NewPassword123!',
+            'password' => '563de2466eb3a6fa682f6b58.X9!a',
+            'password_confirmation' => '563de2466eb3a6fa682f6b58.X9!a',
         ])->assertUnprocessable()->assertJsonValidationErrors(['token']);
     });
 
@@ -157,15 +157,15 @@ describe('POST /api/v1/portal/accept-invite', function (): void {
         // First use succeeds
         $this->postJson('/api/v1/portal/accept-invite', [
             'token' => $invite['invite_token'],
-            'password' => 'FirstPass123!',
-            'password_confirmation' => 'FirstPass123!',
+            'password' => '563de2466eb3a6fa682f6b58.X9!a',
+            'password_confirmation' => '563de2466eb3a6fa682f6b58.X9!a',
         ])->assertOk();
 
         // Replay fails
         $this->postJson('/api/v1/portal/accept-invite', [
             'token' => $invite['invite_token'],
-            'password' => 'SecondPass123!',
-            'password_confirmation' => 'SecondPass123!',
+            'password' => '7a39bc1f02d8e459d7f1c620.M5!b',
+            'password_confirmation' => '7a39bc1f02d8e459d7f1c620.M5!b',
         ])->assertUnprocessable()->assertJsonValidationErrors(['token']);
     });
 
@@ -181,8 +181,8 @@ describe('POST /api/v1/portal/accept-invite', function (): void {
 
         $this->postJson('/api/v1/portal/accept-invite', [
             'token' => $invite['invite_token'],
-            'password' => 'Whatever123!',
-            'password_confirmation' => 'Whatever123!',
+            'password' => 'a91c4d8f7e3b62059d.Q8!z',
+            'password_confirmation' => 'a91c4d8f7e3b62059d.Q8!z',
         ])->assertUnprocessable()->assertJsonValidationErrors(['token']);
     });
 });

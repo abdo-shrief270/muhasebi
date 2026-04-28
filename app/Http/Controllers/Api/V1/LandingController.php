@@ -8,6 +8,7 @@ use App\Http\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CmsPageResource;
 use App\Http\Resources\FaqResource;
+use App\Http\Resources\FeatureShowcaseSectionResource;
 use App\Http\Resources\TestimonialResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -32,6 +33,21 @@ class LandingController extends Controller
                 'testimonials' => TestimonialResource::collection($data['testimonials']),
                 'faqs' => FaqResource::collection($data['faqs']),
             ],
+        ]);
+    }
+
+    /**
+     * GET /v1/landing/feature-showcase — bilingual feature catalog used by
+     * the public /features marketing page. Cache is handled at the service
+     * layer (10-minute TTL); the route also sits behind `cache.public`
+     * middleware for an extra HTTP-cache layer.
+     */
+    public function featureShowcase(): JsonResponse
+    {
+        $sections = $this->cmsService->getFeatureShowcase();
+
+        return response()->json([
+            'data' => FeatureShowcaseSectionResource::collection($sections),
         ]);
     }
 
