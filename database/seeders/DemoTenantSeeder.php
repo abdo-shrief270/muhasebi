@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Domain\Client\Models\Client;
 use App\Domain\Shared\Enums\TenantStatus;
 use App\Domain\Shared\Enums\UserRole;
 use App\Domain\Tenant\Models\Tenant;
@@ -63,11 +64,33 @@ class DemoTenantSeeder extends Seeder
             ]
         );
 
-        // Client user
+        // Demo client (end-customer of the accounting firm)
+        $client = Client::query()->withoutGlobalScopes()->updateOrCreate(
+            [
+                'tenant_id' => $tenant->id,
+                'tax_id' => '987654321',
+            ],
+            [
+                'name' => 'مؤسسة النيل التجارية',
+                'trade_name' => 'النيل للتجارة',
+                'commercial_register' => '67890',
+                'activity_type' => 'تجارة عامة',
+                'address' => '٤٥ شارع الجمهورية، المعادي',
+                'city' => 'القاهرة',
+                'phone' => '+20221234567',
+                'email' => 'client@demo-firm.muhasebi.com',
+                'contact_person' => 'محمد العميل',
+                'contact_phone' => '+201001234567',
+                'is_active' => true,
+            ]
+        );
+
+        // Client portal user — linked to the client above
         User::query()->updateOrCreate(
             ['email' => 'client@demo-firm.muhasebi.com'],
             [
                 'tenant_id' => $tenant->id,
+                'client_id' => $client->id,
                 'name' => 'محمد العميل',
                 'password' => Hash::make('Demo@2026!'),
                 'role' => UserRole::Client,
