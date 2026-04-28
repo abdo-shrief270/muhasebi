@@ -8,6 +8,7 @@ use App\Domain\Client\Models\Client;
 use App\Domain\ClientPortal\Models\PortalInviteToken;
 use App\Domain\Shared\Enums\UserRole;
 use App\Domain\Tenant\Models\Tenant;
+use App\Domain\Tenant\Services\TenantBrandingService;
 use App\Mail\ClientPortalInviteMail;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
@@ -72,6 +73,7 @@ class ClientInvitationService
 
         $tenant = Tenant::query()->find($tenantId);
         $tenantName = $tenant?->name ?? 'محاسبي';
+        $brand = $tenant ? app(TenantBrandingService::class)->brandContext($tenant) : null;
 
         // Send the dedicated invite email carrying the magic-link — the
         // generic welcome flow assumes an already-authenticated user
@@ -80,6 +82,7 @@ class ClientInvitationService
             userName: $user->name,
             tenantName: $tenantName,
             actionUrl: $inviteUrl,
+            brand: $brand,
         ));
 
         return [
@@ -203,11 +206,13 @@ class ClientInvitationService
 
         $tenant = Tenant::query()->find($user->tenant_id);
         $tenantName = $tenant?->name ?? 'محاسبي';
+        $brand = $tenant ? app(TenantBrandingService::class)->brandContext($tenant) : null;
 
         Mail::to($user->email)->send(new ClientPortalInviteMail(
             userName: $user->name,
             tenantName: $tenantName,
             actionUrl: $inviteUrl,
+            brand: $brand,
         ));
 
         return [

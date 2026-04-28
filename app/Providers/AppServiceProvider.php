@@ -322,6 +322,10 @@ class AppServiceProvider extends ServiceProvider
         // SuperAdmin bypasses all permission checks
         Gate::before(fn (User $user) => $user->role === UserRole::SuperAdmin ? true : null);
 
+        // opcodesio/log-viewer enforces this gate in production. Without it the
+        // panel returns 403 even for authenticated SuperAdmins.
+        Gate::define('viewLogViewer', fn (?User $user) => $user?->role === UserRole::SuperAdmin);
+
         // Spatie's HasRoles trait + register_permission_check_method=true in config
         // auto-registers $user->can('permission') via Gate. For permissions not yet in DB
         // (e.g. before seeding), fall back to config-based check.

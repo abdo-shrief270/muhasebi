@@ -42,6 +42,7 @@ use Spatie\Activitylog\Support\LogOptions;
     'favicon_path',
     'social_links',
     'custom_css',
+    'branding',
     'suspension_reason',
     'suspended_at',
     'suspended_by',
@@ -68,6 +69,7 @@ class Tenant extends Model
             'is_landing_page_active' => 'boolean',
             'social_links' => 'array',
             'custom_css' => 'array',
+            'branding' => 'array',
             'suspended_at' => 'datetime',
         ];
     }

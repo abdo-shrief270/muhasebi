@@ -7,6 +7,8 @@ namespace App\Domain\Notification\Services;
 use App\Domain\Notification\Enums\NotificationChannel;
 use App\Domain\Notification\Enums\NotificationType;
 use App\Domain\Notification\Models\Notification;
+use App\Domain\Tenant\Models\Tenant;
+use App\Domain\Tenant\Services\TenantBrandingService;
 use App\Mail\InvoiceSentMail;
 use App\Mail\PaymentReceivedMail;
 use App\Mail\TeamInviteMail;
@@ -207,6 +209,7 @@ class NotificationService
                 clientName: $clientName,
                 totalAmount: $totalAmount,
                 actionUrl: config('app.frontend_url', config('app.url')).$actionUrl,
+                brand: $this->brandContextFor($user->tenant_id),
             ));
         }
 
@@ -237,10 +240,35 @@ class NotificationService
                 invoiceNumber: $invoiceNumber,
                 paymentMethod: $paymentMethod,
                 actionUrl: config('app.frontend_url', config('app.url')).$actionUrl,
+                brand: $this->brandContextFor($user->tenant_id),
             ));
         }
 
         return $notification;
+    }
+
+    /**
+     * Resolve a tenant's brand context for emails. Cached per request via
+     * the container — repeated lookups for the same tenant in one request
+     * (bulk invoice send) hit memory only.
+     *
+     * Returns null on miss so the email layout falls back to platform
+     * defaults rather than blowing up on missing keys.
+     *
+     * @return array{name:string,primary:string,secondary:string,logo_url:?string}|null
+     */
+    private function brandContextFor(?int $tenantId): ?array
+    {
+        if (! $tenantId) {
+            return null;
+        }
+
+        $tenant = Tenant::query()->find($tenantId);
+        if (! $tenant) {
+            return null;
+        }
+
+        return app(TenantBrandingService::class)->brandContext($tenant);
     }
 
     /**

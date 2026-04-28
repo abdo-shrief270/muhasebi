@@ -112,6 +112,7 @@ use App\Http\Controllers\Api\V1\SubscriptionAddOnController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\TaxReturnController;
 use App\Http\Controllers\Api\V1\TeamController;
+use App\Http\Controllers\Api\V1\TenantBrandingController;
 use App\Http\Controllers\Api\V1\TimeBillingController;
 use App\Http\Controllers\Api\V1\TimerController;
 use App\Http\Controllers\Api\V1\TimesheetController;
@@ -663,6 +664,27 @@ Route::prefix('v1')->group(function (): void {
             Route::middleware('permission:manage_landing_page')->group(function (): void {
                 Route::get('landing-page-settings', [LandingPageSettingsController::class, 'show'])->name('landing-page-settings.show');
                 Route::put('landing-page-settings', [LandingPageSettingsController::class, 'update'])->name('landing-page-settings.update');
+            });
+
+            // ── Per-tenant theme (colors, fonts, shape, assets) ──
+            //
+            // GET is intentionally unpermissioned: every tenant user needs
+            // to read their own tenant's branding for runtime theming on
+            // each page load. Mutations require manage_branding.
+            //
+            // The {kind} parameter is constrained to logo|favicon to keep
+            // the asset endpoints from being abused as a generic uploader.
+            Route::get('branding', [TenantBrandingController::class, 'show'])->name('branding.show');
+            Route::middleware('permission:manage_branding')->group(function (): void {
+                Route::put('branding', [TenantBrandingController::class, 'update'])->name('branding.update');
+                Route::delete('branding', [TenantBrandingController::class, 'reset'])->name('branding.reset');
+
+                Route::post('branding/asset/{kind}', [TenantBrandingController::class, 'uploadAsset'])
+                    ->whereIn('kind', ['logo', 'favicon'])
+                    ->name('branding.asset.upload');
+                Route::delete('branding/asset/{kind}', [TenantBrandingController::class, 'deleteAsset'])
+                    ->whereIn('kind', ['logo', 'favicon'])
+                    ->name('branding.asset.delete');
             });
 
             // ── Documents (all tenant roles) ──

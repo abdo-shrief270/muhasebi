@@ -118,6 +118,7 @@ return [
         'manage_payroll',
         'manage_employees',
         'manage_landing_page',
+        'manage_branding',
         'manage_onboarding',
         'manage_vendors',
         'manage_bills',

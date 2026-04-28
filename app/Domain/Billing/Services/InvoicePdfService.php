@@ -6,11 +6,17 @@ namespace App\Domain\Billing\Services;
 
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\InvoiceSettings;
+use App\Domain\Tenant\Services\TenantBrandingService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Symfony\Component\HttpFoundation\Response;
 
 class InvoicePdfService
 {
+    public function __construct(
+        private readonly TenantBrandingService $branding,
+    ) {}
+
+
     /**
      * Generate and download an invoice PDF using the tenant's configured template.
      */
@@ -78,7 +84,13 @@ class InvoicePdfService
             'showPaymentTerms' => $settings?->pdf_show_payment_terms ?? true,
             'footerText' => $settings?->pdf_footer_text ?? null,
             'headerText' => $settings?->pdf_header_text ?? null,
-            'accentColor' => $settings?->pdf_accent_color ?? ($tenant->primary_color ?? '#2c3e50'),
+            // Resolution order:
+            //   1. InvoiceSettings::pdf_accent_color (per-tenant override for PDFs)
+            //   2. Tenant SPA branding primary (set via /settings/branding)
+            //   3. Legacy tenant.primary_color (Blade landing-page column, kept as fallback)
+            //   4. Hardcoded default
+            'accentColor' => $settings?->pdf_accent_color
+                ?? $this->branding->getEffective($tenant)['colors']['primary'],
             'logoUrl' => $tenant->logo_path ? storage_path('app/public/'.$tenant->logo_path) : null,
         ];
     }

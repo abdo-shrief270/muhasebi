@@ -1,9 +1,32 @@
+@php
+/**
+ * Tenant-aware email shell.
+ *
+ * Pass $brand from the Mailable's data array to render firm-to-customer
+ * messages (invoices, portal invites, payment receipts) with the tenant's
+ * brand instead of the platform default. Platform-to-firm messages
+ * (welcome, trial expiring, usage threshold) just don't pass it and the
+ * platform defaults below kick in.
+ *
+ * Resolve via TenantBrandingService::brandContext($tenant) on the backend.
+ */
+$brand = $brand ?? [
+    'name'      => 'محاسبي',
+    'primary'   => '#2c3e50',
+    'secondary' => '#3498db',
+    'logo_url'  => null,
+];
+$brandPrimary   = $brand['primary']   ?? '#2c3e50';
+$brandSecondary = $brand['secondary'] ?? '#3498db';
+$brandName      = $brand['name']      ?? 'محاسبي';
+$brandLogo      = $brand['logo_url']  ?? null;
+@endphp
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title') - محاسبي</title>
+    <title>@yield('title') - {{ $brandName }}</title>
     <style>
         body {
             margin: 0;
@@ -23,11 +46,17 @@
         }
 
         .email-header {
-            background-color: #2c3e50;
+            background-color: {{ $brandPrimary }};
             color: #ffffff;
             text-align: center;
             padding: 24px;
             border-radius: 8px 8px 0 0;
+        }
+
+        .email-header img.logo {
+            max-height: 40px;
+            max-width: 220px;
+            object-fit: contain;
         }
 
         .email-header h1 {
@@ -45,7 +74,7 @@
 
         .email-body h2 {
             margin-top: 0;
-            color: #2c3e50;
+            color: {{ $brandPrimary }};
             font-size: 20px;
         }
 
@@ -58,7 +87,7 @@
         .btn {
             display: inline-block;
             padding: 12px 28px;
-            background-color: #2c3e50;
+            background-color: {{ $brandPrimary }};
             color: #ffffff;
             text-decoration: none;
             border-radius: 6px;
@@ -84,7 +113,7 @@
         .info-box .value {
             font-size: 16px;
             font-weight: bold;
-            color: #2c3e50;
+            color: {{ $brandPrimary }};
         }
 
         .email-footer {
@@ -106,7 +135,11 @@
 <body>
     <div class="email-wrapper">
         <div class="email-header">
-            <h1>محاسبي</h1>
+            @if ($brandLogo)
+                <img src="{{ $brandLogo }}" alt="{{ $brandName }}" class="logo">
+            @else
+                <h1>{{ $brandName }}</h1>
+            @endif
         </div>
 
         <div class="email-body">
@@ -114,7 +147,7 @@
         </div>
 
         <div class="email-footer">
-            <p>&copy; {{ date('Y') }} محاسبي - Muhasebi</p>
+            <p>&copy; {{ date('Y') }} {{ $brandName }}</p>
             <p>نظام المحاسبة السحابي لمكاتب المحاسبة المصرية</p>
         </div>
     </div>
