@@ -9,6 +9,7 @@ use App\Domain\Billing\Enums\InvoiceStatus;
 use App\Domain\Billing\Enums\InvoiceType;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\InvoiceLine;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 
 class TaxReportService
@@ -110,12 +111,12 @@ class TaxReportService
                 'account_name_ar' => $entries->first()->account_name_ar,
                 'account_name_en' => $entries->first()->account_name_en,
                 'entries_count' => $entries->count(),
-                'total_withheld' => number_format((float) $net, 2, '.', ''),
+                'total_withheld' => Money::of($net),
                 'entries' => $entries->map(fn ($e) => [
                     'date' => $e->date,
                     'entry_number' => $e->entry_number,
                     'description' => $e->description,
-                    'amount' => number_format((float) ($e->credit - $e->debit), 2, '.', ''),
+                    'amount' => Money::sub($e->credit, $e->debit),
                 ])->values()->toArray(),
             ];
         })->values()->toArray();
@@ -173,9 +174,9 @@ class TaxReportService
 
         return [
             'total' => $netOutputVat,
-            'taxable_amount' => number_format((float) ($salesVat->taxable_amount ?? 0), 2, '.', ''),
-            'sales_vat' => number_format((float) ($salesVat->total_vat ?? 0), 2, '.', ''),
-            'credit_notes_vat' => number_format((float) ($creditNotesVat->total_vat ?? 0), 2, '.', ''),
+            'taxable_amount' => Money::of($salesVat->taxable_amount ?? 0),
+            'sales_vat' => Money::of($salesVat->total_vat ?? 0),
+            'credit_notes_vat' => Money::of($creditNotesVat->total_vat ?? 0),
             'invoice_count' => (int) ($salesVat->invoice_count ?? 0),
             'credit_notes_count' => (int) ($creditNotesVat->count ?? 0),
         ];
@@ -204,7 +205,7 @@ class TaxReportService
             ->first();
 
         return [
-            'total' => number_format((float) ($result->total_debit ?? 0), 2, '.', ''),
+            'total' => Money::of($result->total_debit ?? 0),
             'entry_count' => (int) ($result->entry_count ?? 0),
         ];
     }
@@ -232,10 +233,10 @@ class TaxReportService
             ->get();
 
         return $breakdown->map(fn ($row) => [
-            'rate' => number_format((float) $row->vat_rate, 2, '.', ''),
+            'rate' => Money::of($row->vat_rate),
             'rate_label' => $row->vat_rate == 0 ? 'معفى / Exempt' : "{$row->vat_rate}%",
-            'taxable_amount' => number_format((float) $row->taxable_amount, 2, '.', ''),
-            'vat_amount' => number_format((float) $row->vat_amount, 2, '.', ''),
+            'taxable_amount' => Money::of($row->taxable_amount),
+            'vat_amount' => Money::of($row->vat_amount),
             'line_count' => $row->line_count,
         ])->toArray();
     }

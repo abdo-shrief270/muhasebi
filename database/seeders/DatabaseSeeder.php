@@ -14,6 +14,8 @@ class DatabaseSeeder extends Seeder
             PermissionSeeder::class,       // 1. Roles & permissions (required by users)
             RolesSeeder::class,            // 2. Tenant-level roles (admin/accountant/auditor/limited)
             PlanSeeder::class,             // 3. Subscription plans
+            AddOnSeeder::class,            // 3b. Subscription add-ons catalog
+            FeatureShowcaseSeeder::class,  // 3c. Marketing /features page content
             SuperAdminSeeder::class,       // 4. Super admin user
             DemoTenantSeeder::class,       // 5. Demo tenant with sample data
             SyncUserRolesSeeder::class,    // 6. Sync enum roles → Spatie roles

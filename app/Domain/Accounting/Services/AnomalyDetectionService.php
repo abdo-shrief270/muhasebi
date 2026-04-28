@@ -9,6 +9,7 @@ use App\Domain\Accounting\Models\JournalEntry;
 use App\Domain\Accounting\Models\JournalEntryLine;
 use App\Domain\AccountsPayable\Models\BillPayment;
 use App\Domain\Billing\Models\Invoice;
+use App\Support\Money;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -138,8 +139,9 @@ class AnomalyDetectionService
         // Use a single query with a subquery join for thresholds
         $accountThresholds = $stats->map(fn ($s) => [
             'account_id' => $s->account_id,
-            'mean' => number_format((float) $s->mean_amount, 2, '.', ''),
-            'stddev' => number_format((float) $s->stddev_amount, 2, '.', ''),
+            'mean' => Money::of($s->mean_amount),
+            'stddev' => Money::of($s->stddev_amount),
+            // threshold stays float — used downstream as a numeric comparator, not displayed
             'threshold' => (float) $s->mean_amount + 3 * (float) $s->stddev_amount,
         ]);
 

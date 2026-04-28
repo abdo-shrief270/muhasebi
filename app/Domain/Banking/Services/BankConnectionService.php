@@ -8,6 +8,7 @@ use App\Domain\Accounting\Enums\ReconciliationStatus;
 use App\Domain\Accounting\Models\BankReconciliation;
 use App\Domain\Accounting\Models\BankStatementLine;
 use App\Domain\Banking\Models\BankConnection;
+use App\Support\Money;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -196,7 +197,7 @@ class BankConnectionService
                 'total_connections' => $connections->count(),
                 'active_connections' => $activeCount,
                 'error_connections' => $errorCount,
-                'total_balance' => number_format((float) $totalBalance, 2, '.', ''),
+                'total_balance' => Money::of($totalBalance),
                 'currency' => 'EGP',
             ],
         ];

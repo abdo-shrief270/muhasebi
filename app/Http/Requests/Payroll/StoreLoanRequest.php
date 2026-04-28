@@ -24,7 +24,7 @@ class StoreLoanRequest extends FormRequest
                 Rule::exists('employees', 'id')->where('tenant_id', app('tenant.id')),
             ],
             'loan_type' => ['required', Rule::in(['salary_advance', 'personal_loan', 'housing_loan'])],
-            'amount' => ['required', 'numeric', 'min:1'],
+            'amount' => ['required', 'numeric', 'min:1', 'max:9999999999.99'],
             'installment_amount' => ['required', 'numeric', 'min:1'],
             'start_date' => ['required', 'date'],
             'notes' => ['nullable', 'string', 'max:1000'],

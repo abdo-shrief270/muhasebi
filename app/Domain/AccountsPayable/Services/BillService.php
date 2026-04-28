@@ -9,6 +9,7 @@ use App\Domain\Accounting\Services\JournalEntryService;
 use App\Domain\AccountsPayable\Enums\BillStatus;
 use App\Domain\AccountsPayable\Models\Bill;
 use App\Domain\AccountsPayable\Models\BillLine;
+use App\Support\Money;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -28,25 +29,34 @@ class BillService
      */
     public function list(array $filters = []): LengthAwarePaginator
     {
+        // Whitelist sortable columns so the SPA's sort_by can't reach an
+        // unindexed column. Default to date desc, matching the original
+        // bill-recency ordering.
+        $allowedSorts = ['bill_number', 'date', 'due_date', 'total', 'amount_paid', 'created_at'];
+        $sortBy = in_array($filters['sort_by'] ?? null, $allowedSorts, true)
+            ? $filters['sort_by']
+            : 'date';
+        $sortDir = (($filters['sort_dir'] ?? 'desc') === 'asc') ? 'asc' : 'desc';
+
+        // Coerce status — silently ignore invalid values rather than 500ing.
+        $status = null;
+        if (isset($filters['status']) && $filters['status'] !== '') {
+            $status = $filters['status'] instanceof BillStatus
+                ? $filters['status']
+                : BillStatus::tryFrom((string) $filters['status']);
+        }
+
         return Bill::query()
             ->with(['vendor'])
             ->withCount('lines')
-            ->when(
-                isset($filters['search']),
-                fn ($q) => $q->search($filters['search'])
-            )
-            ->when(
-                isset($filters['status']),
-                fn ($q) => $q->ofStatus(
-                    $filters['status'] instanceof BillStatus
-                        ? $filters['status']
-                        : BillStatus::from($filters['status'])
-                )
-            )
+            ->when(isset($filters['search']), fn ($q) => $q->search($filters['search']))
+            ->when($status !== null, fn ($q) => $q->ofStatus($status))
             ->when(isset($filters['vendor_id']), fn ($q) => $q->forVendor((int) $filters['vendor_id']))
             ->when(isset($filters['date_from']), fn ($q) => $q->where('date', '>=', $filters['date_from']))
             ->when(isset($filters['date_to']), fn ($q) => $q->where('date', '<=', $filters['date_to']))
-            ->orderBy('date', 'desc')
+            ->when(isset($filters['due_from']), fn ($q) => $q->where('due_date', '>=', $filters['due_from']))
+            ->when(isset($filters['due_to']), fn ($q) => $q->where('due_date', '<=', $filters['due_to']))
+            ->orderBy($sortBy, $sortDir)
             ->orderBy('bill_number', 'desc')
             ->paginate($filters['per_page'] ?? 15);
     }
@@ -185,8 +195,8 @@ class BillService
             foreach ($expenseByAccount as $accountId => $amount) {
                 $jeLines[] = [
                     'account_id' => $accountId,
-                    'debit' => (float) $amount,
-                    'credit' => 0,
+                    'debit' => Money::of($amount),
+                    'credit' => Money::zero(),
                     'currency' => $currency,
                     'description' => "فاتورة مشتريات رقم {$bill->bill_number}",
                 ];
@@ -196,8 +206,8 @@ class BillService
             if (bccomp((string) $bill->vat_amount, '0.00', 2) > 0) {
                 $jeLines[] = [
                     'account_id' => $vatInputAccountId,
-                    'debit' => (float) $bill->vat_amount,
-                    'credit' => 0,
+                    'debit' => Money::of($bill->vat_amount),
+                    'credit' => Money::zero(),
                     'currency' => $currency,
                     'description' => "ضريبة القيمة المضافة - فاتورة مشتريات رقم {$bill->bill_number}",
                 ];
@@ -206,8 +216,8 @@ class BillService
             // CREDIT: Accounts Payable for the bill total
             $jeLines[] = [
                 'account_id' => $apAccountId,
-                'debit' => 0,
-                'credit' => (float) $bill->total,
+                'debit' => Money::zero(),
+                'credit' => Money::of($bill->total),
                 'currency' => $currency,
                 'description' => "فاتورة مشتريات رقم {$bill->bill_number}",
             ];
@@ -222,8 +232,8 @@ class BillService
 
                 $jeLines[] = [
                     'account_id' => $whtAccountId,
-                    'debit' => 0,
-                    'credit' => (float) $bill->wht_amount,
+                    'debit' => Money::zero(),
+                    'credit' => Money::of($bill->wht_amount),
                     'currency' => $currency,
                     'description' => "ضريبة خصم من المنبع - فاتورة مشتريات رقم {$bill->bill_number}",
                 ];
@@ -343,6 +353,10 @@ class BillService
                 'wht_rate' => $lineData['wht_rate'] ?? 0,
                 'sort_order' => $lineData['sort_order'] ?? $index,
                 'account_id' => $lineData['account_id'] ?? null,
+                // Optional FK back to the saved vendor product. Used by the
+                // BillLine observer to bump `last_used_at`; the snapshot
+                // fields above remain the source of truth for print/post.
+                'vendor_product_id' => $lineData['vendor_product_id'] ?? null,
             ]);
 
             $line->calculateTotals();

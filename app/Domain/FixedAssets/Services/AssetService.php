@@ -9,6 +9,7 @@ use App\Domain\Accounting\Services\JournalEntryService;
 use App\Domain\FixedAssets\Enums\AssetStatus;
 use App\Domain\FixedAssets\Models\AssetCategory;
 use App\Domain\FixedAssets\Models\FixedAsset;
+use App\Support\Money;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -107,15 +108,15 @@ class AssetService
                     'lines' => [
                         [
                             'account_id' => $category->asset_account_id,
-                            'debit' => (float) $acquisitionCost,
-                            'credit' => 0,
+                            'debit' => Money::of($acquisitionCost),
+                            'credit' => Money::zero(),
                             'currency' => $currency,
                             'description' => "اقتناء أصل ثابت: {$asset->name_ar}",
                         ],
                         [
                             'account_id' => (int) $creditAccountId,
-                            'debit' => 0,
-                            'credit' => (float) $acquisitionCost,
+                            'debit' => Money::zero(),
+                            'credit' => Money::of($acquisitionCost),
                             'currency' => $currency,
                             'description' => "اقتناء أصل ثابت: {$asset->name_ar}",
                         ],

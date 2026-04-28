@@ -15,7 +15,11 @@ use App\Domain\AccountsPayable\Models\Vendor;
 use App\Domain\Auth\Services\PermissionService;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\Payment;
+use App\Domain\Billing\Observers\InvoiceLineObserver;
 use App\Domain\Billing\Observers\InvoiceObserver;
+use App\Domain\AccountsPayable\Observers\BillLineObserver;
+use App\Domain\AccountsPayable\Models\BillLine;
+use App\Domain\Billing\Models\InvoiceLine;
 use App\Domain\Billing\Observers\PaymentObserver;
 use App\Domain\Client\Models\Client;
 use App\Domain\Collection\Models\CollectionAction;
@@ -64,7 +68,9 @@ use App\Policies\TaxReturnPolicy;
 use App\Policies\TimesheetEntryPolicy;
 use App\Policies\VendorPolicy;
 use App\Policies\WhtCertificatePolicy;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -100,6 +106,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureRateLimiting();
         $this->registerModelObservers();
         $this->configurePasswordPolicy();
+        $this->configurePasswordResetUrl();
 
         // Register N+1 query analyzer (works in all environments)
         QueryAnalyzer::register(threshold: 5);
@@ -182,6 +189,12 @@ class AppServiceProvider extends ServiceProvider
     private function registerModelObservers(): void
     {
         Invoice::observe(InvoiceObserver::class);
+        // Recency tracking on saved per-party items — bumps
+        // client_products.last_used_at / vendor_products.last_used_at on
+        // line creation so the catalog "Last used" column and the picker's
+        // recent-first ordering surface real data.
+        InvoiceLine::observe(InvoiceLineObserver::class);
+        BillLine::observe(BillLineObserver::class);
         Payment::observe(PaymentObserver::class);
         JournalEntry::observe(JournalEntryObserver::class);
         Account::observe(AccountObserver::class);
@@ -244,6 +257,63 @@ class AppServiceProvider extends ServiceProvider
             }
 
             return Password::min(8);
+        });
+    }
+
+    /**
+     * Build the reset-password link that ships in the notification email so it
+     * points at the SPA's reset page (`/auth/reset-password`) instead of the
+     * non-existent backend `password.reset` named route. The SPA reads `token`
+     * and `email` from query params and posts them to /v1/reset-password.
+     *
+     * Base URL falls back to APP_URL; override per-deployment with
+     * SPA_RESET_PASSWORD_URL when the SPA lives on a different host.
+     *
+     * The email body itself is also localized here via toMailUsing(): subject
+     * and lines come from `lang/{ar,en}/emails.php` and we honor the user's
+     * stored `locale` (falls back to app locale, then `ar`) so the email
+     * language matches the user — not whatever request happened to trigger
+     * the notification. Without toMailUsing(), Laravel renders the framework
+     * default English-only template.
+     */
+    private function configurePasswordResetUrl(): void
+    {
+        ResetPassword::createUrlUsing(function ($notifiable, string $token): string {
+            $base = config('app.spa_reset_password_url')
+                ?: rtrim((string) config('app.url'), '/').'/auth/reset-password';
+
+            return $base.'?'.http_build_query([
+                'token' => $token,
+                'email' => $notifiable->getEmailForPasswordReset(),
+            ]);
+        });
+
+        ResetPassword::toMailUsing(function ($notifiable, string $token): MailMessage {
+            $url = call_user_func(ResetPassword::$createUrlCallback, $notifiable, $token);
+
+            $previousLocale = app()->getLocale();
+            $userLocale = $notifiable->locale ?? $previousLocale;
+            $locale = in_array($userLocale, ['ar', 'en'], true) ? $userLocale : 'ar';
+            app()->setLocale($locale);
+
+            $appName = config('app.name', 'Muhasebi');
+            $expiresMinutes = config('auth.passwords.users.expire', 60);
+
+            $message = (new MailMessage)
+                ->subject(__('emails.reset_password.subject', ['app' => $appName]))
+                ->greeting(__('emails.reset_password.greeting', ['name' => $notifiable->name ?? '']))
+                ->line(__('emails.reset_password.line_intro'))
+                ->action(__('emails.reset_password.action'), $url)
+                ->line(__('emails.reset_password.line_expires', ['count' => $expiresMinutes]))
+                ->line(__('emails.reset_password.line_ignore'))
+                ->salutation(__('emails.reset_password.salutation', ['app' => $appName]));
+
+            // Restore the request's app locale once the message is built so we
+            // don't leak the user-locale switch into anything that runs after
+            // notification dispatch (e.g. observers, subsequent toasts).
+            app()->setLocale($previousLocale);
+
+            return $message;
         });
     }
 

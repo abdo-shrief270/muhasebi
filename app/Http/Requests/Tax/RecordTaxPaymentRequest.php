@@ -17,7 +17,7 @@ class RecordTaxPaymentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:9999999999.99'],
             'payment_date' => ['required', 'date'],
             'reference' => ['nullable', 'string', 'max:255'],
         ];

@@ -17,7 +17,7 @@ class StoreBillPaymentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:9999999999.99'],
             'payment_method' => ['required', 'string', 'in:cash,bank_transfer,check,mobile_wallet,other'],
             'payment_date' => ['required', 'date'],
             'reference' => ['nullable', 'string', 'max:255'],

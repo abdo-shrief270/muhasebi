@@ -13,6 +13,12 @@ declare(strict_types=1);
  *   Route::middleware('feature:clients')->group(...);
  *
  * Plan-level storage: Plan.features JSON column — { "clients": true, "e_invoice": false, ... }
+ *
+ * As of 2026-04-26: every staff-nav leaf has a `feature` flag for symmetry with
+ * its `permission` flag. Truly core features (dashboard, notifications, basic
+ * settings, etc.) are bundled into EVERY plan including `free_trial` so they're
+ * effectively always-on; premium add-ons (webhooks, alerts, landing_page,
+ * etc.) are bundled into `professional` and `enterprise` only.
  */
 return [
 
@@ -45,6 +51,65 @@ return [
         'reports' => [
             'name_en' => 'Reports',
             'name_ar' => 'التقارير',
+            'category' => 'module',
+            'group' => 'core',
+        ],
+
+        // Always-on platform fundamentals — bundled into every plan including
+        // free_trial. Listed as features for catalog symmetry with the staff
+        // nav (every leaf has a `feature`), not because tenants would ever
+        // realistically disable them.
+        'dashboard' => [
+            'name_en' => 'Dashboard',
+            'name_ar' => 'لوحة التحكم',
+            'category' => 'module',
+            'group' => 'core',
+        ],
+        'notifications' => [
+            'name_en' => 'Notifications',
+            'name_ar' => 'الإشعارات',
+            'category' => 'module',
+            'group' => 'core',
+        ],
+        'activity_feed' => [
+            'name_en' => 'Activity Feed',
+            'name_ar' => 'سجل النشاط',
+            'category' => 'module',
+            'group' => 'core',
+        ],
+        'team_management' => [
+            'name_en' => 'Team Management',
+            'name_ar' => 'إدارة الفريق',
+            'category' => 'module',
+            'group' => 'core',
+        ],
+        'onboarding' => [
+            'name_en' => 'Onboarding Wizard',
+            'name_ar' => 'مساعد الإعداد',
+            'category' => 'module',
+            'group' => 'core',
+        ],
+        'subscription_management' => [
+            'name_en' => 'Subscription & Billing',
+            'name_ar' => 'الاشتراك والفوترة',
+            'category' => 'module',
+            'group' => 'core',
+        ],
+        'company_settings' => [
+            'name_en' => 'Company Settings',
+            'name_ar' => 'إعدادات المنشأة',
+            'category' => 'module',
+            'group' => 'core',
+        ],
+        'currencies' => [
+            'name_en' => 'Currencies',
+            'name_ar' => 'العملات',
+            'category' => 'module',
+            'group' => 'core',
+        ],
+        'general_settings' => [
+            'name_en' => 'General Settings',
+            'name_ar' => 'الإعدادات العامة',
             'category' => 'module',
             'group' => 'core',
         ],
@@ -118,6 +183,12 @@ return [
             'category' => 'module',
             'group' => 'operations',
         ],
+        'engagements' => [
+            'name_en' => 'Engagements',
+            'name_ar' => 'الارتباطات',
+            'category' => 'module',
+            'group' => 'operations',
+        ],
         'ecommerce' => [
             'name_en' => 'E-Commerce Integration',
             'name_ar' => 'تكامل التجارة الإلكترونية',
@@ -125,7 +196,21 @@ return [
             'group' => 'operations',
         ],
 
-        // ─── Add-ons ──────────────────────────────────────────
+        // ─── Workflows ────────────────────────────────────────
+        'approvals' => [
+            'name_en' => 'Approvals',
+            'name_ar' => 'الاعتمادات',
+            'category' => 'addon',
+            'group' => 'workflows',
+        ],
+        'alerts' => [
+            'name_en' => 'Alerts',
+            'name_ar' => 'التنبيهات',
+            'category' => 'addon',
+            'group' => 'workflows',
+        ],
+
+        // ─── Add-ons / integrations ───────────────────────────
         'e_invoice' => [
             'name_en' => 'ETA E-Invoice',
             'name_ar' => 'الفاتورة الإلكترونية (ETA)',
@@ -150,6 +235,32 @@ return [
             'category' => 'addon',
             'group' => 'integrations',
         ],
+        'client_messaging' => [
+            'name_en' => 'Client Messaging',
+            'name_ar' => 'مراسلات العملاء',
+            'category' => 'addon',
+            'group' => 'integrations',
+        ],
+        'data_import' => [
+            'name_en' => 'Data Import (CSV)',
+            'name_ar' => 'استيراد البيانات (CSV)',
+            'category' => 'addon',
+            'group' => 'integrations',
+        ],
+        'webhooks' => [
+            'name_en' => 'Webhooks',
+            'name_ar' => 'الـ Webhooks',
+            'category' => 'addon',
+            'group' => 'integrations',
+        ],
+        'landing_page' => [
+            'name_en' => 'Public Landing Page',
+            'name_ar' => 'صفحة الهبوط العامة',
+            'category' => 'addon',
+            'group' => 'integrations',
+        ],
+
+        // ─── Compliance / support ────────────────────────────
         'priority_support' => [
             'name_en' => 'Priority Support',
             'name_ar' => 'الدعم المميز',
@@ -157,39 +268,91 @@ return [
             'group' => 'support',
         ],
         'audit_log' => [
-            'name_en' => 'Audit Log',
-            'name_ar' => 'سجل المراجعة',
+            'name_en' => 'Audit Log (Compliance)',
+            'name_ar' => 'سجل المراجعة (الامتثال)',
             'category' => 'addon',
             'group' => 'compliance',
+        ],
+
+        // ─── Experimental ────────────────────────────────────
+        // Off by default for every plan; enabled per-tenant via the admin
+        // feature_flags table when a tenant opts into the AI preview.
+        'experimental_ai' => [
+            'name_en' => 'AI Suggestions (Preview)',
+            'name_ar' => 'الاقتراحات بالذكاء الاصطناعي (تجريبي)',
+            'category' => 'experimental',
+            'group' => 'experimental',
         ],
     ],
 
     /**
      * Default feature bundles per plan slug.
      * Used by PlanSeeder to populate the plans.features JSON column.
+     *
+     * `core_always_on` is included by reference in every plan's bundle so a new
+     * "always available" feature only needs to be added in one place.
      */
     'plan_bundles' => [
+        // Reusable: core platform features that should never be missing.
+        // Spread into every plan below.
+        '__core_always_on' => [
+            'dashboard',
+            'notifications',
+            'activity_feed',
+            'team_management',
+            'onboarding',
+            'subscription_management',
+            'company_settings',
+            'currencies',
+            'general_settings',
+        ],
+
         'free_trial' => [
+            'dashboard', 'notifications', 'activity_feed',
+            'team_management', 'onboarding', 'subscription_management',
+            'company_settings', 'currencies', 'general_settings',
             'clients', 'documents',
         ],
         'starter' => [
+            'dashboard', 'notifications', 'activity_feed',
+            'team_management', 'onboarding', 'subscription_management',
+            'company_settings', 'currencies', 'general_settings',
             'clients', 'documents', 'invoicing', 'accounting', 'reports',
             'expenses', 'custom_reports',
+            'data_import',
         ],
         'professional' => [
+            'dashboard', 'notifications', 'activity_feed',
+            'team_management', 'onboarding', 'subscription_management',
+            'company_settings', 'currencies', 'general_settings',
             'clients', 'documents', 'invoicing', 'accounting', 'reports',
             'banking', 'expenses', 'bills_vendors', 'collections',
             'fixed_assets', 'tax', 'cost_centers', 'budgeting',
             'inventory', 'payroll', 'timesheets',
+            'engagements',
             'e_invoice', 'api_access', 'custom_reports', 'client_portal',
+            'client_messaging',
+            'data_import',
+            'approvals', 'alerts',
+            'landing_page',
         ],
         'enterprise' => [
+            'dashboard', 'notifications', 'activity_feed',
+            'team_management', 'onboarding', 'subscription_management',
+            'company_settings', 'currencies', 'general_settings',
             'clients', 'documents', 'invoicing', 'accounting', 'reports',
             'banking', 'expenses', 'bills_vendors', 'collections',
             'fixed_assets', 'tax', 'cost_centers', 'budgeting',
             'inventory', 'payroll', 'timesheets', 'ecommerce',
+            'engagements',
             'e_invoice', 'api_access', 'custom_reports', 'client_portal',
+            'client_messaging',
+            'data_import',
+            'approvals', 'alerts',
+            'landing_page',
+            'webhooks',
             'priority_support', 'audit_log',
+            'experimental_ai',
         ],
     ],
 ];

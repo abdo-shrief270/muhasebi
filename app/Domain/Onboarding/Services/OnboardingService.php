@@ -115,11 +115,14 @@ class OnboardingService
         // Check if all key steps are done
         $onboarding->refresh();
 
+        // Mirror the 4-step flow walked by the SPA's /onboarding page so the
+        // dashboard banner can hit 100% and disappear once the user is done.
+        // Must stay in sync with OnboardingStep::STEPS.
         if (
             $onboarding->company_details_completed
             && $onboarding->coa_template_selected
             && $onboarding->first_client_added
-            && $onboarding->first_invoice_created
+            && $onboarding->team_invited
             && ! $onboarding->wizard_completed
         ) {
             $onboarding->update([

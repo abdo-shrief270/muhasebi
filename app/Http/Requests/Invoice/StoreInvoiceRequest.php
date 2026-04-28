@@ -28,10 +28,15 @@ class StoreInvoiceRequest extends FormRequest
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.description' => ['required', 'string', 'max:500'],
             'lines.*.quantity' => ['required', 'numeric', 'min:0.01'],
-            'lines.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'lines.*.unit_price' => ['required', 'numeric', 'min:0', 'max:9999999999.99'],
             'lines.*.discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'lines.*.vat_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'lines.*.account_id' => ['nullable', 'integer', Rule::exists('accounts', 'id')->where('tenant_id', app('tenant.id'))],
+            // Optional FK back to a per-client product the line was sourced
+            // from. The picker on the SPA sets this; freeform lines leave it
+            // null. Tenant scoping is enforced via the where() clause; the
+            // global BelongsToTenant scope is bypassed by exists() rules.
+            'lines.*.client_product_id' => ['nullable', 'integer', Rule::exists('client_products', 'id')->where('tenant_id', app('tenant.id'))],
         ];
     }
 

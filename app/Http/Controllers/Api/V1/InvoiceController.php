@@ -65,7 +65,7 @@ class InvoiceController extends Controller
         $this->invoiceService->delete($invoice);
 
         return response()->json([
-            'message' => 'Invoice deleted successfully.',
+            'message' => __('messages.success.deleted'),
         ]);
     }
 

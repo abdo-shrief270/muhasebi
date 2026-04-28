@@ -12,6 +12,7 @@ use App\Domain\FixedAssets\Enums\DisposalType;
 use App\Domain\FixedAssets\Models\AssetDisposal;
 use App\Domain\FixedAssets\Models\DepreciationEntry;
 use App\Domain\FixedAssets\Models\FixedAsset;
+use App\Support\Money;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -103,8 +104,8 @@ class AssetDisposalService
 
                     $jeLines[] = [
                         'account_id' => (int) $cashAccountId,
-                        'debit' => (float) $proceeds,
-                        'credit' => 0,
+                        'debit' => Money::of($proceeds),
+                        'credit' => Money::zero(),
                         'currency' => $currency,
                         'description' => "حصيلة التصرف في أصل: {$asset->name_ar} ({$asset->code})",
                     ];
@@ -114,8 +115,8 @@ class AssetDisposalService
                 if (bccomp($accumulatedAtDisposal, '0.00', 2) > 0) {
                     $jeLines[] = [
                         'account_id' => $category->accumulated_depreciation_account_id,
-                        'debit' => (float) $accumulatedAtDisposal,
-                        'credit' => 0,
+                        'debit' => Money::of($accumulatedAtDisposal),
+                        'credit' => Money::zero(),
                         'currency' => $currency,
                         'description' => "إلغاء مجمع إهلاك أصل: {$asset->name_ar} ({$asset->code})",
                     ];
@@ -124,8 +125,8 @@ class AssetDisposalService
                 // CREDIT asset_account for acquisition_cost
                 $jeLines[] = [
                     'account_id' => $category->asset_account_id,
-                    'debit' => 0,
-                    'credit' => (float) $acquisitionCost,
+                    'debit' => Money::zero(),
+                    'credit' => Money::of($acquisitionCost),
                     'currency' => $currency,
                     'description' => "إلغاء تكلفة أصل: {$asset->name_ar} ({$asset->code})",
                 ];
@@ -139,8 +140,8 @@ class AssetDisposalService
 
                     $jeLines[] = [
                         'account_id' => $disposalAccountId,
-                        'debit' => $isGain ? 0 : (float) $absGainLoss,
-                        'credit' => $isGain ? (float) $absGainLoss : 0,
+                        'debit' => $isGain ? Money::zero() : Money::of($absGainLoss),
+                        'credit' => $isGain ? Money::of($absGainLoss) : Money::zero(),
                         'currency' => $currency,
                         'description' => $isGain
                             ? "أرباح التصرف في أصل: {$asset->name_ar} ({$asset->code})"
@@ -317,15 +318,15 @@ class AssetDisposalService
                 'lines' => [
                     [
                         'account_id' => $category->depreciation_expense_account_id,
-                        'debit' => (float) $depreciationAmount,
-                        'credit' => 0,
+                        'debit' => Money::of($depreciationAmount),
+                        'credit' => Money::zero(),
                         'currency' => $currency,
                         'description' => "مصروف إهلاك أصل: {$asset->name_ar}",
                     ],
                     [
                         'account_id' => $category->accumulated_depreciation_account_id,
-                        'debit' => 0,
-                        'credit' => (float) $depreciationAmount,
+                        'debit' => Money::zero(),
+                        'credit' => Money::of($depreciationAmount),
                         'currency' => $currency,
                         'description' => "مجمع إهلاك أصل: {$asset->name_ar}",
                     ],

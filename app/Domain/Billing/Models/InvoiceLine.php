@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Billing\Models;
 
 use App\Domain\Accounting\Models\Account;
+use App\Domain\Client\Models\ClientProduct;
 use App\Domain\Shared\Traits\BelongsToTenant;
 use Database\Factories\InvoiceLineFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Table('invoice_lines')]
 #[Fillable([
     'invoice_id',
+    'client_product_id',
     'description',
     'quantity',
     'unit_price',
@@ -75,6 +77,11 @@ class InvoiceLine extends Model
     public function account(): BelongsTo
     {
         return $this->belongsTo(Account::class);
+    }
+
+    public function clientProduct(): BelongsTo
+    {
+        return $this->belongsTo(ClientProduct::class);
     }
 
     // ──────────────────────────────────────

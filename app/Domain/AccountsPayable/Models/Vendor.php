@@ -81,6 +81,11 @@ class Vendor extends Model
         return $this->hasMany(BillPayment::class);
     }
 
+    public function products(): HasMany
+    {
+        return $this->hasMany(VendorProduct::class);
+    }
+
     public function createdByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

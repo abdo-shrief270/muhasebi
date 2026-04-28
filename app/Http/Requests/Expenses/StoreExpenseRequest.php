@@ -25,7 +25,7 @@ class StoreExpenseRequest extends FormRequest
                 'integer',
                 Rule::exists('expense_categories', 'id')->where('tenant_id', $tenantId),
             ],
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:9999999999.99'],
             'currency' => ['nullable', 'string', 'size:3'],
             'date' => ['required', 'date'],
             'vendor_name' => ['nullable', 'string', 'max:255'],

@@ -9,12 +9,16 @@ use App\Domain\Auth\Requests\RegisterRequest;
 use App\Domain\Auth\Services\AuthService;
 use App\Domain\Auth\Services\PermissionService;
 use App\Domain\Shared\Services\FeatureFlagService;
+use App\Domain\Subscription\Models\Plan;
 use App\Domain\Subscription\Models\Subscription;
 use App\Domain\Tenant\Models\Tenant;
 use App\Http\Controllers\Controller;
+use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password as PasswordBrokerFacade;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
@@ -30,7 +34,7 @@ class AuthController extends Controller
         $result = $this->authService->register($request->validated());
 
         return response()->json([
-            'message' => 'Registration successful.',
+            'message' => __('messages.auth.registered'),
             'data' => [
                 'user' => [
                     'id' => $result['user']->id,
@@ -55,14 +59,8 @@ class AuthController extends Controller
         $result = $this->authService->login($request->validated());
         $user = $result['user'];
 
-        // True when the user is subject to 2FA enforcement (admin / super-admin)
-        // but hasn't enabled it yet. Frontend should redirect to /v1/2fa/enable.
-        // Matches the gating condition in Enforce2fa middleware so the contract
-        // and the downstream 403 stay in sync.
-        $requires2fa = ($user->isSuperAdmin() || $user->isAdmin()) && ! $user->two_factor_enabled;
-
         return response()->json([
-            'message' => 'Login successful.',
+            'message' => __('messages.auth.logged_in'),
             'data' => [
                 'user' => [
                     'id' => $user->id,
@@ -72,7 +70,11 @@ class AuthController extends Controller
                     'tenant_id' => $user->tenant_id,
                 ],
                 'token' => $result['token'],
-                'requires_2fa' => $requires2fa,
+                // Admins are nudged to enroll in 2FA on first login; the SPA
+                // routes them to /settings/two-factor when this flag is true.
+                // Once enrolled (`two_factor_enabled = true`), the flag stays
+                // false on subsequent logins. Non-admin users always see false.
+                'requires_2fa' => $user->isAdmin() && ! $user->two_factor_enabled,
             ],
         ]);
     }
@@ -82,7 +84,7 @@ class AuthController extends Controller
         $this->authService->logout($request->user());
 
         return response()->json([
-            'message' => 'Logged out successfully.',
+            'message' => __('messages.auth.logged_out'),
         ]);
     }
 
@@ -90,6 +92,17 @@ class AuthController extends Controller
     {
         $user = $request->user();
         $tenant = $user->tenant_id ? Tenant::find($user->tenant_id) : null;
+
+        // Resolve the active subscription's plan so the SPA can apply plan-
+        // level gates (manifest `plans: [...]`) from /me alone without a
+        // second /subscription round-trip. The dedicated /subscription
+        // endpoint still returns richer detail (billing cycle, periods,
+        // limits, usage) when the subscription page needs it.
+        $activeSub = $tenant ? Subscription::query()
+            ->where('tenant_id', $tenant->id)
+            ->active()
+            ->with('plan:id,slug,name_en,name_ar')
+            ->first() : null;
 
         return response()->json([
             'data' => [
@@ -118,27 +131,69 @@ class AuthController extends Controller
                     'secondary_color' => $tenant->secondary_color,
                     'city' => $tenant->city,
                     'features' => $this->tenantFeatures($tenant->id),
+                    'plan' => $activeSub?->plan ? [
+                        'id' => $activeSub->plan->id,
+                        'slug' => $activeSub->plan->slug,
+                        'name_en' => $activeSub->plan->name_en,
+                        'name_ar' => $activeSub->plan->name_ar,
+                    ] : null,
+                    'subscription_status' => $activeSub?->status->value,
                 ] : null,
             ],
         ]);
     }
 
     /**
-     * Resolve the merged feature-flag map for a tenant, including per-tenant
-     * overrides layered on top of plan-bundled flags. Result is cached for
-     * 5 minutes inside FeatureFlagService::getAllForTenant, so repeated
-     * /me calls from the same tenant don't thrash the DB.
+     * Resolve the effective feature-flag map for a tenant.
+     *
+     * Layering (in order, last wins):
+     *   1. Every slug in `config/features.php` catalog starts at false.
+     *   2. Active subscription's Plan.features JSON (the plan bundle).
+     *   3. Per-tenant overrides from the `feature_flags` admin table.
+     *
+     * Must stay consistent with `CheckFeature` middleware which applies the
+     * same precedence: FeatureFlagService (admin override) → PlanFeatureCache
+     * (plan bundle). Returning only the admin-override layer here (as the
+     * previous implementation did) produced an empty map whenever the admin
+     * hadn't populated `feature_flags` — breaking frontend nav gating even
+     * though the backend route-level check passed via the plan fallback.
+     *
+     * Cached for 5 minutes inside FeatureFlagService so repeated /me calls
+     * don't thrash the DB.
      *
      * @return array<string, bool>
      */
     private function tenantFeatures(int $tenantId): array
     {
-        $planId = Subscription::query()
+        $subscription = Subscription::query()
             ->where('tenant_id', $tenantId)
             ->active()
-            ->value('plan_id');
+            ->first();
 
-        return FeatureFlagService::getAllForTenant($tenantId, $planId ? (int) $planId : null);
+        $planId = $subscription?->plan_id ? (int) $subscription->plan_id : null;
+
+        // Catalog keys from config — authoritative list the frontend expects.
+        $catalog = array_keys(config('features.catalog', []));
+
+        // Layer 1: plan bundle (every catalog key, default false unless the
+        // plan's features JSON includes it).
+        $plan = $planId ? Plan::query()->find($planId) : null;
+        $result = [];
+        foreach ($catalog as $key) {
+            $result[$key] = $plan instanceof Plan ? $plan->hasFeature($key) : false;
+        }
+
+        // Layer 2: per-tenant admin overrides from FeatureFlag table.
+        $overrides = FeatureFlagService::getAllForTenant($tenantId, $planId);
+        foreach ($overrides as $key => $enabled) {
+            // Only overlay keys that already exist in the catalog so we never
+            // leak unknown flags into the client payload.
+            if (array_key_exists($key, $result)) {
+                $result[$key] = (bool) $enabled;
+            }
+        }
+
+        return $result;
     }
 
     public function updateProfile(Request $request): JsonResponse
@@ -154,7 +209,7 @@ class AuthController extends Controller
         $user->update($request->only(['name', 'phone', 'locale', 'timezone']));
 
         return response()->json([
-            'message' => 'Profile updated successfully.',
+            'message' => __('messages.success.updated'),
             'data' => ['name' => $user->name, 'phone' => $user->phone, 'locale' => $user->locale, 'timezone' => $user->timezone],
         ]);
     }
@@ -170,15 +225,67 @@ class AuthController extends Controller
 
         if (! Hash::check($request->input('current_password'), $user->password)) {
             throw ValidationException::withMessages([
-                'current_password' => [
-                    'The current password is incorrect.',
-                    'كلمة المرور الحالية غير صحيحة.',
-                ],
+                'current_password' => [__('messages.auth.invalid_credentials')],
             ]);
         }
 
         $user->update(['password' => Hash::make($request->input('password'))]);
 
-        return response()->json(['message' => 'Password changed successfully.']);
+        return response()->json(['message' => __('messages.success.updated')]);
+    }
+
+    /**
+     * Send a password-reset link to the supplied email if it belongs to a
+     * registered user. We always return the same 200 response — including for
+     * unknown emails — so attackers cannot enumerate valid accounts via this
+     * endpoint. Real send failures (mailer down) still log; the user still
+     * sees the generic success message.
+     */
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => ['required', 'string', 'email', 'max:255'],
+        ]);
+
+        PasswordBrokerFacade::sendResetLink($request->only('email'));
+
+        return response()->json([
+            'message' => __('passwords.sent'),
+        ]);
+    }
+
+    /**
+     * Verify the reset token and rotate the password. Token is consumed by
+     * the broker on success and rejected on mismatch/expiry. The new password
+     * must satisfy the global Password::defaults() policy.
+     */
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'token' => ['required', 'string'],
+            'email' => ['required', 'string', 'email'],
+            'password' => ['required', 'confirmed', Password::defaults()],
+        ]);
+
+        $status = PasswordBrokerFacade::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function ($user, string $password): void {
+                $user->forceFill([
+                    'password' => Hash::make($password),
+                    'remember_token' => Str::random(60),
+                ])->save();
+            }
+        );
+
+        if ($status === PasswordBroker::PASSWORD_RESET) {
+            return response()->json(['message' => __($status)]);
+        }
+
+        // Token invalid / expired / email mismatch — surface as a 422 field
+        // error so the SPA's existing validation-handling path renders it
+        // inline rather than as a banner.
+        throw ValidationException::withMessages([
+            'email' => [__($status)],
+        ]);
     }
 }

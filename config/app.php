@@ -58,6 +58,38 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | SPA Reset-Password URL
+    |--------------------------------------------------------------------------
+    |
+    | Used by AppServiceProvider::configurePasswordResetUrl() when building
+    | the link in reset-password emails. Should point at the SPA route that
+    | reads `token`/`email` query params and POSTs them to /v1/reset-password.
+    | When unset, falls back to APP_URL + /auth/reset-password.
+    |
+    */
+
+    'spa_reset_password_url' => env('SPA_RESET_PASSWORD_URL'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Frontend URL
+    |--------------------------------------------------------------------------
+    |
+    | The host where the SPA lives. Used by features that need to redirect
+    | from the API/admin side back into the SPA — e.g. the Filament user
+    | impersonate action, password-reset email links (when SPA_RESET_PASSWORD_URL
+    | is unset), etc.
+    |
+    | Defaults to APP_URL if FRONTEND_URL is not set, instead of the
+    | framework default `http://localhost:3000` which only makes sense in
+    | development.
+    |
+    */
+
+    'frontend_url' => env('FRONTEND_URL', env('APP_URL', 'http://localhost')),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

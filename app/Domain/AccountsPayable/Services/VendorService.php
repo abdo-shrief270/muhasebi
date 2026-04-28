@@ -17,11 +17,18 @@ class VendorService
      */
     public function list(array $filters = []): LengthAwarePaginator
     {
+        // Whitelist sort columns so user input can't reach an unindexed column.
+        $allowedSorts = ['name_ar', 'name_en', 'code', 'city', 'created_at'];
+        $sortBy = in_array($filters['sort_by'] ?? null, $allowedSorts, true)
+            ? $filters['sort_by']
+            : 'created_at';
+        $sortDir = (($filters['sort_dir'] ?? 'desc') === 'asc') ? 'asc' : 'desc';
+
         return Vendor::query()
             ->when(isset($filters['search']), fn ($q) => $q->search($filters['search']))
             ->when(isset($filters['is_active']), fn ($q) => $q->where('is_active', (bool) $filters['is_active']))
             ->withCount('bills')
-            ->orderByDesc('created_at')
+            ->orderBy($sortBy, $sortDir)
             ->paginate($filters['per_page'] ?? 15);
     }
 
@@ -85,6 +92,61 @@ class VendorService
         }
 
         $vendor->delete();
+    }
+
+    /**
+     * Compute the per-vendor financial summary used by VendorController::show()
+     * for the SPA's detail page (balance, open bills count, aging buckets,
+     * last payment timestamp). Buckets follow the SPA contract:
+     *   0_30 = open bills with due_date in the future or up to 30 days overdue
+     *   31_60 / 61_90 / 90_plus
+     *
+     * @return array{
+     *   balance: string,
+     *   open_bills_count: int,
+     *   aging_buckets: array{'0_30': string, '31_60': string, '61_90': string, '90_plus': string},
+     *   last_payment_at: ?string,
+     * }
+     */
+    public function vendorSummary(Vendor $vendor): array
+    {
+        $openBills = $vendor->bills()
+            ->whereIn('status', ['approved', 'partially_paid'])
+            ->get(['id', 'total', 'amount_paid', 'due_date']);
+
+        $today = now()->startOfDay();
+        $balance = '0.00';
+        $buckets = ['0_30' => '0.00', '31_60' => '0.00', '61_90' => '0.00', '90_plus' => '0.00'];
+        $openCount = 0;
+
+        foreach ($openBills as $bill) {
+            $remaining = bcsub((string) $bill->total, (string) $bill->amount_paid, 2);
+            if (bccomp($remaining, '0', 2) <= 0) {
+                continue;
+            }
+            $openCount++;
+            $balance = bcadd($balance, $remaining, 2);
+
+            $daysOverdue = (int) max(0, $bill->due_date->startOfDay()->diffInDays($today, false));
+            $key = match (true) {
+                $daysOverdue <= 30 => '0_30',
+                $daysOverdue <= 60 => '31_60',
+                $daysOverdue <= 90 => '61_90',
+                default            => '90_plus',
+            };
+            $buckets[$key] = bcadd($buckets[$key], $remaining, 2);
+        }
+
+        $lastPaymentAt = $vendor->payments()
+            ->latest('payment_date')
+            ->value('payment_date');
+
+        return [
+            'balance' => $balance,
+            'open_bills_count' => $openCount,
+            'aging_buckets' => $buckets,
+            'last_payment_at' => $lastPaymentAt?->toIso8601String(),
+        ];
     }
 
     /**

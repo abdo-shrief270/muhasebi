@@ -39,6 +39,7 @@ use App\Http\Controllers\Api\V1\AssetCategoryController;
 use App\Http\Controllers\Api\V1\AssetDisposalController;
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AuditComplianceController;
+use App\Http\Controllers\Api\V1\BankAccountController;
 use App\Http\Controllers\Api\V1\BankAutoReconciliationController;
 use App\Http\Controllers\Api\V1\BankCategorizationController;
 use App\Http\Controllers\Api\V1\BankConnectionController;
@@ -48,6 +49,7 @@ use App\Http\Controllers\Api\V1\BillPaymentController;
 use App\Http\Controllers\Api\V1\BlogController;
 use App\Http\Controllers\Api\V1\BudgetController;
 use App\Http\Controllers\Api\V1\ClientController;
+use App\Http\Controllers\Api\V1\ClientProductController;
 use App\Http\Controllers\Api\V1\CollectionController;
 use App\Http\Controllers\Api\V1\CostCenterController;
 use App\Http\Controllers\Api\V1\CsvImportController;
@@ -88,6 +90,7 @@ use App\Http\Controllers\Api\V1\OnboardingWizardController;
 use App\Http\Controllers\Api\V1\PaymentController;
 use App\Http\Controllers\Api\V1\PayrollController;
 use App\Http\Controllers\Api\V1\PayslipController;
+use App\Http\Controllers\Api\V1\AddOnCatalogController;
 use App\Http\Controllers\Api\V1\PlanController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalAuthController;
 use App\Http\Controllers\Api\V1\Portal\ClientPortalController;
@@ -105,6 +108,7 @@ use App\Http\Controllers\Api\V1\SalaryComponentController;
 use App\Http\Controllers\Api\V1\ScheduledReportController;
 use App\Http\Controllers\Api\V1\SocialInsuranceController;
 use App\Http\Controllers\Api\V1\StatementBuilderController;
+use App\Http\Controllers\Api\V1\SubscriptionAddOnController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\TaxReturnController;
 use App\Http\Controllers\Api\V1\TeamController;
@@ -114,6 +118,7 @@ use App\Http\Controllers\Api\V1\TimesheetController;
 use App\Http\Controllers\Api\V1\TwoFactorController;
 use App\Http\Controllers\Api\V1\UserPreferenceController;
 use App\Http\Controllers\Api\V1\VendorController;
+use App\Http\Controllers\Api\V1\VendorProductController;
 use App\Http\Controllers\Api\V1\WebhookController;
 use App\Http\Controllers\Api\V1\WebhookEndpointController;
 use App\Http\Controllers\Api\V1\WhtCertificateController;
@@ -141,6 +146,16 @@ Route::prefix('v1')->group(function (): void {
         ->middleware('throttle:5,1')
         ->name('auth.login');
 
+    // Password reset — anti-enumeration on send (always 200), token-bound
+    // verification on reset. Throttled per-IP to slow brute-force attempts.
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])
+        ->middleware('throttle:5,1')
+        ->name('auth.forgot-password');
+
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])
+        ->middleware('throttle:5,1')
+        ->name('auth.reset-password');
+
     // Portal invite acceptance (magic-link exchange for a Sanctum token)
     Route::post('/portal/accept-invite', [ClientPortalAuthController::class, 'acceptInvite'])
         ->middleware('throttle:10,1')
@@ -150,9 +165,14 @@ Route::prefix('v1')->group(function (): void {
     Route::get('/plans', [PlanController::class, 'index'])->name('plans.index');
     Route::get('/plans/{plan}', [PlanController::class, 'show'])->name('plans.show');
 
+    // Public add-ons catalog — read-only, used by both pricing page and
+    // authenticated marketplace UI.
+    Route::get('/add-ons', [AddOnCatalogController::class, 'index'])->name('add-ons.index');
+
     // Public landing page data (cached responses)
     Route::middleware('cache.public:600')->group(function (): void {
         Route::get('/landing', [LandingController::class, 'index'])->name('landing.index');
+        Route::get('/landing/feature-showcase', [LandingController::class, 'featureShowcase'])->name('landing.feature-showcase');
         Route::get('/pages/{slug}', [LandingController::class, 'showPage'])->name('pages.show');
     });
     Route::post('/contact', [LandingController::class, 'submitContact'])->middleware('throttle:5,1')->name('contact.submit');
@@ -246,7 +266,7 @@ Route::prefix('v1')->group(function (): void {
         // ──────────────────────────────────
         // Tenant-scoped routes
         // ──────────────────────────────────
-        Route::middleware(['tenant', 'active', 'enforce.2fa', 'set_timezone', 'set_locale', 'meter.usage'])->group(function (): void {
+        Route::middleware(['tenant', 'active', 'set_timezone', 'set_locale', 'meter.usage'])->group(function (): void {
 
             // ── Dashboard (all roles) ──
             Route::middleware('permission:view_dashboard')->group(function (): void {
@@ -287,6 +307,18 @@ Route::prefix('v1')->group(function (): void {
                 Route::get('subscription/usage', [SubscriptionController::class, 'usage'])->name('subscription.usage');
                 Route::get('subscription/usage-history', [SubscriptionController::class, 'usageHistory'])->name('subscription.usage-history');
                 Route::get('subscription/payments', [SubscriptionController::class, 'payments'])->name('subscription.payments');
+
+                // Subscription add-ons — purchase/cancel sit alongside plan
+                // mutations, idempotent + rate-limited the same way.
+                Route::get('subscription/add-ons', [SubscriptionAddOnController::class, 'index'])->name('subscription.add-ons.index');
+                Route::get('subscription/credits', [SubscriptionAddOnController::class, 'credits'])->name('subscription.credits');
+                Route::get('subscription/add-ons/{subscriptionAddOn}', [SubscriptionAddOnController::class, 'show'])->name('subscription.add-ons.show');
+                Route::post('subscription/add-ons', [SubscriptionAddOnController::class, 'store'])
+                    ->middleware(['throttle:10,1', 'idempotent', 'no-duplicate'])
+                    ->name('subscription.add-ons.store');
+                Route::delete('subscription/add-ons/{subscriptionAddOn}', [SubscriptionAddOnController::class, 'destroy'])
+                    ->middleware(['throttle:10,1'])
+                    ->name('subscription.add-ons.destroy');
             });
 
             // ── Clients (admin + accountant) ──
@@ -297,6 +329,14 @@ Route::prefix('v1')->group(function (): void {
                 Route::get('clients/{client}/messages', [ClientController::class, 'messages'])->name('clients.messages');
                 Route::post('clients/{client}/messages', [ClientController::class, 'sendMessage'])->name('clients.send-message');
                 Route::post('import/clients', [CsvImportController::class, 'importClients'])->middleware('idempotent')->name('import.clients');
+
+                // Per-client products (billable items per client) + the
+                // tenant-wide catalog rollup. See ClientProductController for
+                // the rationale on why this is split from inventory.products.
+                Route::apiResource('clients.products', ClientProductController::class)
+                    ->scoped()
+                    ->parameters(['products' => 'product']);
+                Route::get('catalog', [ClientProductController::class, 'catalog'])->name('catalog.index');
             });
             Route::middleware(['feature:client_portal', 'permission:invite_client_portal'])->group(function (): void {
                 Route::post('clients/{client}/invite-portal', [ClientController::class, 'invitePortalUser'])->name('clients.invite-portal');
@@ -313,6 +353,12 @@ Route::prefix('v1')->group(function (): void {
                 Route::get('accounts/tree', [AccountController::class, 'tree'])->name('accounts.tree');
                 Route::apiResource('accounts', AccountController::class);
                 Route::post('import/accounts', [CsvImportController::class, 'importAccounts'])->middleware('idempotent')->name('import.accounts');
+
+                // Company bank accounts — distinct from the GL chart of
+                // accounts; carries IBAN/SWIFT/branch and points at a GL
+                // cash account via gl_account_id. See migration for the
+                // rationale on why it's a separate table.
+                Route::apiResource('bank-accounts', BankAccountController::class);
 
                 // Bank Reconciliation
                 Route::prefix('bank-reconciliations')->name('bank-reconciliations.')->group(function (): void {
@@ -492,6 +538,16 @@ Route::prefix('v1')->group(function (): void {
                 Route::apiResource('vendors', VendorController::class);
                 Route::get('vendors/{vendor}/statement', [VendorController::class, 'statement'])->name('vendors.statement');
                 Route::get('vendors/reports/aging', [VendorController::class, 'aging'])->name('vendors.aging');
+
+                // Per-vendor billable items — used by the bill-line picker
+                // and the Products tab on the vendor detail page. Mirrors
+                // the per-client products under /clients/{client}/products.
+                Route::apiResource('vendors.products', VendorProductController::class)
+                    ->scoped()
+                    ->parameters(['products' => 'product']);
+                // Tenant-wide vendor-product catalog — read-only rollup
+                // across all vendors. Mirrors /catalog on the AR side.
+                Route::get('vendor-catalog', [VendorProductController::class, 'catalog'])->name('vendor-catalog.index');
             });
 
             Route::middleware(['feature:bills_vendors', 'permission:manage_bills'])->group(function (): void {
@@ -500,6 +556,10 @@ Route::prefix('v1')->group(function (): void {
                 Route::post('bills/{bill}/cancel', [BillController::class, 'cancel'])->middleware('idempotent')->name('bills.cancel');
                 Route::get('bills/{bill}/payments', [BillPaymentController::class, 'index'])->name('bills.payments.index');
                 Route::post('bills/{bill}/payments', [BillPaymentController::class, 'store'])->middleware('idempotent')->name('bills.payments.store');
+                // Tenant-wide bill-payments list — same controller method as
+                // the per-bill route, but called without a {bill} so the SPA's
+                // /bill-payments page can show every payment across vendors.
+                Route::get('bill-payments', [BillPaymentController::class, 'index'])->name('bill-payments.index');
                 Route::delete('bill-payments/{billPayment}/void', [BillPaymentController::class, 'void'])->name('bill-payments.void');
             });
 
@@ -953,7 +1013,7 @@ Route::prefix('v1')->group(function (): void {
         // ──────────────────────────────────
         // Super Admin routes
         // ──────────────────────────────────
-        Route::middleware(['super_admin', 'admin.ip', 'enforce.2fa'])->prefix('admin')->name('admin.')->group(function (): void {
+        Route::middleware(['super_admin', 'admin.ip'])->prefix('admin')->name('admin.')->group(function (): void {
             // ── DEPRECATED: use Filament /admin/plans — sunset 2026-07-17 ──
             Route::middleware('deprecated:/admin/plans,2026-07-17')->group(function (): void {
                 Route::apiResource('plans', PlanController::class)->only(['store', 'update', 'destroy']);

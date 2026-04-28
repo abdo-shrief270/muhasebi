@@ -32,7 +32,7 @@ class StoreTaxAdjustmentRequest extends FormRequest
             ],
             'description_ar' => ['required', 'string', 'max:500'],
             'description_en' => ['nullable', 'string', 'max:500'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:9999999999.99'],
             'is_addition' => ['required', 'boolean'],
         ];
     }

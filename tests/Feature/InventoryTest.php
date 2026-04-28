@@ -216,8 +216,23 @@ test('product scopes filter correctly', function () {
     $tenant = Tenant::factory()->create();
     app()->instance('tenant.id', $tenant->id);
 
-    $active = Product::factory()->for($tenant)->create(['is_active' => true, 'name_ar' => 'شاشة', 'sku' => 'SCR-001']);
-    Product::factory()->for($tenant)->create(['is_active' => false, 'name_ar' => 'طابعة', 'sku' => 'PRT-001']);
+    // Pin reorder_level/current_stock explicitly — the factory randomizes
+    // both, which would let products 1 and 2 sneak into the lowStock scope
+    // some runs and make this test flaky.
+    $active = Product::factory()->for($tenant)->create([
+        'is_active' => true,
+        'reorder_level' => 5,
+        'current_stock' => 100,
+        'name_ar' => 'شاشة',
+        'sku' => 'SCR-001',
+    ]);
+    Product::factory()->for($tenant)->create([
+        'is_active' => false,
+        'reorder_level' => 5,
+        'current_stock' => 100,
+        'name_ar' => 'طابعة',
+        'sku' => 'PRT-001',
+    ]);
     Product::factory()->for($tenant)->create([
         'is_active' => true,
         'reorder_level' => 20,

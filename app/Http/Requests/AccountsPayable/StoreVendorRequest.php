@@ -20,8 +20,10 @@ class StoreVendorRequest extends FormRequest
         $tenantId = app('tenant.id');
 
         return [
-            'name_ar' => ['required', 'string', 'max:255'],
-            'name_en' => ['nullable', 'string', 'max:255'],
+            // Either AR or EN name must be present — the SPA enforces this in the
+            // form schema and surfaces a single combined error.
+            'name_ar' => ['required_without:name_en', 'nullable', 'string', 'max:255'],
+            'name_en' => ['required_without:name_ar', 'nullable', 'string', 'max:255'],
             'code' => [
                 'nullable',
                 'string',
@@ -41,13 +43,16 @@ class StoreVendorRequest extends FormRequest
             'bank_account' => ['nullable', 'string', 'max:255'],
             'iban' => ['nullable', 'string', 'max:34'],
             'swift_code' => ['nullable', 'string', 'max:11'],
-            'payment_terms' => ['nullable', 'string', 'in:net_15,net_30,net_45,net_60,net_90,due_on_receipt'],
+            'payment_terms' => ['nullable', 'string', 'in:net_15,net_30,net_45,net_60,net_90,due_on_receipt,cod,prepaid'],
             'credit_limit' => ['nullable', 'numeric', 'min:0'],
             'currency' => ['nullable', 'string', 'size:3'],
             'contacts' => ['nullable', 'array'],
             'contacts.*.name' => ['required_with:contacts', 'string', 'max:255'],
+            'contacts.*.role' => ['nullable', 'string', 'max:120'],
             'contacts.*.email' => ['nullable', 'email'],
             'contacts.*.phone' => ['nullable', 'string', 'max:30'],
+            'contacts.*.is_primary' => ['nullable', 'boolean'],
+            'is_active' => ['nullable', 'boolean'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ];
     }
@@ -56,7 +61,8 @@ class StoreVendorRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name_ar.required' => 'اسم المورد بالعربية مطلوب.',
+            'name_ar.required_without' => 'اسم المورد بالعربية أو بالإنجليزية مطلوب.',
+            'name_en.required_without' => 'Vendor name (Arabic or English) is required.',
             'code.unique' => 'كود المورد مسجل بالفعل.',
             'email.email' => 'البريد الإلكتروني غير صالح.',
             'country.size' => 'رمز الدولة يجب أن يكون حرفين.',

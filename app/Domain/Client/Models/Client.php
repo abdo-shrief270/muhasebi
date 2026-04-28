@@ -85,6 +85,11 @@ class Client extends Model
         return $this->hasMany(Message::class);
     }
 
+    public function products(): HasMany
+    {
+        return $this->hasMany(ClientProduct::class);
+    }
+
     // ──────────────────────────────────────
     // Scopes
     // ──────────────────────────────────────

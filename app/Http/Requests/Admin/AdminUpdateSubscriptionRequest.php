@@ -19,7 +19,7 @@ class AdminUpdateSubscriptionRequest extends FormRequest
         return [
             'plan_id' => ['sometimes', 'integer', 'exists:plans,id'],
             'status' => ['sometimes', 'string', 'in:trial,active,past_due,cancelled,expired'],
-            'price' => ['sometimes', 'numeric', 'min:0'],
+            'price' => ['sometimes', 'numeric', 'min:0', 'max:9999999999.99'],
             'current_period_end' => ['nullable', 'date'],
             'trial_ends_at' => ['nullable', 'date'],
         ];

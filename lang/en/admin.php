@@ -16,6 +16,7 @@ return [
     'resources' => [
         'tenant' => ['singular' => 'Tenant', 'plural' => 'Tenants'],
         'plan' => ['singular' => 'Plan', 'plural' => 'Plans'],
+        'add_on' => ['singular' => 'Add-on', 'plural' => 'Add-ons'],
         'subscription' => ['singular' => 'Subscription', 'plural' => 'Subscriptions'],
         'subscription_payment' => ['singular' => 'Payment', 'plural' => 'Subscription Payments'],
         'currency' => ['singular' => 'Currency', 'plural' => 'Currencies'],

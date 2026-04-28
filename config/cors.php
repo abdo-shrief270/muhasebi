@@ -1,29 +1,46 @@
 <?php
 
-return [
+/*
+|--------------------------------------------------------------------------
+| Cross-Origin Resource Sharing (CORS) Configuration
+|--------------------------------------------------------------------------
+|
+| In development, CORS_ALLOWED_ORIGINS may be set to "*" for convenience.
+| In production, set explicit domains:
+|   CORS_ALLOWED_ORIGINS="https://app.muhasebi.com,https://muhasebi.com"
+|
+| Empty default = fail-closed: no cross-origin requests are allowed unless
+| CORS_ALLOWED_ORIGINS or CORS_ALLOWED_PATTERN is set. This is intentional —
+| an open default would silently expose every install on first boot.
+|
+| CORS_SUPPORTS_CREDENTIALS=true MUST NOT be combined with the wildcard "*"
+| origin; browsers reject the combination per spec. We trip an exception at
+| boot if both are set so the misconfiguration surfaces loudly instead of
+| breaking SPA auth at runtime.
+*/
 
-    /*
-    |--------------------------------------------------------------------------
-    | Cross-Origin Resource Sharing (CORS) Configuration
-    |--------------------------------------------------------------------------
-    |
-    | Configure allowed origins for production security.
-    | In development, CORS_ALLOWED_ORIGINS can be set to "*".
-    | In production, set explicit domains:
-    |   CORS_ALLOWED_ORIGINS="https://app.muhasebi.com,https://muhasebi.com"
-    |
-    */
+$allowedOrigins = array_values(array_filter(array_map('trim', explode(',', (string) env('CORS_ALLOWED_ORIGINS', '')))));
+$supportsCredentials = (bool) env('CORS_SUPPORTS_CREDENTIALS', false);
+
+if ($supportsCredentials && in_array('*', $allowedOrigins, true)) {
+    throw new RuntimeException(
+        'CORS misconfiguration: CORS_SUPPORTS_CREDENTIALS=true cannot be used with the wildcard "*" origin. '
+        .'Set CORS_ALLOWED_ORIGINS to an explicit comma-separated list of domains.'
+    );
+}
+
+return [
 
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
     'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
-    'allowed_origins' => array_filter(explode(',', env('CORS_ALLOWED_ORIGINS', ''))),
+    'allowed_origins' => $allowedOrigins,
 
-    'allowed_origins_patterns' => array_filter([
+    'allowed_origins_patterns' => array_values(array_filter([
         // Allow all subdomains of muhasebi.com in production
         env('CORS_ALLOWED_PATTERN', ''),
-    ]),
+    ])),
 
     'allowed_headers' => [
         'Content-Type',
@@ -49,6 +66,6 @@ return [
 
     'max_age' => 7200, // 2 hours — reduces preflight requests
 
-    'supports_credentials' => (bool) env('CORS_SUPPORTS_CREDENTIALS', false),
+    'supports_credentials' => $supportsCredentials,
 
 ];

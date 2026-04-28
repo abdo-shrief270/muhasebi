@@ -23,7 +23,7 @@ class AssignSalaryComponentRequest extends FormRequest
                 'integer',
                 Rule::exists('salary_components', 'id')->where('tenant_id', app('tenant.id')),
             ],
-            'amount' => ['nullable', 'numeric', 'min:0'],
+            'amount' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
             'percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'effective_from' => ['required', 'date'],
             'effective_to' => ['nullable', 'date', 'after:effective_from'],

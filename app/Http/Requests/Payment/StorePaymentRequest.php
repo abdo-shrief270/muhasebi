@@ -20,7 +20,7 @@ class StorePaymentRequest extends FormRequest
     {
         return [
             'invoice_id' => ['required', 'integer', Rule::exists('invoices', 'id')->where('tenant_id', app('tenant.id'))],
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:9999999999.99'],
             'date' => ['required', 'date'],
             'method' => ['required', 'string', Rule::in(array_column(PaymentMethod::cases(), 'value'))],
             'reference' => ['nullable', 'string', 'max:100'],

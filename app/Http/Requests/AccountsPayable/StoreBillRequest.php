@@ -39,9 +39,16 @@ class StoreBillRequest extends FormRequest
                 'integer',
                 Rule::exists('accounts', 'id')->where('tenant_id', $tenantId),
             ],
+            // Optional FK back to the saved vendor product. Tenant-scoped to
+            // prevent picking another tenant's product on a bill line.
+            'lines.*.vendor_product_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('vendor_products', 'id')->where('tenant_id', $tenantId),
+            ],
             'lines.*.description' => ['nullable', 'string', 'max:500'],
             'lines.*.quantity' => ['required', 'numeric', 'min:0.0001'],
-            'lines.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'lines.*.unit_price' => ['required', 'numeric', 'min:0', 'max:9999999999.99'],
             'lines.*.discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'lines.*.vat_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'lines.*.wht_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],

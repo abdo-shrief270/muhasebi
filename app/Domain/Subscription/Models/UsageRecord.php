@@ -19,6 +19,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'users_count',
     'clients_count',
     'invoices_count',
+    'bills_count',
+    'journal_entries_count',
+    'bank_imports_count',
+    'documents_count',
+    'api_calls_count',
     'storage_bytes',
     'metadata',
 ])]
@@ -34,6 +39,11 @@ class UsageRecord extends Model
             'users_count' => 'integer',
             'clients_count' => 'integer',
             'invoices_count' => 'integer',
+            'bills_count' => 'integer',
+            'journal_entries_count' => 'integer',
+            'bank_imports_count' => 'integer',
+            'documents_count' => 'integer',
+            'api_calls_count' => 'integer',
             'storage_bytes' => 'integer',
             'metadata' => 'array',
         ];
@@ -44,6 +54,11 @@ class UsageRecord extends Model
         'users_count' => 0,
         'clients_count' => 0,
         'invoices_count' => 0,
+        'bills_count' => 0,
+        'journal_entries_count' => 0,
+        'bank_imports_count' => 0,
+        'documents_count' => 0,
+        'api_calls_count' => 0,
         'storage_bytes' => 0,
     ];
 

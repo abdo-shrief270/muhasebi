@@ -16,6 +16,7 @@ return [
     'resources' => [
         'tenant' => ['singular' => 'مستأجر', 'plural' => 'المستأجرون'],
         'plan' => ['singular' => 'خطة', 'plural' => 'الخطط'],
+        'add_on' => ['singular' => 'إضافة', 'plural' => 'الإضافات'],
         'subscription' => ['singular' => 'اشتراك', 'plural' => 'الاشتراكات'],
         'subscription_payment' => ['singular' => 'دفعة', 'plural' => 'مدفوعات الاشتراكات'],
         'currency' => ['singular' => 'عملة', 'plural' => 'العملات'],

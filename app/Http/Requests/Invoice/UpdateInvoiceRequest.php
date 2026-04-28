@@ -28,10 +28,13 @@ class UpdateInvoiceRequest extends FormRequest
             'lines' => ['sometimes', 'array', 'min:1'],
             'lines.*.description' => ['required_with:lines', 'string', 'max:500'],
             'lines.*.quantity' => ['required_with:lines', 'numeric', 'min:0.01'],
-            'lines.*.unit_price' => ['required_with:lines', 'numeric', 'min:0'],
+            'lines.*.unit_price' => ['required_with:lines', 'numeric', 'min:0', 'max:9999999999.99'],
             'lines.*.discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'lines.*.vat_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'lines.*.account_id' => ['nullable', 'integer', Rule::exists('accounts', 'id')->where('tenant_id', app('tenant.id'))],
+            // Optional FK back to the per-client product the line was sourced
+            // from. See StoreInvoiceRequest for rationale.
+            'lines.*.client_product_id' => ['nullable', 'integer', Rule::exists('client_products', 'id')->where('tenant_id', app('tenant.id'))],
         ];
     }
 

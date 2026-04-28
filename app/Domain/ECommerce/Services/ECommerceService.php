@@ -8,6 +8,7 @@ use App\Domain\Billing\Services\InvoiceService;
 use App\Domain\Client\Models\Client;
 use App\Domain\ECommerce\Models\ECommerceChannel;
 use App\Domain\ECommerce\Models\ECommerceOrder;
+use App\Support\Money;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -207,7 +208,7 @@ class ECommerceService
                 'total_orders' => $totalOrders,
                 'pending_orders' => $pendingOrders,
                 'synced_orders' => $syncedOrders,
-                'total_revenue' => number_format((float) $totalRevenue, 2, '.', ''),
+                'total_revenue' => Money::of($totalRevenue),
                 'currency' => 'EGP',
             ],
         ];

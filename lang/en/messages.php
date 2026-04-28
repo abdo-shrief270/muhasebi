@@ -26,13 +26,18 @@ return [
         'two_factor_required' => 'Please enter your two-factor authentication code.',
         'two_factor_invalid' => 'Invalid two-factor authentication code.',
         'password_breached' => 'This password has appeared in a data breach. Please choose a different password.',
+        'duplicate_name' => 'This name is already in use.',
     ],
 
     'auth' => [
         'registered' => 'Registered successfully.',
         'logged_in' => 'Logged in successfully.',
-        'logged_out' => 'Logged out.',
+        'logged_out' => 'Logged out successfully.',
         'invalid_credentials' => 'Invalid credentials.',
+    ],
+
+    'client' => [
+        'deleted' => 'Client deleted successfully.',
     ],
 
     'invoice' => [

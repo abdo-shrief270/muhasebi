@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\JournalEntry;
 
+use App\Support\Money;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -25,8 +26,8 @@ class UpdateJournalEntryRequest extends FormRequest
             'fiscal_period_id' => ['nullable', 'integer', Rule::exists('fiscal_periods', 'id')],
             'lines' => ['required', 'array', 'min:2'],
             'lines.*.account_id' => ['required', 'integer', Rule::exists('accounts', 'id')],
-            'lines.*.debit' => ['required', 'numeric', 'min:0'],
-            'lines.*.credit' => ['required', 'numeric', 'min:0'],
+            'lines.*.debit' => ['required', 'numeric', 'min:0', 'max:9999999999.99'],
+            'lines.*.credit' => ['required', 'numeric', 'min:0', 'max:9999999999.99'],
             'lines.*.description' => ['nullable', 'string', 'max:500'],
             'lines.*.cost_center' => ['nullable', 'string', 'max:50'],
         ];
@@ -60,32 +61,34 @@ class UpdateJournalEntryRequest extends FormRequest
                     return;
                 }
 
-                $totalDebit = 0;
-                $totalCredit = 0;
+                // Use bcmath via Money helper so summing many lines doesn't drift
+                // by sub-cent floats and falsely reject a balanced entry.
+                $totalDebit = Money::zero();
+                $totalCredit = Money::zero();
 
                 foreach ($lines as $index => $line) {
-                    $debit = (float) ($line['debit'] ?? 0);
-                    $credit = (float) ($line['credit'] ?? 0);
+                    $debit = Money::of($line['debit'] ?? 0);
+                    $credit = Money::of($line['credit'] ?? 0);
 
-                    if ($debit > 0 && $credit > 0) {
+                    if (Money::isPositive($debit) && Money::isPositive($credit)) {
                         $validator->errors()->add(
                             "lines.{$index}",
                             'لا يمكن أن يكون المبلغ المدين والدائن أكبر من صفر في نفس السطر.',
                         );
                     }
 
-                    if ($debit == 0 && $credit == 0) {
+                    if (Money::isZero($debit) && Money::isZero($credit)) {
                         $validator->errors()->add(
                             "lines.{$index}",
                             'يجب إدخال مبلغ مدين أو دائن في كل سطر.',
                         );
                     }
 
-                    $totalDebit += $debit;
-                    $totalCredit += $credit;
+                    $totalDebit = Money::add($totalDebit, $debit);
+                    $totalCredit = Money::add($totalCredit, $credit);
                 }
 
-                if (round($totalDebit, 2) !== round($totalCredit, 2)) {
+                if (Money::cmp($totalDebit, $totalCredit) !== 0) {
                     $validator->errors()->add(
                         'lines',
                         'مجموع المبالغ المدينة يجب أن يساوي مجموع المبالغ الدائنة.',

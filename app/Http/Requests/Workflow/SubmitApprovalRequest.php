@@ -20,7 +20,7 @@ class SubmitApprovalRequest extends FormRequest
         return [
             'entity_type' => ['required', 'string', 'max:50', Rule::in(['bill', 'expense', 'journal_entry', 'leave_request', 'payroll_run'])],
             'entity_id' => ['required', 'integer', 'min:1'],
-            'amount' => ['nullable', 'numeric', 'min:0'],
+            'amount' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
         ];
     }
 

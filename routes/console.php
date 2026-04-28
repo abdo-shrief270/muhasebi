@@ -27,8 +27,21 @@ use Illuminate\Support\Facades\Schedule;
 |
 */
 
+// Flush API usage buffers from the cache into api_usage_meters before the
+// daily snapshot reads them. Without this step, the day's last 0–49 in-memory
+// API calls are lost when the worker recycles overnight.
+Schedule::command('usage:flush-buffers')->dailyAt('00:01');
+
 // Record daily usage for all tenants (runs at midnight)
 Schedule::command('usage:record')->dailyAt('00:05');
+
+// Sweep add-ons whose period_end or expires_at has passed (runs after the
+// usage snapshot so warnings reflect the post-expiry state).
+Schedule::command('subscriptions:expire-add-ons')->dailyAt('00:15');
+
+// Email tenant owners when any metric crosses 80% or 100% — idempotent per
+// (tenant, metric, threshold, day) via the subscription.metadata sentinel.
+Schedule::command('subscriptions:warn-usage')->dailyAt('07:30');
 
 // Daily database backup at 2am (keep 30 days)
 Schedule::command('backup:database --keep=30')->dailyAt('02:00');

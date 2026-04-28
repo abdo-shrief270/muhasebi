@@ -453,6 +453,11 @@ class InvoiceService
 
             $line = new InvoiceLine([
                 'invoice_id' => $invoice->id,
+                // Optional FK back to the per-client product the line was
+                // sourced from. Snapshot fields (description / unit_price /
+                // vat_rate) are still copied so future product renames or
+                // price changes don't rewrite invoice history.
+                'client_product_id' => $lineData['client_product_id'] ?? null,
                 'description' => $lineData['description'] ?? '',
                 'quantity' => $lineData['quantity'] ?? 1,
                 'unit_price' => $lineData['unit_price'] ?? 0,

@@ -61,11 +61,20 @@ class OnboardingStep extends Model
     }
 
     /** @var list<string> */
+    /**
+     * Steps that count toward the 100% wizard completion bar shown on the
+     * dashboard. Must mirror the 4-step flow walked by the SPA's
+     * /onboarding page: company → CoA → first client → team invite. The
+     * `first_invoice_created` and `sample_data_loaded` flags still exist on
+     * the record (auto-detected by getProgress()) but are not counted here
+     * — adding an invoice has its own happy path elsewhere in the app and
+     * dragging it into onboarding caused the banner to stick at 80% even
+     * after the user finished every step the SPA actually presents.
+     */
     private const STEPS = [
         'company_details_completed',
         'coa_template_selected',
         'first_client_added',
-        'first_invoice_created',
         'team_invited',
     ];
 

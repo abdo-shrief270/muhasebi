@@ -7,6 +7,7 @@ namespace App\Domain\Import\Services;
 use App\Domain\Accounting\Models\Account;
 use App\Domain\Client\Models\Client;
 use App\Domain\Import\Models\ImportJob;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -232,10 +233,10 @@ class ImportService
                     continue;
                 }
 
-                $debit = (float) ($row['debit'] ?? 0);
-                $credit = (float) ($row['credit'] ?? 0);
+                $debit = Money::of($row['debit'] ?? 0);
+                $credit = Money::of($row['credit'] ?? 0);
 
-                if ($debit == 0 && $credit == 0) {
+                if (Money::isZero($debit) && Money::isZero($credit)) {
                     continue;
                 }
 
@@ -248,11 +249,12 @@ class ImportService
                 $job->incrementProgress();
             }
 
-            // Validate total debits = total credits
-            $totalDebit = array_sum(array_column($entries, 'debit'));
-            $totalCredit = array_sum(array_column($entries, 'credit'));
+            // Validate total debits = total credits using precise bcmath sums; a
+            // float-based check would drift across hundreds of CSV rows.
+            $totalDebit = Money::sum(array_column($entries, 'debit'));
+            $totalCredit = Money::sum(array_column($entries, 'credit'));
 
-            if (abs($totalDebit - $totalCredit) > 0.01) {
+            if (! Money::isZero(Money::sub($totalDebit, $totalCredit))) {
                 $job->addError(0, '', "Opening balances don't balance: Debit={$totalDebit}, Credit={$totalCredit}");
             }
         });

@@ -26,7 +26,7 @@ class UpdateExpenseRequest extends FormRequest
                 'integer',
                 Rule::exists('expense_categories', 'id')->where('tenant_id', $tenantId),
             ],
-            'amount' => ['sometimes', 'required', 'numeric', 'min:0.01'],
+            'amount' => ['sometimes', 'required', 'numeric', 'min:0.01', 'max:9999999999.99'],
             'currency' => ['nullable', 'string', 'size:3'],
             'date' => ['sometimes', 'required', 'date'],
             'vendor_name' => ['nullable', 'string', 'max:255'],

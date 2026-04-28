@@ -8,6 +8,7 @@ use App\Domain\Accounting\Enums\AccountType;
 use App\Domain\Accounting\Enums\JournalEntryStatus;
 use App\Domain\Accounting\Enums\NormalBalance;
 use App\Domain\Accounting\Models\Account;
+use App\Support\Money;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -170,8 +171,8 @@ class ReportService
                     'account_type' => $account->type->value,
                     'opening_debit' => $openingDebitCol,
                     'opening_credit' => $openingCreditCol,
-                    'period_debit' => number_format((float) $periodDebit, 2, '.', ''),
-                    'period_credit' => number_format((float) $periodCredit, 2, '.', ''),
+                    'period_debit' => Money::of($periodDebit),
+                    'period_credit' => Money::of($periodCredit),
                     'closing_debit' => $closingDebitCol,
                     'closing_credit' => $closingCreditCol,
                 ];

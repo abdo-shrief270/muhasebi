@@ -87,7 +87,15 @@ return Application::configure(basePath: dirname(__DIR__))
             'ecommerce.verify' => VerifyEcommerceWebhookSignature::class,
         ]);
 
+        // IMPORTANT: Authenticate must appear before IdentifyTenant so
+        // `$request->user()` is populated by the time IdentifyTenant reads
+        // it for its priority-4 (authenticated user's home tenant) fallback.
+        // Without this, Laravel's SortedMiddleware reorder pulls
+        // IdentifyTenant in front of Authenticate:sanctum and every
+        // tenant-scoped endpoint 404s "Tenant not found." for users who
+        // rely on the fallback rather than an explicit X-Tenant header.
         $middleware->priority([
+            \Illuminate\Auth\Middleware\Authenticate::class,
             IdentifyTenant::class,
             SetTimezone::class,
             SetLocale::class,

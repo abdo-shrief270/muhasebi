@@ -73,6 +73,18 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Dedicated channel for the `log` mail driver. Captures every outbound
+        // email's full source (subject + body + headers) at debug level so you
+        // can inspect them during local development without flipping the
+        // app-wide LOG_LEVEL. Wire to the mailer via MAIL_LOG_CHANNEL=mail.
+        'mail' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/mail.log'),
+            'level' => 'debug',
+            'days' => 7,
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

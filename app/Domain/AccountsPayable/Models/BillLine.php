@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'total',
     'sort_order',
     'account_id',
+    'vendor_product_id',
 ])]
 class BillLine extends Model
 {
@@ -69,6 +70,11 @@ class BillLine extends Model
     public function account(): BelongsTo
     {
         return $this->belongsTo(Account::class);
+    }
+
+    public function vendorProduct(): BelongsTo
+    {
+        return $this->belongsTo(VendorProduct::class, 'vendor_product_id');
     }
 
     // ──────────────────────────────────────

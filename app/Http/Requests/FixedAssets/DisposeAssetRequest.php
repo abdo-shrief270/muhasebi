@@ -19,7 +19,7 @@ class DisposeAssetRequest extends FormRequest
         return [
             'disposal_date' => ['required', 'date'],
             'disposal_type' => ['required', 'string', 'in:sale,scrap,donation,write_off'],
-            'proceeds' => ['nullable', 'numeric', 'min:0'],
+            'proceeds' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ];
     }

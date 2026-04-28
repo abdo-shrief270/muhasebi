@@ -56,6 +56,13 @@ return [
     ],
     'not_in' => ':attribute المحدد غير صالح.',
     'numeric' => ':attribute يجب أن يكون رقماً.',
+    'password' => [
+        'letters' => 'يجب أن تحتوي :attribute على حرف واحد على الأقل.',
+        'mixed' => 'يجب أن تحتوي :attribute على حرف كبير (A-Z) وحرف صغير (a-z) على الأقل.',
+        'numbers' => 'يجب أن تحتوي :attribute على رقم واحد على الأقل.',
+        'symbols' => 'يجب أن تحتوي :attribute على رمز واحد على الأقل (مثل !@#).',
+        'uncompromised' => 'ظهرت :attribute المُدخلة في عمليات تسريب بيانات سابقة. الرجاء اختيار قيمة مختلفة.',
+    ],
     'regex' => 'صيغة :attribute غير صالحة.',
     'required' => ':attribute مطلوب.',
     'required_if' => ':attribute مطلوب عندما يكون :other هو :value.',
@@ -68,4 +75,23 @@ return [
     'string' => ':attribute يجب أن يكون نصاً.',
     'unique' => ':attribute مستخدم بالفعل.',
     'url' => ':attribute يجب أن يكون رابطاً صالحاً.',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Custom Attributes — translates field names referenced via :attribute.
+    | Without this, a message like "The :attribute must be at least 10 chars"
+    | renders the raw field key (e.g. "password" or "tenant_name") inside an
+    | otherwise Arabic sentence. Add new entries when a feature introduces a
+    | user-facing field.
+    |--------------------------------------------------------------------------
+    */
+    'attributes' => [
+        'name' => 'الاسم',
+        'email' => 'البريد الإلكتروني',
+        'password' => 'كلمة المرور',
+        'password_confirmation' => 'تأكيد كلمة المرور',
+        'phone' => 'رقم الهاتف',
+        'tenant_name' => 'اسم الشركة',
+        'tenant_slug' => 'معرّف الشركة',
+    ],
 ];

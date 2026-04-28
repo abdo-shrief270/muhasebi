@@ -3196,11 +3196,6 @@ parameters:
 			count: 2
 			path: app/Domain/Subscription/Models/Plan.php
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$tenant_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domain/Subscription/Models/Subscription.php
-		-
 			message: '#^Cannot call method isAccessible\(\) on string\.$#'
 			identifier: method.nonObject
 			count: 1
@@ -3241,11 +3236,6 @@ parameters:
 			count: 1
 			path: app/Domain/Subscription/Models/Subscription.php
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$tenant_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domain/Subscription/Models/SubscriptionPayment.php
-		-
 			message: '#^Strict comparison using \=\=\= between string and App\\Domain\\Subscription\\Enums\\PaymentStatus\:\:Completed will always evaluate to false\.$#'
 			identifier: identical.alwaysFalse
 			count: 1
@@ -3260,11 +3250,6 @@ parameters:
 			identifier: identical.alwaysFalse
 			count: 1
 			path: app/Domain/Subscription/Models/SubscriptionPayment.php
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$tenant_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domain/Subscription/Models/UsageRecord.php
 		-
 			message: '#^Cannot access property \$value on string\.$#'
 			identifier: property.nonObject
@@ -3320,31 +3305,6 @@ parameters:
 			identifier: identical.alwaysFalse
 			count: 1
 			path: app/Domain/Subscription/Services/SubscriptionService.php
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$limits\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domain/Subscription/Services/UsageService.php
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name_ar\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domain/Subscription/Services/UsageService.php
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name_en\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domain/Subscription/Services/UsageService.php
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domain/Subscription/Services/UsageService.php
-		-
-			message: '#^Using nullsafe property access "\?\-\>limits" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Domain/Subscription/Services/UsageService.php
 		-
 			message: '#^Using nullsafe property access "\?\-\>name_ar" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull

@@ -20,7 +20,7 @@ class UpdateEmployeeRequest extends FormRequest
             'hire_date' => ['sometimes', 'date'],
             'department' => ['nullable', 'string', 'max:100'],
             'job_title' => ['nullable', 'string', 'max:100'],
-            'base_salary' => ['sometimes', 'numeric', 'min:0'],
+            'base_salary' => ['sometimes', 'numeric', 'min:0', 'max:9999999999.99'],
             'social_insurance_number' => ['nullable', 'string', 'max:50'],
             'bank_account' => ['nullable', 'string', 'max:100'],
             'is_insured' => ['sometimes', 'boolean'],

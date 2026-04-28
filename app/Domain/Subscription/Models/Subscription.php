@@ -20,6 +20,30 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 #[Table('subscriptions')]
+/**
+ * @property int $id
+ * @property int $tenant_id
+ * @property int $plan_id
+ * @property SubscriptionStatus $status
+ * @property string $billing_cycle
+ * @property string $price
+ * @property string $currency
+ * @property \Illuminate\Support\Carbon|null $trial_ends_at
+ * @property \Illuminate\Support\Carbon|null $current_period_start
+ * @property \Illuminate\Support\Carbon|null $current_period_end
+ * @property \Illuminate\Support\Carbon|null $cancelled_at
+ * @property string|null $cancellation_reason
+ * @property \Illuminate\Support\Carbon|null $expires_at
+ * @property PaymentGateway|null $gateway
+ * @property string|null $gateway_subscription_id
+ * @property array<string, mixed>|null $metadata
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read Plan|null $plan
+ * @property-read \App\Domain\Tenant\Models\Tenant|null $tenant
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, SubscriptionPayment> $payments
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, SubscriptionAddOn> $addOns
+ */
 #[Fillable([
     'tenant_id',
     'plan_id',
@@ -84,6 +108,7 @@ class Subscription extends Model
         return $this->belongsTo(Tenant::class);
     }
 
+    /** @return BelongsTo<Plan, $this> */
     public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class);
@@ -92,6 +117,24 @@ class Subscription extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(SubscriptionPayment::class);
+    }
+
+    /** @return HasMany<SubscriptionAddOn, $this> */
+    public function addOns(): HasMany
+    {
+        return $this->hasMany(SubscriptionAddOn::class);
+    }
+
+    /**
+     * Convenience relation that pre-applies the `active` scope. Useful for
+     * eager loading: `with('activeAddOns')` keeps cancelled/expired rows
+     * out of the loaded set.
+     *
+     * @return HasMany<SubscriptionAddOn, $this>
+     */
+    public function activeAddOns(): HasMany
+    {
+        return $this->addOns()->where('status', \App\Domain\Subscription\Enums\SubscriptionAddOnStatus::Active->value);
     }
 
     // ──────────────────────────────────────

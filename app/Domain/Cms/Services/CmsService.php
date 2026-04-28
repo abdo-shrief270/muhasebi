@@ -5,6 +5,7 @@ namespace App\Domain\Cms\Services;
 use App\Domain\Cms\Models\CmsPage;
 use App\Domain\Cms\Models\ContactSubmission;
 use App\Domain\Cms\Models\Faq;
+use App\Domain\Cms\Models\FeatureShowcaseSection;
 use App\Domain\Cms\Models\LandingSetting;
 use App\Domain\Cms\Models\SlugRedirect;
 use App\Domain\Cms\Models\Testimonial;
@@ -23,16 +24,57 @@ class CmsService
 
     public function getLandingData(): array
     {
-        return Cache::remember('landing_data', 3600, function () {
-            $settings = LandingSetting::all()->pluck('data', 'section')->toArray();
-
-            return [
-                'hero' => $settings['hero'] ?? null,
-                'stats' => $settings['stats'] ?? null,
-                'testimonials' => Testimonial::active()->ordered()->get(),
-                'faqs' => Faq::active()->ordered()->get(),
-            ];
+        // Cache ONLY the serialization-safe scalar settings. Live Eloquent
+        // Collections (Testimonial + Faq) are NOT cached — caching them
+        // across process boundaries causes `__PHP_Incomplete_Class` errors
+        // whenever the class signature drifts between write and read (e.g.
+        // after a composer update or OPcache reset on only one side), and
+        // manifests as a recurring 500 on /landing until cache:clear.
+        // Testimonials and FAQs are small tables and queried fresh each
+        // request; the controller re-wraps them with Resources anyway.
+        $settings = Cache::remember('landing_data.settings', 3600, function () {
+            return LandingSetting::all()->pluck('data', 'section')->toArray();
         });
+
+        return [
+            'hero' => $settings['hero'] ?? null,
+            'stats' => $settings['stats'] ?? null,
+            'testimonials' => Testimonial::active()->ordered()->get(),
+            'faqs' => Faq::active()->ordered()->get(),
+        ];
+    }
+
+    /**
+     * Bilingual feature-showcase tree: active sections, each with its
+     * active items pre-loaded. Cached 10 minutes — content changes rarely
+     * and the page is loaded by anonymous visitors so cache absorbs the
+     * read load. Bust manually after a seeder rerun via cache:clear.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, FeatureShowcaseSection>
+     */
+    public function getFeatureShowcase(): \Illuminate\Database\Eloquent\Collection
+    {
+        // Cache the IDs (lightweight, serialization-safe) and re-hydrate
+        // the relation tree from the DB on each hit. Caching the eager
+        // collection across processes can hit `__PHP_Incomplete_Class`
+        // after deploys, same trap LandingSetting already navigates.
+        $ids = Cache::remember('feature_showcase.ids', 600, function () {
+            return FeatureShowcaseSection::active()
+                ->ordered()
+                ->pluck('id')
+                ->all();
+        });
+
+        if ($ids === []) {
+            return new \Illuminate\Database\Eloquent\Collection();
+        }
+
+        return FeatureShowcaseSection::query()
+            ->with(['items' => fn ($q) => $q->where('is_active', true)])
+            ->whereIn('id', $ids)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
     }
 
     public function getAdminLandingData(): array
@@ -65,7 +107,8 @@ class CmsService
             }
         }
 
-        Cache::forget('landing_data');
+        Cache::forget('landing_data.settings');
+        Cache::forget('landing_data'); // legacy key from before 2026-04-23 refactor
 
         return $this->getAdminLandingData();
     }
@@ -143,7 +186,8 @@ class CmsService
 
     public function createTestimonial(array $data): Testimonial
     {
-        Cache::forget('landing_data');
+        Cache::forget('landing_data.settings');
+        Cache::forget('landing_data'); // legacy key from before 2026-04-23 refactor
 
         return Testimonial::create([
             'name_ar' => $data['name']['ar'] ?? '',
@@ -160,7 +204,8 @@ class CmsService
 
     public function updateTestimonial(Testimonial $testimonial, array $data): Testimonial
     {
-        Cache::forget('landing_data');
+        Cache::forget('landing_data.settings');
+        Cache::forget('landing_data'); // legacy key from before 2026-04-23 refactor
 
         $testimonial->update([
             'name_ar' => $data['name']['ar'] ?? $testimonial->name_ar,
@@ -186,7 +231,8 @@ class CmsService
 
     public function createFaq(array $data): Faq
     {
-        Cache::forget('landing_data');
+        Cache::forget('landing_data.settings');
+        Cache::forget('landing_data'); // legacy key from before 2026-04-23 refactor
 
         return Faq::create([
             'question_ar' => $data['question']['ar'] ?? '',
@@ -200,7 +246,8 @@ class CmsService
 
     public function updateFaq(Faq $faq, array $data): Faq
     {
-        Cache::forget('landing_data');
+        Cache::forget('landing_data.settings');
+        Cache::forget('landing_data'); // legacy key from before 2026-04-23 refactor
 
         $faq->update([
             'question_ar' => $data['question']['ar'] ?? $faq->question_ar,
